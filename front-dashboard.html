@@ -204,10 +204,10 @@
     <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:28px;filter:brightness(0) invert(1)">
   </div>
   <nav class="sidebar-nav">
-    <a class="sidebar-link activo" href="https://gestiondeclientes.bitrix24.site/dashboard/"><span class="sb-icon">📊</span> Mi día</a>
-    <a class="sidebar-link" href="https://gestiondeclientes.bitrix24.site/tareas/"><span class="sb-icon">📋</span> Tareas</a>
-    <a class="sidebar-link" href="https://gestiondeclientes.bitrix24.site/cambiaretapa/"><span class="sb-icon">🔄</span> Cambiar etapa</a>
-    <a class="sidebar-link" id="sb-link-ing" href="https://gestiondeclientes.bitrix24.site/ingenieria/"><span class="sb-icon">🔧</span> Propuestas Ing.</a>
+    <a class="sidebar-link activo" target="_top" href="https://gestiondeclientes.bitrix24.site/dashboard/"><span class="sb-icon">📊</span> Mi día</a>
+    <a class="sidebar-link" target="_top" href="https://gestiondeclientes.bitrix24.site/tareas/"><span class="sb-icon">📋</span> Tareas</a>
+    <a class="sidebar-link" target="_top" href="https://gestiondeclientes.bitrix24.site/cambiaretapa/"><span class="sb-icon">🔄</span> Cambiar etapa</a>
+    <a class="sidebar-link" id="sb-link-ing" target="_top" href="https://gestiondeclientes.bitrix24.site/ingenieria/"><span class="sb-icon">🔧</span> Propuestas Ing.</a>
   </nav>
   <hr class="sidebar-sep">
   <div class="sidebar-user">
@@ -221,7 +221,7 @@
 <div class="login-wrap" id="vista-login">
   <div class="login-card">
     <div class="login-logo">
-      <a href="https://gestiondeclientes.bitrix24.site/" style="display:inline-block;line-height:0">
+      <a target="_top" href="https://gestiondeclientes.bitrix24.site/" style="display:inline-block;line-height:0">
         <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:42px;filter:brightness(0)">
       </a>
     </div>
@@ -305,7 +305,7 @@
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <a href="https://gestiondeclientes.bitrix24.site/" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#374151;text-decoration:none;background:#f3f4f6;padding:6px 11px;border-radius:9px">🏠 Inicio</a>
+      <a target="_top" href="https://gestiondeclientes.bitrix24.site/" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#374151;text-decoration:none;background:#f3f4f6;padding:6px 11px;border-radius:9px">🏠 Inicio</a>
       <button class="btn-logout" onclick="logout()">Salir</button>
     </div>
   </div>
@@ -323,7 +323,7 @@
   // Abrir una negociación en NUESTRO front (/tareas/), no en Bitrix
   function irANegociacion(dealId) {
     localStorage.setItem('solart_deal_id_preload', String(dealId));
-    window.location.href = 'https://gestiondeclientes.bitrix24.site/tareas/';
+    window.top.location.href = 'https://gestiondeclientes.bitrix24.site/tareas/';
   }
 
   // Profundidad del deal en el embudo (mismo modelo que el tablero directivo)
