@@ -325,9 +325,40 @@ const STAGE_IDS_MANUAL = {
 let pinActual = '';
 let STAGES = {}; // nombre → id
 
+// Limitador de concurrencia: máximo N llamadas a Bitrix en vuelo a la vez.
+// Evita tumbar el límite de peticiones cuando el tablero dispara decenas de golpe.
+let _enVuelo = 0;
+const _cola = [];
+function _gate() {
+  return new Promise(res => {
+    const intentar = () => {
+      if (_enVuelo < 4) { _enVuelo++; res(() => { _enVuelo--; if (_cola.length) _cola.shift()(); }); }
+      else _cola.push(intentar);
+    };
+    intentar();
+  });
+}
+
 // Reintenta cuando Bitrix responde con límite de peticiones (evita que el
 // tablero truene por una ráfaga de llamadas). Espera creciente entre intentos.
-async function _conReintento(fn, intentos = 3) {
+async function _conReintento(fn, intentos = 4) {
+  const liberar = await _gate();
+  try {
+    for (let i = 0; i < intentos; i++) {
+      let j;
+      try { j = await fn(); } catch (e) { if (i === intentos - 1) throw e; await new Promise(r => setTimeout(r, 600 * (i + 1))); continue; }
+      const err = String(j?.error || '').toUpperCase();
+      if (err.includes('QUERY_LIMIT') || err.includes('OPERATION_TIME_LIMIT') || err.includes('OVERLOAD')) {
+        if (i === intentos - 1) return j;
+        await new Promise(r => setTimeout(r, 800 * (i + 1)));
+        continue;
+      }
+      return j;
+    }
+  } finally { liberar(); }
+}
+
+async function _conReintentoVIEJO(fn, intentos = 3) {
   for (let i = 0; i < intentos; i++) {
     let j;
     try { j = await fn(); } catch (e) { if (i === intentos - 1) throw e; await new Promise(r => setTimeout(r, 600 * (i + 1))); continue; }
