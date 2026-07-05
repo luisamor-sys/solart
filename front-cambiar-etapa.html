@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cambiar etapa — SOLART</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f4f6f9;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: #f59e0b;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+
+  h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+  .subtitle { font-size: 14px; color: #6b7280; margin-bottom: 20px; }
+
+  /* Toggle modo */
+  .modo-wrap { display: flex; gap: 0; margin-bottom: 24px; background: #f3f4f6; border-radius: 12px; padding: 4px; }
+  .modo-btn {
+    flex: 1; padding: 11px 8px; border: none; border-radius: 9px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    background: transparent; color: #6b7280; transition: all 0.15s; text-align: center;
+  }
+  .modo-btn.activo { background: #fff; color: #1a1a2e; box-shadow: 0 1px 6px rgba(0,0,0,0.10); }
+  .modo-btn.activo.verde { color: #15803d; }
+  .modo-btn.activo.morado { color: #5b21b6; }
+
+  /* Buscador */
+  .search-wrap { position: relative; margin-bottom: 8px; }
+  .search-wrap input {
+    width: 100%;
+    padding: 13px 44px 13px 14px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #1a1a2e;
+    outline: none;
+    background: #fafafa;
+    transition: border-color 0.2s;
+  }
+  .search-wrap input:focus { border-color: #f59e0b; background: #fff; }
+  .search-icon {
+    position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px; color: #9ca3af; pointer-events: none;
+  }
+
+  /* Resultados */
+  .resultados {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .resultados.visible { display: block; }
+
+  .resultado-item {
+    padding: 13px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s;
+  }
+  .resultado-item:last-child { border-bottom: none; }
+  .resultado-item:hover { background: #fef3c7; }
+  .resultado-nombre { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+  .resultado-etapa { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+  .sin-resultados {
+    padding: 16px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 14px;
+  }
+
+  /* Tarjeta del prospecto seleccionado */
+  .prospecto-card {
+    background: #f8fafc;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .prospecto-card.visible { display: block; }
+
+  .prospecto-nombre {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+  }
+  .prospecto-empresa {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 14px;
+  }
+
+  .etapa-actual {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .etapa-label { font-size: 12px; color: #9ca3af; font-weight: 500; }
+  .etapa-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: #e5e7eb;
+    color: #374151;
+  }
+
+  .flecha {
+    text-align: center;
+    font-size: 22px;
+    color: #d1d5db;
+    margin: 10px 0 6px;
+  }
+
+  .etapa-siguiente {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .etapa-sig-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: #fef3c7;
+    color: #b45309;
+  }
+
+  /* Botones */
+  .btn {
+    width: 100%;
+    padding: 15px;
+    background: #f59e0b;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    margin-bottom: 10px;
+  }
+  .btn:hover { background: #d97706; }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { background: #d1d5db; cursor: not-allowed; transform: none; }
+
+  .btn-peligro {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: #ef4444;
+    border: 1.5px solid #fca5a5;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 4px;
+  }
+  .btn-peligro:hover { background: #fef2f2; }
+
+  .btn-secundario {
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    color: #f59e0b;
+    border: 2px solid #f59e0b;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-secundario:hover { background: #fef3c7; }
+
+  /* Estados */
+  .estado { display: none; text-align: center; padding: 20px 0; }
+  .estado.visible { display: block; }
+
+  .spinner {
+    width: 44px; height: 44px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #f59e0b;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .exito-icono { font-size: 52px; margin-bottom: 12px; }
+  .exito-titulo { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+  .exito-sub { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+
+  /* Modal confirmación */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none; align-items: center; justify-content: center;
+    padding: 16px; z-index: 100;
+  }
+  .overlay.visible { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 24px;
+    width: 100%; max-width: 360px;
+    text-align: center;
+  }
+  .modal-icono { font-size: 40px; margin-bottom: 12px; }
+  .modal-titulo { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+  .modal-texto { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+  .modal-acciones { display: flex; gap: 10px; }
+  .btn-modal-cancel {
+    flex: 1; padding: 12px;
+    background: #f3f4f6; color: #374151;
+    border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn-modal-confirm {
+    flex: 1; padding: 12px;
+    background: #ef4444; color: #fff;
+    border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+
+  /* Buscando spinner inline */
+  .buscando {
+    text-align: center;
+    padding: 14px;
+    color: #9ca3af;
+    font-size: 14px;
+    display: none;
+  }
+  .buscando.visible { display: block; }
+
+  /* Lista de tarjetas auto-cargadas */
+  .lista-card {
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    transition: border-color 0.15s;
+  }
+  .lista-card:hover { border-color: #d1d5db; }
+  .lista-card-nombre { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+  .lista-card-empresa { font-size: 12px; color: #6b7280; margin-bottom: 10px; }
+  .lista-card-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .chip {
+    font-size: 11px; font-weight: 600; padding: 3px 9px;
+    border-radius: 20px; background: #f3f4f6; color: #374151;
+  }
+  .chip.verde  { background: #dcfce7; color: #15803d; }
+  .chip.azul   { background: #dbeafe; color: #1e40af; }
+  .chip.morado { background: #ede9fe; color: #5b21b6; }
+  .chip.amber  { background: #fef3c7; color: #92400e; }
+  .lista-card-acciones { display: flex; gap: 7px; flex-wrap: wrap; }
+  .btn-lista { font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 8px; cursor: pointer; border: 1.5px solid; white-space: nowrap; }
+  .btn-lista.etapa  { background: #fef3c7; color: #92400e; border-color: #fbbf24; }
+  .btn-lista.chat   { background: #f0f9ff; color: #0369a1; border-color: #7dd3fc; }
+  .btn-lista.tareas { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+
+  /* Panel chat inline */
+  .chat-panel { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f3f4f6; }
+  .chat-panel.abierto { display: block; }
+  .chat-msg { padding: 7px 10px; background: #f9fafb; border-radius: 8px; margin-bottom: 6px; }
+  .chat-msg-fecha { font-size: 10px; color: #9ca3af; margin-bottom: 2px; }
+  .chat-msg-texto { font-size: 12px; color: #374151; line-height: 1.4; word-break: break-word; }
+  .chat-input-row { display: flex; gap: 6px; margin-top: 8px; }
+  .chat-inp { flex: 1; padding: 8px 10px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; font-family: inherit; }
+  .chat-inp:focus { border-color: #0369a1; }
+  .chat-send { padding: 8px 12px; background: #0369a1; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .chat-send:disabled { background: #d1d5db; cursor: not-allowed; }
+  .lista-empty { text-align: center; padding: 32px 16px; color: #9ca3af; font-size: 14px; }
+
+  /* ── SIDEBAR DESKTOP ── */
+  @media (min-width: 768px) {
+    body { display: flex; padding: 0; align-items: stretch; }
+    .sidebar { width: 230px; flex-shrink: 0; background: #1a1a2e; display: flex; flex-direction: column; padding: 28px 16px; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; overflow-y: auto; }
+    .sidebar-logo { margin-bottom: 36px; padding: 0 4px; }
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 10px; color: #9ca3af; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.15s; }
+    .sidebar-link:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .sidebar-link.activo { background: #f59e0b; color: #1a1a2e; }
+    .sidebar-link .sb-icon { font-size: 18px; width: 22px; text-align: center; }
+    .sidebar-sep { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 12px 0; }
+    .sidebar-user { display: flex; align-items: center; gap: 8px; padding: 10px 14px; }
+    .sidebar-user-avatar { width: 30px; height: 30px; border-radius: 50%; background: #f59e0b; color: #1a1a2e; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sidebar-user-name { font-size: 13px; color: #d1d5db; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-logout { background: none; border: none; color: #6b7280; font-size: 12px; cursor: pointer; padding: 0; }
+    .sidebar-logout:hover { color: #ef4444; }
+    .page-main { margin-left: 230px; flex: 1; min-height: 100vh; padding: 32px; display: flex; justify-content: center; align-items: flex-start; }
+    .card { max-width: 680px; width: 100%; }
+    .logo { display: none; }
+  }
+  @media (max-width: 767px) { .sidebar { display: none; } .page-main { display: contents; } }
+</style>
+</head>
+<body>
+
+<!-- MODAL CONFIRMAR NO UTIL -->
+<div class="overlay" id="overlay-noutil">
+  <div class="modal">
+    <div class="modal-icono">⚠️</div>
+    <div class="modal-titulo">¿Marcar como No útil?</div>
+    <div class="modal-texto">
+      El prospecto se moverá a <strong>99_Prospecto no útil</strong>.<br>
+      Esta acción queda registrada en el CRM.
+    </div>
+    <div class="modal-acciones">
+      <button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-modal-confirm" onclick="confirmarNoUtil()">Sí, marcar</button>
+    </div>
+  </div>
+</div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:28px;filter:brightness(0) invert(1)">
+  </div>
+  <nav class="sidebar-nav">
+    <a class="sidebar-link" href="https://gestiondeclientes.bitrix24.site/dashboard/"><span class="sb-icon">📊</span> Mi día</a>
+    <a class="sidebar-link" href="https://gestiondeclientes.bitrix24.site/tareas/"><span class="sb-icon">📋</span> Tareas</a>
+    <a class="sidebar-link activo" href="https://gestiondeclientes.bitrix24.site/cambiaretapa/"><span class="sb-icon">🔄</span> Cambiar etapa</a>
+    <a class="sidebar-link" href="https://gestiondeclientes.bitrix24.site/ingenieria/"><span class="sb-icon">🔧</span> Propuestas Ing.</a>
+  </nav>
+  <hr class="sidebar-sep">
+  <div class="sidebar-user">
+    <div class="sidebar-user-avatar" id="sb-avatar">?</div>
+    <span class="sidebar-user-name" id="sb-nombre">—</span>
+    <button class="sidebar-logout" onclick="window.location.href='https://gestiondeclientes.bitrix24.site/dashboard/'">Salir</button>
+  </div>
+</aside>
+
+<div class="page-main">
+<div class="card">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <a href="https://gestiondeclientes.bitrix24.site/" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#6b7280;text-decoration:none;background:#f3f4f6;padding:7px 12px;border-radius:10px">← Menú</a>
+    <a href="https://gestiondeclientes.bitrix24.site/" style="display:inline-block;line-height:0">
+      <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:28px;filter:brightness(0)">
+    </a>
+  </div>
+
+  <!-- VISTA BÚSQUEDA -->
+  <div id="vista-busqueda">
+    <h1>Cambiar etapa</h1>
+    <p class="subtitle">¿Qué quieres actualizar?</p>
+
+    <div class="modo-wrap">
+      <button class="modo-btn activo verde" id="modo-btn-prospectos" onclick="setModo('prospectos')">
+        👤 Prospectos
+      </button>
+      <button class="modo-btn morado" id="modo-btn-negociaciones" onclick="setModo('negociaciones')">
+        🤝 Negociaciones
+      </button>
+    </div>
+
+    <div class="search-wrap" style="margin-bottom:14px">
+      <input type="text" id="busqueda" placeholder="Filtrar por nombre…" oninput="filtrarLista(this.value)" autocomplete="off">
+      <span class="search-icon">🔍</span>
+    </div>
+
+    <div class="buscando" id="buscando">Cargando…</div>
+    <div id="lista-cards"></div>
+  </div>
+
+  <!-- VISTA PROSPECTO SELECCIONADO -->
+  <div id="vista-prospecto" style="display:none">
+    <button onclick="volver()" style="background:none;border:none;color:#6b7280;font-size:14px;cursor:pointer;margin-bottom:20px;padding:0;">← Buscar otro</button>
+
+    <div class="prospecto-card visible" id="prospecto-card">
+      <div class="prospecto-nombre" id="p-nombre"></div>
+      <div class="prospecto-empresa" id="p-empresa"></div>
+
+      <div class="etapa-actual">
+        <span class="etapa-label">Etapa actual</span>
+        <span class="etapa-badge" id="p-etapa-actual"></span>
+      </div>
+      <div class="flecha" id="flecha-sig">↓</div>
+      <div class="etapa-siguiente" id="wrap-sig">
+        <span class="etapa-label">Mover a</span>
+        <span class="etapa-sig-badge" id="p-etapa-sig"></span>
+      </div>
+    </div>
+
+    <!-- Botón etapa normal -->
+    <button class="btn" id="btn-avanzar" onclick="avanzarEtapa()">Mover a siguiente etapa →</button>
+
+    <!-- Botón siempre visible: Mover a Negociaciones -->
+    <button class="btn" id="btn-negociacion" style="background:#16a34a;margin-bottom:10px;" onclick="toggleFormNegociacion()">
+      📄 Tengo el recibo CFE — Mover a Negociaciones
+    </button>
+
+    <!-- Formulario recibo CFE (se despliega al hacer clic arriba) -->
+    <div id="bloque-negociacion" style="display:none; background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:12px; padding:16px; margin-bottom:12px;">
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Monto del recibo CFE <span style="color:#ef4444">*</span></div>
+      <input type="number" id="monto-cfe" placeholder="Ej. 1850" min="0" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;margin-bottom:14px;outline:none;background:#fff;">
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Recibo CFE (PDF o imagen) <span style="color:#ef4444">*</span></div>
+      <label id="label-archivo" style="display:flex;align-items:center;gap:10px;padding:13px 14px;border:1.5px dashed #d1d5db;border-radius:10px;cursor:pointer;margin-bottom:6px;background:#fff;transition:border-color 0.2s;">
+        <span style="font-size:20px">📎</span>
+        <span id="archivo-texto" style="font-size:14px;color:#6b7280;">Seleccionar archivo…</span>
+        <input type="file" id="archivo-cfe" accept=".pdf,image/*" style="display:none" onchange="onArchivoSeleccionado(this)">
+      </label>
+      <div id="err-recibo" style="font-size:12px;color:#ef4444;margin-bottom:14px;display:none;">Sube el recibo CFE antes de continuar</div>
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;">¿Tiene link de propuesta Sunwise? <span style="color:#ef4444">*</span></div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <button id="btn-no-sunwise" onclick="seleccionarSunwise(false)" style="flex:1;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;">
+          ❌ No — propuesta especial
+        </button>
+        <button id="btn-si-sunwise" onclick="seleccionarSunwise(true)" style="flex:1;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;">
+          🔗 Sí — tiene link
+        </button>
+      </div>
+      <div id="wrap-link-sunwise" style="display:none;margin-bottom:14px;">
+        <input type="url" id="link-sunwise" placeholder="https://..." style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none;background:#fff;margin-bottom:10px;">
+        <div id="err-sunwise" style="font-size:12px;color:#ef4444;margin-top:-6px;margin-bottom:10px;display:none;">Pega el link de Sunwise</div>
+        <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Monto de la propuesta Sunwise (MXN) <span style="color:#ef4444">*</span></div>
+        <input type="number" id="monto-negociacion" placeholder="Ej. 280000" min="0" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;outline:none;background:#fff;">
+      </div>
+
+      <div style="border-top:1px solid #d1fae5;margin:14px 0;"></div>
+      <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Datos de la negociación</div>
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Proyecto <span style="color:#ef4444">*</span></div>
+      <input type="text" id="neg-proyecto" placeholder="Nombre del proyecto" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:14px;outline:none;background:#fff;">
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Potencial del cliente (proyectos) <span style="color:#ef4444">*</span></div>
+      <input type="number" id="neg-potencial" placeholder="Ej. 3" min="1" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:14px;outline:none;background:#fff;">
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Entidad federativa <span style="color:#ef4444">*</span></div>
+      <select id="neg-entidad" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:14px;outline:none;background:#fff;appearance:auto;">
+        <option value="">Seleccionar estado…</option>
+        <option value="790">Aguascalientes</option><option value="784">Baja California</option><option value="786">Baja California Sur</option><option value="788">Campeche</option><option value="790">Coahuila de Zaragoza</option><option value="792">Colima</option><option value="794">Chiapas</option><option value="796">Chihuahua</option><option value="798">Ciudad de México</option><option value="800">Durango</option><option value="802">Guanajuato</option><option value="804">Guerrero</option><option value="806">Hidalgo</option><option value="808">Jalisco</option><option value="810">Edo. de México</option><option value="812">Michoacán de Ocampo</option><option value="814">Morelos</option><option value="816">Nayarit</option><option value="818">Nuevo León</option><option value="820">Oaxaca</option><option value="822">Puebla</option><option value="824">Querétaro</option><option value="826">Quintana Roo</option><option value="828">San Luis Potosí</option><option value="830">Sinaloa</option><option value="832">Sonora</option><option value="834">Tabasco</option><option value="836">Tamaulipas</option><option value="838">Tlaxcala</option><option value="840">Veracruz</option><option value="842">Yucatán</option><option value="844">Zacatecas</option>
+      </select>
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Tipo de proyecto <span style="color:#ef4444">*</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+        <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;background:#fff;">
+          <input type="checkbox" value="312" name="tipo-proyecto"> FOTOVOLTAICO</label>
+        <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;background:#fff;">
+          <input type="checkbox" value="310" name="tipo-proyecto"> BESS</label>
+        <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;background:#fff;">
+          <input type="checkbox" value="336" name="tipo-proyecto"> Suministro Calificado</label>
+        <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;background:#fff;">
+          <input type="checkbox" value="526" name="tipo-proyecto"> Mantenimiento</label>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Origen prospecto <span style="color:#ef4444">*</span></div>
+      <select id="neg-origen" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:16px;outline:none;background:#fff;appearance:auto;">
+        <option value="">Seleccionar origen…</option>
+        <option value="94">Prospección Propia</option><option value="88">Don Miguel</option><option value="90">Vendedores Anteriores</option><option value="86">Victor Linaldi</option><option value="92">Estratégica</option><option value="96">Cartera Propia</option><option value="98">Otros</option><option value="254">Javier Reyes</option><option value="288">Adrian Escamilla Prioridad 2</option><option value="290">Adrian Escamilla Prioridad 1</option><option value="302">Adrian Escamilla</option><option value="974">Christian</option><option value="1168">Rodrigo Luna</option><option value="1170">Javier Canseco</option><option value="1480">EXPOGRAFICA</option>
+      </select>
+
+      <button class="btn" style="background:#16a34a;" onclick="pasarANegociacion()">Confirmar y mover a Negociaciones ✓</button>
+    </div>
+
+    <!-- Botón CFE + Visita técnica -->
+    <button class="btn" id="btn-visita-cfe" style="background:#0369a1;margin-bottom:10px;" onclick="toggleFormVisitaCFE()">
+      🔧 Tengo recibo CFE y quiero agendar visita técnica
+    </button>
+
+    <div id="bloque-visita-cfe" style="display:none;background:#f0f9ff;border:1.5px solid #7dd3fc;border-radius:12px;padding:16px;margin-bottom:12px;">
+
+      <div style="font-size:13px;font-weight:700;color:#0369a1;margin-bottom:14px;">📄 Datos del recibo CFE</div>
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Monto del recibo CFE <span style="color:#ef4444">*</span></div>
+      <input type="number" id="vc-monto-cfe" placeholder="Ej. 1850" min="0" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;margin-bottom:14px;outline:none;background:#fff;">
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Recibo CFE (PDF o imagen) <span style="color:#ef4444">*</span></div>
+      <label id="vc-label-archivo" style="display:flex;align-items:center;gap:10px;padding:13px 14px;border:1.5px dashed #d1d5db;border-radius:10px;cursor:pointer;margin-bottom:6px;background:#fff;">
+        <span style="font-size:20px">📎</span>
+        <span id="vc-archivo-texto" style="font-size:14px;color:#6b7280;">Seleccionar archivo…</span>
+        <input type="file" id="vc-archivo-cfe" accept=".pdf,image/*" style="display:none" onchange="vcOnArchivo(this)">
+      </label>
+      <div id="vc-err-recibo" style="font-size:12px;color:#ef4444;margin-bottom:14px;display:none;">Sube el recibo CFE antes de continuar</div>
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;">¿Tiene link de propuesta Sunwise? <span style="color:#ef4444">*</span></div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <button id="vc-btn-no-sunwise" onclick="vcSelSunwise(false)" style="flex:1;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;">❌ No</button>
+        <button id="vc-btn-si-sunwise"  onclick="vcSelSunwise(true)"  style="flex:1;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;">🔗 Sí</button>
+      </div>
+      <div id="vc-wrap-sunwise" style="display:none;margin-bottom:14px;">
+        <input type="url" id="vc-link-sunwise" placeholder="https://..." style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none;background:#fff;margin-bottom:8px;">
+        <div id="vc-err-sunwise" style="font-size:12px;color:#ef4444;margin-bottom:8px;display:none;">Pega el link de Sunwise</div>
+        <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Monto de la propuesta Sunwise (MXN) <span style="color:#ef4444">*</span></div>
+        <input type="number" id="vc-monto-neg" placeholder="Ej. 280000" min="0" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;outline:none;background:#fff;">
+      </div>
+
+      <div style="border-top:1px solid #bae6fd;margin:14px 0;"></div>
+      <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Datos de la negociación</div>
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Proyecto <span style="color:#ef4444">*</span></div>
+      <input type="text" id="vc-proyecto" placeholder="Nombre del proyecto" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:14px;outline:none;background:#fff;">
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Potencial del cliente (proyectos) <span style="color:#ef4444">*</span></div>
+      <input type="number" id="vc-potencial" placeholder="Ej. 3" min="1" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:14px;outline:none;background:#fff;">
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Entidad federativa <span style="color:#ef4444">*</span></div>
+      <select id="vc-entidad" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:14px;outline:none;background:#fff;appearance:auto;">
+        <option value="">Seleccionar estado…</option>
+        <option value="790">Aguascalientes</option><option value="784">Baja California</option><option value="786">Baja California Sur</option><option value="788">Campeche</option><option value="790">Coahuila de Zaragoza</option><option value="792">Colima</option><option value="794">Chiapas</option><option value="796">Chihuahua</option><option value="798">Ciudad de México</option><option value="800">Durango</option><option value="802">Guanajuato</option><option value="804">Guerrero</option><option value="806">Hidalgo</option><option value="808">Jalisco</option><option value="810">Edo. de México</option><option value="812">Michoacán de Ocampo</option><option value="814">Morelos</option><option value="816">Nayarit</option><option value="818">Nuevo León</option><option value="820">Oaxaca</option><option value="822">Puebla</option><option value="824">Querétaro</option><option value="826">Quintana Roo</option><option value="828">San Luis Potosí</option><option value="830">Sinaloa</option><option value="832">Sonora</option><option value="834">Tabasco</option><option value="836">Tamaulipas</option><option value="838">Tlaxcala</option><option value="840">Veracruz</option><option value="842">Yucatán</option><option value="844">Zacatecas</option>
+      </select>
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Tipo de proyecto <span style="color:#ef4444">*</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+        <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;background:#fff;"><input type="checkbox" value="312" name="vc-tipo"> FOTOVOLTAICO</label>
+        <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;background:#fff;"><input type="checkbox" value="310" name="vc-tipo"> BESS</label>
+        <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;background:#fff;"><input type="checkbox" value="336" name="vc-tipo"> Suministro Calificado</label>
+        <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;background:#fff;"><input type="checkbox" value="526" name="vc-tipo"> Mantenimiento</label>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Origen prospecto <span style="color:#ef4444">*</span></div>
+      <select id="vc-origen" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:16px;outline:none;background:#fff;appearance:auto;">
+        <option value="">Seleccionar origen…</option>
+        <option value="94">Prospección Propia</option><option value="88">Don Miguel</option><option value="90">Vendedores Anteriores</option><option value="86">Victor Linaldi</option><option value="92">Estratégica</option><option value="96">Cartera Propia</option><option value="98">Otros</option><option value="254">Javier Reyes</option><option value="288">Adrian Escamilla Prioridad 2</option><option value="290">Adrian Escamilla Prioridad 1</option><option value="302">Adrian Escamilla</option><option value="974">Christian</option><option value="1168">Rodrigo Luna</option><option value="1170">Javier Canseco</option><option value="1480">EXPOGRAFICA</option>
+      </select>
+
+      <div style="border-top:1px solid #bae6fd;margin:14px 0;"></div>
+      <div style="font-size:12px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">🔧 Datos de la visita técnica</div>
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Fecha de la visita <span style="color:#ef4444">*</span></div>
+      <input type="date" id="vc-fecha-visita" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;margin-bottom:14px;outline:none;background:#fff;">
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Dirección de la visita <span style="color:#ef4444">*</span></div>
+      <input type="text" id="vc-direccion" placeholder="Ej. Av. Constitución 123, Monterrey" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:14px;outline:none;background:#fff;">
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">¿Quién recibe al ingeniero? <span style="color:#ef4444">*</span></div>
+      <input type="text" id="vc-quien" placeholder="Ej. Carlos Mendoza — Gerente" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:14px;outline:none;background:#fff;">
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">kWp aproximado <span style="color:#ef4444">*</span></div>
+      <input type="number" id="vc-kwp" placeholder="Ej. 50" min="0" step="0.1" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;margin-bottom:14px;outline:none;background:#fff;">
+
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">% de energía que cubrimos <span style="color:#ef4444">*</span></div>
+      <input type="text" id="vc-energia" placeholder="Ej. 85%" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:16px;outline:none;background:#fff;">
+
+      <button class="btn" style="background:#0369a1;" onclick="pasarANegociacionConVisita()">Confirmar — crear negociación y agendar visita ✓</button>
+    </div>
+
+    <!-- Botón para negociaciones ya convertidas -->
+    <div id="bloque-ya-negociacion" style="display:none; background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:12px; padding:16px; margin-bottom:12px; text-align:center;">
+      <div style="font-size:13px;color:#1e40af;font-weight:600;margin-bottom:12px;">
+        🤝 Este prospecto ya tiene una negociación activa
+      </div>
+      <button class="btn" style="background:#3b82f6;margin-bottom:0" onclick="irANegociacion()">
+        Ver tareas de esta negociación →
+      </button>
+    </div>
+
+    <!-- Siempre visible: No útil -->
+    <button class="btn-peligro" id="btn-no-util" onclick="abrirModal()">Marcar como No útil</button>
+  </div>
+
+  <!-- VISTA NEGOCIACIÓN SELECCIONADA -->
+  <div id="vista-deal" style="display:none">
+    <button onclick="volverDeal()" style="background:none;border:none;color:#6b7280;font-size:14px;cursor:pointer;margin-bottom:20px;padding:0;">← Buscar otra</button>
+
+    <div class="prospecto-card visible">
+      <div class="prospecto-nombre" id="d-nombre"></div>
+      <div class="prospecto-empresa" id="d-proyecto" style="margin-bottom:14px"></div>
+      <div class="etapa-actual">
+        <span class="etapa-label">Etapa actual</span>
+        <span class="etapa-badge" id="d-etapa-actual"></span>
+      </div>
+      <div class="flecha" id="d-flecha-sig">↓</div>
+      <div class="etapa-siguiente" id="d-wrap-sig">
+        <span class="etapa-label">Mover a</span>
+        <span class="etapa-sig-badge" id="d-etapa-sig"></span>
+      </div>
+    </div>
+
+    <button class="btn" id="d-btn-avanzar" onclick="avanzarEtapaDeal()" style="display:none">Mover a siguiente etapa →</button>
+
+    <!-- Aviso cuando la siguiente etapa requiere generar una tarea -->
+    <div id="d-aviso-tarea" style="display:none;background:#ede9fe;border:1.5px solid #c4b5fd;border-radius:14px;padding:16px 18px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;color:#5b21b6;margin-bottom:6px" id="d-aviso-tarea-titulo"></div>
+      <div style="font-size:12px;color:#6b21a8;line-height:1.5;margin-bottom:14px" id="d-aviso-tarea-desc"></div>
+      <button class="btn" onclick="irATareasDeal()" style="background:#7c3aed;margin:0">
+        📋 Ir a generar la tarea →
+      </button>
+    </div>
+
+    <button class="btn" id="d-btn-tarea" onclick="irATareasDeal()" style="background:#7c3aed;margin-bottom:10px;display:none">
+      📋 Generar tarea para esta negociación
+    </button>
+
+    <!-- BOTÓN MOVER A CIERRE — solo en Proceso de Venta -->
+    <div id="d-wrap-cierre" style="display:none;margin-bottom:10px">
+      <button class="btn" id="d-btn-cierre"
+        onclick="confirmarCierre()"
+        style="background:#15803d;width:100%">
+        ✅ Ya aprobó la propuesta — mover a Cierre
+      </button>
+      <div id="d-confirm-cierre" style="display:none;background:#f0fdf4;border:1.5px solid #86efac;border-radius:14px;padding:16px;margin-top:8px;text-align:center">
+        <div style="font-size:14px;font-weight:700;color:#15803d;margin-bottom:12px">¿Confirmas que el cliente aprobó la propuesta?</div>
+        <div style="display:flex;gap:10px">
+          <button onclick="ejecutarCierre()"
+            style="flex:1;padding:12px;background:#15803d;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">
+            Sí, mover a Cierre
+          </button>
+          <button onclick="cancelarCierre()"
+            style="flex:1;padding:12px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="d-sin-siguiente" style="display:none;background:#f3f4f6;border-radius:12px;padding:14px;margin-bottom:12px;font-size:13px;color:#6b7280;text-align:center">
+      Esta negociación está en la etapa final del pipeline.
+    </div>
+  </div>
+
+  <!-- VISTA CARGANDO -->
+  <div class="estado" id="vista-cargando">
+    <div class="spinner"></div>
+    <div style="font-size:15px;color:#6b7280;">Actualizando etapa…</div>
+  </div>
+
+  <!-- VISTA ÉXITO -->
+  <div class="estado" id="vista-exito">
+    <div class="exito-icono">✅</div>
+    <div class="exito-titulo" id="exito-titulo">¡Etapa actualizada!</div>
+    <div class="exito-sub" id="exito-detalle"></div>
+    <button class="btn" onclick="reiniciar()">Cambiar otro prospecto</button>
+    <br>
+    <button class="btn-secundario" onclick="window.open('https://crm-solart.bitrix24.mx/crm/leads/', '_blank')">Ver en CRM</button>
+  </div>
+
+</div>
+
+<script>
+  const WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/';
+
+  async function bx(endpoint, params = {}) {
+    const res = await fetch(WEBHOOK + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    return res.json();
+  }
+
+  // ── ETAPAS DEALS ─────────────────────────────────────────────────────
+  const ETAPAS_DEAL_VENTA = [
+    { id: 'PREPARATION',        nombre: '01_Generación propuesta' },
+    { id: 'NEW',                nombre: '02_Propuesta preliminar' },
+    { id: 'PREPAYMENT_INVOICE', nombre: '03_Presentación inicial' },
+    { id: 'EXECUTING',          nombre: '04_Visita técnica' },
+    { id: 'UC_OF6DF0',          nombre: '05_Propuesta formal' },
+    { id: 'FINAL_INVOICE',      nombre: '06_Evaluación interna' },
+    { id: 'UC_Y3LUYS',          nombre: '07_Propuesta final' },
+    { id: 'UC_YTJ3M5',          nombre: '08_Propuesta financiera' },
+    { id: 'UC_ODYVCM',          nombre: '09_Recibo SOLART' },
+    { id: 'UC_LARNFI',          nombre: '10_Email acelerador' },
+    { id: 'UC_60SZCS',          nombre: '11_Abrió email' },
+    { id: 'UC_Y71AO6',          nombre: '12_Recuperada' },
+  ];
+  const ETAPAS_DEAL_CIERRE = [
+    { id: 'C2:NEW',         nombre: '09_Sí verbal (Cierre)' },
+    { id: 'C2:UC_6WRMUD',  nombre: '10_Documentos contrato' },
+    { id: 'C2:PREPARATION', nombre: '11_Firma de contrato' },
+    { id: 'C2:UC_LSBW8K',  nombre: 'Revisión financiera' },
+    { id: 'C2:UC_B36RA8',  nombre: 'Espera anticipo' },
+  ];
+
+  function etapaDealPorId(stageId, categoryId) {
+    const lista = categoryId === 2 ? ETAPAS_DEAL_CIERRE : ETAPAS_DEAL_VENTA;
+    return lista.find(e => e.id === stageId) || { id: stageId, nombre: stageId };
+  }
+  function siguienteEtapaDeal(stageId, categoryId) {
+    const lista = categoryId === 2 ? ETAPAS_DEAL_CIERRE : ETAPAS_DEAL_VENTA;
+    const idx = lista.findIndex(e => e.id === stageId);
+    if (idx === -1 || idx >= lista.length - 1) return null;
+    return lista[idx + 1];
+  }
+
+  // ── MODO TOGGLE ───────────────────────────────────────────────────────
+  let modoActual = 'prospectos'; // 'prospectos' | 'negociaciones'
+  let listaActual = [];           // todos los registros cargados
+  const _chatCargado = new Set();
+
+  // Leer usuario del localStorage (seteado desde la home)
+  let _uid = null;
+  try { const u = JSON.parse(localStorage.getItem('solart_user')); _uid = u?.id || null; } catch {}
+
+  function setModo(modo) {
+    modoActual = modo;
+    document.getElementById('modo-btn-prospectos').className =
+      'modo-btn' + (modo === 'prospectos' ? ' activo verde' : '');
+    document.getElementById('modo-btn-negociaciones').className =
+      'modo-btn' + (modo === 'negociaciones' ? ' activo morado' : '');
+    const input = document.getElementById('busqueda');
+    input.value = '';
+    input.placeholder = modo === 'prospectos' ? 'Filtrar prospectos…' : 'Filtrar negociaciones…';
+    listaActual = [];
+    document.getElementById('lista-cards').innerHTML = '';
+    autocargar();
+  }
+
+  async function autocargar() {
+    const buscando = document.getElementById('buscando');
+    const lista    = document.getElementById('lista-cards');
+    buscando.classList.add('visible');
+    lista.innerHTML = '';
+    try {
+      if (modoActual === 'prospectos') {
+        const filter = { '!STATUS_ID': ['CONVERTED','JUNK'] };
+        if (_uid) filter.ASSIGNED_BY_ID = _uid;
+        const r = await bx('crm.lead.list.json', {
+          filter,
+          select: ['ID','NAME','LAST_NAME','TITLE','COMPANY_TITLE','STATUS_ID','OPPORTUNITY','CURRENCY_ID'],
+          order: { DATE_MODIFY: 'DESC' }
+        });
+        listaActual = r.result || [];
+      } else {
+        const filter = { '!STAGE_ID': ['WON','LOSE','C2:WON','C2:LOSE'] };
+        if (_uid) filter.ASSIGNED_BY_ID = _uid;
+        const r = await bx('crm.deal.list.json', {
+          filter,
+          select: ['ID','TITLE','STAGE_ID','CATEGORY_ID','COMPANY_TITLE','OPPORTUNITY','CURRENCY_ID',
+                   'COMPANY_ID','UF_CRM_1741392978542','UF_CRM_1741208352117','UF_CRM_1753209254287'],
+          order: { DATE_MODIFY: 'DESC' }
+        });
+        listaActual = r.result || [];
+      }
+      renderLista(listaActual);
+    } catch(e) {
+      lista.innerHTML = `<div class="lista-empty">Error al cargar. Intenta de nuevo.</div>`;
+    } finally {
+      buscando.classList.remove('visible');
+    }
+  }
+
+  function filtrarLista(q) {
+    const qn = q.trim().toLowerCase();
+    if (!qn) { renderLista(listaActual); return; }
+    const filtrados = listaActual.filter(item => {
+      const titulo = (item.TITLE || item.NAME + ' ' + (item.LAST_NAME||'') + ' ' + (item.COMPANY_TITLE||'')).toLowerCase();
+      return titulo.includes(qn);
+    });
+    renderLista(filtrados);
+  }
+
+  function renderLista(items) {
+    const lista = document.getElementById('lista-cards');
+    if (!items.length) {
+      lista.innerHTML = `<div class="lista-empty">Sin resultados.</div>`;
+      return;
+    }
+    lista.innerHTML = modoActual === 'prospectos'
+      ? items.map(renderCardProspecto).join('')
+      : items.map(renderCardNegociacion).join('');
+  }
+
+  const ETAPA_LABEL_MAP = Object.fromEntries(
+    [{ id:'UC_WWL2HT',nombre:'00_Validación estratégica'},{ id:'UC_6ZKIB2',nombre:'01_Datos por confirmar'},
+     { id:'UC_KF4DSF',nombre:'02_Primer contacto'},{ id:'UC_SOR5IW',nombre:'03_Datos confirmados'},
+     { id:'NEW',nombre:'04_Contacto comercial'},{ id:'IN_PROCESS',nombre:'05_Credenciales'},
+     { id:'UC_CSHZAY',nombre:'06_Espera recibo CFE'},{ id:'UC_QN380W',nombre:'07_Recibo recibido'},
+     { id:'CONVERTED',nombre:'08_Convertido'},
+     { id:'PREPARATION',nombre:'01_Gen. propuesta'},{ id:'NEW',nombre:'02_Prop. preliminar'},
+     { id:'PREPAYMENT_INVOICE',nombre:'03_Presentación'},{ id:'EXECUTING',nombre:'04_Visita técnica'},
+     { id:'UC_OF6DF0',nombre:'05_Prop. formal'},{ id:'FINAL_INVOICE',nombre:'06_Evaluación'},
+     { id:'UC_Y3LUYS',nombre:'07_Prop. final'},{ id:'UC_YTJ3M5',nombre:'08_Prop. financiera'},
+     { id:'UC_ODYVCM',nombre:'09_Recibo SOLART'},{ id:'UC_LARNFI',nombre:'10_Email acelerador'},
+     { id:'UC_60SZCS',nombre:'11_Abrió email'},{ id:'UC_Y71AO6',nombre:'12_Recuperada'},
+     { id:'C2:NEW',nombre:'09_Sí verbal (Cierre)'},{ id:'C2:UC_6WRMUD',nombre:'10_Documentos contrato'},
+     { id:'C2:PREPARATION',nombre:'11_Firma contrato'},{ id:'C2:UC_LSBW8K',nombre:'Rev. financiera'},
+     { id:'C2:UC_B36RA8',nombre:'Espera anticipo'}
+    ].map(e => [e.id, e.nombre])
+  );
+
+  function fmtMonto(m, cur) {
+    if (!m || m === '0') return '';
+    return '$' + Number(m).toLocaleString('es-MX') + ' ' + (cur || 'MXN');
+  }
+
+  function renderCardProspecto(p) {
+    const nombre  = p.TITLE || [p.NAME, p.LAST_NAME].filter(Boolean).join(' ') || 'Sin nombre';
+    const empresa = p.COMPANY_TITLE || '';
+    const etapa   = ETAPA_LABEL_MAP[p.STATUS_ID] || p.STATUS_ID || '';
+    const monto   = fmtMonto(p.OPPORTUNITY, p.CURRENCY_ID);
+    return `<div class="lista-card" id="lcard-p-${p.ID}">
+      <div class="lista-card-nombre">${nombre}</div>
+      ${empresa ? `<div class="lista-card-empresa">🏢 ${empresa}</div>` : ''}
+      <div class="lista-card-chips">
+        ${etapa  ? `<span class="chip verde">${etapa}</span>` : ''}
+        ${monto  ? `<span class="chip amber">💰 ${monto}</span>` : ''}
+      </div>
+      <div class="lista-card-acciones">
+        <button class="btn-lista etapa" onclick="seleccionarProspecto(${p.ID})">🔄 Cambiar etapa</button>
+        <button class="btn-lista chat"  onclick="toggleChat('lead','${p.ID}')">💬 Chat</button>
+      </div>
+      <div class="chat-panel" id="chat-${p.ID}">
+        <div id="chat-msgs-${p.ID}"><div style="font-size:12px;color:#9ca3af">Cargando…</div></div>
+        <div class="chat-input-row">
+          <input class="chat-inp" id="chat-inp-${p.ID}" placeholder="Escribe un mensaje…">
+          <button class="chat-send" onclick="enviarChatEntidad('lead','${p.ID}')">Enviar</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderCardNegociacion(d) {
+    const etapa  = ETAPA_LABEL_MAP[d.STAGE_ID] || d.STAGE_ID || '';
+    const monto  = fmtMonto(d.OPPORTUNITY, d.CURRENCY_ID);
+    const kwp    = d.UF_CRM_1741208352117 ? `${d.UF_CRM_1741208352117} kWp` : '';
+    const energy = d.UF_CRM_1753209254287 || '';
+    const esVenta  = parseInt(d.CATEGORY_ID) === 0;
+    const esCierre = parseInt(d.CATEGORY_ID) === 2;
+    const pipChip  = esVenta  ? '<span class="chip azul">Venta</span>'
+                   : esCierre ? '<span class="chip morado">Cierre</span>' : '';
+    return `<div class="lista-card" id="lcard-d-${d.ID}">
+      <div class="lista-card-nombre">${d.TITLE}</div>
+      ${d.COMPANY_TITLE ? `<div class="lista-card-empresa">🏢 ${d.COMPANY_TITLE}</div>` : ''}
+      <div class="lista-card-chips">
+        ${pipChip}
+        ${etapa  ? `<span class="chip verde">${etapa}</span>` : ''}
+        ${monto  ? `<span class="chip amber">💰 ${monto}</span>` : ''}
+        ${kwp    ? `<span class="chip azul">⚡ ${kwp}</span>` : ''}
+        ${energy ? `<span class="chip">☀️ ${energy}</span>` : ''}
+      </div>
+      <div class="lista-card-acciones">
+        <button class="btn-lista etapa" onclick="seleccionarDeal(${d.ID})">🔄 Cambiar etapa</button>
+        <button class="btn-lista chat"  onclick="toggleChat('deal','${d.ID}')">💬 Chat</button>
+        <button class="btn-lista tareas" onclick="irATareasDealId(${d.ID},'${d.TITLE.replace(/'/g,"\\'")}')">📋 Tareas</button>
+      </div>
+      <div class="chat-panel" id="chat-${d.ID}">
+        <div id="chat-msgs-${d.ID}"><div style="font-size:12px;color:#9ca3af">Cargando…</div></div>
+        <div class="chat-input-row">
+          <input class="chat-inp" id="chat-inp-${d.ID}" placeholder="Escribe un mensaje…">
+          <button class="chat-send" onclick="enviarChatEntidad('deal','${d.ID}')">Enviar</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  async function toggleChat(tipo, id) {
+    const panel = document.getElementById(`chat-${id}`);
+    if (!panel) return;
+    const abierto = panel.classList.toggle('abierto');
+    if (!abierto || _chatCargado.has(id)) return;
+    _chatCargado.add(id);
+    await cargarChat(tipo, id);
+  }
+
+  async function cargarChat(tipo, id) {
+    const msgsEl = document.getElementById(`chat-msgs-${id}`);
+    try {
+      const entityType = tipo === 'deal' ? 'deal' : 'lead';
+      const r = await bx('crm.timeline.comment.list.json', {
+        filter: { ENTITY_ID: id, ENTITY_TYPE: entityType },
+        order: { ID: 'ASC' }
+      });
+      const items = r.result || [];
+      renderChatMsgs(id, items);
+    } catch {
+      msgsEl.innerHTML = `<div style="font-size:12px;color:#ef4444">Error al cargar chat.</div>`;
+    }
+  }
+
+  function renderChatMsgs(id, items) {
+    const msgsEl = document.getElementById(`chat-msgs-${id}`);
+    if (!items.length) {
+      msgsEl.innerHTML = `<div style="font-size:12px;color:#9ca3af;padding:4px 0">Sin comentarios aún.</div>`;
+      return;
+    }
+    msgsEl.innerHTML = items.map(c => {
+      const fecha = c.CREATED ? new Date(c.CREATED).toLocaleString('es-MX',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      const texto = (c.COMMENT || '').replace(/<[^>]*>/g,'').trim();
+      return `<div class="chat-msg">
+        <div class="chat-msg-fecha">${fecha}</div>
+        <div class="chat-msg-texto">${texto}</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function enviarChatEntidad(tipo, id) {
+    const inp  = document.getElementById(`chat-inp-${id}`);
+    const texto = inp?.value?.trim();
+    if (!texto) return;
+    inp.value = '';
+    inp.disabled = true;
+    const btn = inp.nextElementSibling;
+    if (btn) btn.disabled = true;
+    try {
+      await bx('crm.timeline.comment.add.json', {
+        fields: {
+          ENTITY_ID: id,
+          ENTITY_TYPE: tipo === 'deal' ? 'deal' : 'lead',
+          COMMENT: texto
+        }
+      });
+      // Recargar
+      const r = await bx('crm.timeline.comment.list.json', {
+        filter: { ENTITY_ID: id, ENTITY_TYPE: tipo === 'deal' ? 'deal' : 'lead' },
+        order: { ID: 'ASC' }
+      });
+      renderChatMsgs(id, r.result || []);
+    } catch {
+      alert('No se pudo enviar el mensaje.');
+    } finally {
+      inp.disabled = false;
+      if (btn) btn.disabled = false;
+      inp.focus();
+    }
+  }
+
+  function irATareasDealId(id, titulo) {
+    localStorage.setItem('solart_deal_id_preload', id);
+    localStorage.setItem('solart_neg_preload', titulo);
+    window.location.href = 'https://gestiondeclientes.bitrix24.site/tareas/';
+  }
+
+  // Orden de etapas del pipeline de Prospectos
+  const ETAPAS = [
+    { id: 'UC_WWL2HT', nombre: '00_Validacion estrategica' },
+    { id: 'UC_6ZKIB2', nombre: '01_Datos por confirmar' },
+    { id: 'UC_KF4DSF', nombre: '02_Primer contacto pendiente' },
+    { id: 'UC_SOR5IW', nombre: '03_Datos confirmados' },
+    { id: 'NEW',       nombre: '04_Contacto comercial inicial' },
+    { id: 'IN_PROCESS',nombre: '05_Credenciales presentadas' },
+    { id: 'UC_CSHZAY', nombre: '06_Espera recibo CFE' },
+    { id: 'UC_QN380W', nombre: '07_Recibo recibido Adri' },
+    { id: 'CONVERTED', nombre: '08_Recibo validado' },
+  ];
+  const ETAPA_NOUTIL = { id: 'JUNK', nombre: '99_Prospecto no util' };
+
+  let prospectoActual = null;
+  let busquedaTimer = null;
+
+  function etapaPorId(id) {
+    return ETAPAS.find(e => e.id === id) || { id, nombre: id };
+  }
+  function siguienteEtapa(id) {
+    const idx = ETAPAS.findIndex(e => e.id === id);
+    if (idx === -1 || idx >= ETAPAS.length - 1) return null;
+    return ETAPAS[idx + 1];
+  }
+
+  function onBusqueda(val) {
+    clearTimeout(busquedaTimer);
+    const res = document.getElementById('resultados');
+    const buscando = document.getElementById('buscando');
+    if (val.trim().length < 2) {
+      res.classList.remove('visible');
+      buscando.classList.remove('visible');
+      return;
+    }
+    buscando.classList.add('visible');
+    res.classList.remove('visible');
+    if (modoActual === 'negociaciones') {
+      busquedaTimer = setTimeout(() => buscarDeal(val.trim()), 400);
+    } else {
+      busquedaTimer = setTimeout(() => buscarProspecto(val.trim()), 400);
+    }
+  }
+
+  // ── BÚSQUEDA Y SELECCIÓN DE DEALS ────────────────────────────────────
+  let dealActual = null;
+
+  async function buscarDeal(q) {
+    try {
+      const res = await fetch(WEBHOOK + 'crm.deal.list.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filter: { '%TITLE': q, '!STAGE_ID': ['WON','LOSE','C2:WON'] },
+          select: ['ID','TITLE','STAGE_ID','CATEGORY_ID','UF_CRM_1741392978542'],
+          order: { DATE_MODIFY: 'DESC' }
+        })
+      });
+      const data = await res.json();
+      document.getElementById('buscando').classList.remove('visible');
+      mostrarResultadosDeal(data.result || []);
+    } catch {
+      document.getElementById('buscando').classList.remove('visible');
+      mostrarResultadosDeal([]);
+    }
+  }
+
+  function mostrarResultadosDeal(lista) {
+    const div = document.getElementById('resultados');
+    if (!lista.length) {
+      div.innerHTML = '<div class="sin-resultados">Sin resultados. Intenta con otro nombre.</div>';
+      div.classList.add('visible');
+      return;
+    }
+    const pipeline = { 0: 'Proceso de Venta', 2: 'Proceso de Cierre' };
+    div.innerHTML = lista.map(d => {
+      const etapa = etapaDealPorId(d.STAGE_ID, parseInt(d.CATEGORY_ID)).nombre;
+      const pip   = pipeline[d.CATEGORY_ID] || '';
+      return `<div class="resultado-item" onclick="seleccionarDeal(${d.ID})">
+        <div class="resultado-nombre">${d.TITLE}</div>
+        <div class="resultado-etapa">${etapa}${pip ? ' · ' + pip : ''}</div>
+      </div>`;
+    }).join('');
+    div.classList.add('visible');
+  }
+
+  async function seleccionarDeal(id) {
+    document.getElementById('buscando').classList.add('visible');
+    document.getElementById('buscando').textContent = 'Cargando…';
+    const res = await fetch(WEBHOOK + 'crm.deal.get.json', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    const data = await res.json();
+    document.getElementById('buscando').classList.remove('visible');
+    document.getElementById('buscando').textContent = 'Buscando…';
+    dealActual = data.result;
+    if (!dealActual) return;
+
+    const catId = parseInt(dealActual.CATEGORY_ID);
+    const etapaActual = etapaDealPorId(dealActual.STAGE_ID, catId);
+    const sig = siguienteEtapaDeal(dealActual.STAGE_ID, catId);
+
+    document.getElementById('d-nombre').textContent = dealActual.TITLE;
+    document.getElementById('d-proyecto').textContent = dealActual.UF_CRM_1741392978542 || '';
+    document.getElementById('d-etapa-actual').textContent = etapaActual.nombre;
+
+    document.getElementById('d-btn-avanzar').style.display    = 'none';
+    document.getElementById('d-btn-tarea').style.display      = 'none';
+    document.getElementById('d-sin-siguiente').style.display  = 'none';
+    document.getElementById('d-flecha-sig').style.display     = 'none';
+    document.getElementById('d-wrap-sig').style.display       = 'none';
+    document.getElementById('d-wrap-cierre').style.display    = 'none';
+    document.getElementById('d-confirm-cierre').style.display = 'none';
+    document.getElementById('d-aviso-tarea').style.display    = 'none';
+
+    // Etapas que requieren generar una tarea (no se avanza directo)
+    const ETAPAS_CON_TAREA = {
+      'EXECUTING':  { titulo: 'La siguiente etapa es Visita Técnica', desc: 'Para avanzar a esta etapa es necesario agendar la visita con ingeniería. Al generar la tarea, la negociación se moverá automáticamente.' },
+      'UC_OF6DF0':  { titulo: 'La siguiente etapa es Propuesta Formal', desc: 'Para avanzar necesitas solicitar la propuesta formal a ingeniería. Al generar la tarea, la negociación avanza de etapa automáticamente.' },
+      'UC_Y3LUYS':  { titulo: 'La siguiente etapa es Propuesta Final', desc: 'Para avanzar necesitas solicitar la propuesta final a ingeniería. Al generar la tarea, la negociación avanza de etapa automáticamente.' },
+    };
+
+    if (sig) {
+      document.getElementById('d-etapa-sig').textContent    = sig.nombre;
+      document.getElementById('d-flecha-sig').style.display = 'block';
+      document.getElementById('d-wrap-sig').style.display   = 'flex';
+
+      if (ETAPAS_CON_TAREA[sig.id]) {
+        // Mostrar aviso en lugar del botón de avanzar
+        const info = ETAPAS_CON_TAREA[sig.id];
+        document.getElementById('d-aviso-tarea-titulo').textContent = '📋 ' + info.titulo;
+        document.getElementById('d-aviso-tarea-desc').textContent   = info.desc;
+        document.getElementById('d-aviso-tarea').style.display      = 'block';
+      } else {
+        document.getElementById('d-btn-avanzar').style.display = 'block';
+      }
+    } else {
+      document.getElementById('d-sin-siguiente').style.display = 'block';
+    }
+    document.getElementById('d-btn-tarea').style.display = 'block';
+
+    // Botón "Mover a Cierre" solo en Proceso de Venta (CATEGORY_ID=0)
+    if (catId === 0) {
+      document.getElementById('d-wrap-cierre').style.display = 'block';
+    }
+
+    document.getElementById('vista-busqueda').style.display = 'none';
+    document.getElementById('vista-deal').style.display = 'block';
+  }
+
+  async function avanzarEtapaDeal() {
+    if (!dealActual) return;
+    const catId = parseInt(dealActual.CATEGORY_ID);
+    const sig = siguienteEtapaDeal(dealActual.STAGE_ID, catId);
+    if (!sig) return;
+    mostrarEstado('vista-cargando');
+    try {
+      const res = await fetch(WEBHOOK + 'crm.deal.update.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: dealActual.ID, fields: { STAGE_ID: sig.id } })
+      });
+      const data = await res.json();
+      if (!data.result) throw new Error(data.error_description || 'Error');
+      document.getElementById('exito-titulo').textContent = '¡Etapa actualizada!';
+      document.getElementById('exito-detalle').textContent = dealActual.TITLE + ' → ' + sig.nombre;
+      mostrarEstado('vista-exito');
+    } catch(e) {
+      alert('Error: ' + e.message);
+      mostrarEstado(null);
+      document.getElementById('vista-deal').style.display = 'block';
+    }
+  }
+
+  function confirmarCierre() {
+    document.getElementById('d-confirm-cierre').style.display = 'block';
+    document.getElementById('d-btn-cierre').style.display = 'none';
+  }
+
+  function cancelarCierre() {
+    document.getElementById('d-confirm-cierre').style.display = 'none';
+    document.getElementById('d-btn-cierre').style.display = 'block';
+  }
+
+  async function ejecutarCierre() {
+    if (!dealActual) return;
+    mostrarEstado('vista-cargando');
+    try {
+      const res = await fetch(WEBHOOK + 'crm.deal.update.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: dealActual.ID, fields: { STAGE_ID: 'C2:NEW' } })
+      });
+      const data = await res.json();
+      if (!data.result) throw new Error(data.error_description || 'Error');
+      document.getElementById('exito-titulo').textContent = '¡Movida a Proceso de Cierre!';
+      document.getElementById('exito-detalle').textContent = dealActual.TITLE + ' → 09_Sí verbal (Cierre)';
+      mostrarEstado('vista-exito');
+    } catch(e) {
+      alert('Error: ' + e.message);
+      mostrarEstado(null);
+      document.getElementById('vista-deal').style.display = 'block';
+      cancelarCierre();
+    }
+  }
+
+  function irATareasDeal() {
+    if (!dealActual) return;
+    localStorage.setItem('solart_neg_preload', dealActual.TITLE);
+    localStorage.setItem('solart_deal_id_preload', dealActual.ID);
+    window.location.href = 'https://gestiondeclientes.bitrix24.site/tareas/';
+  }
+
+  function volverDeal() {
+    dealActual = null;
+    document.getElementById('busqueda').value = '';
+    document.getElementById('vista-deal').style.display = 'none';
+    document.getElementById('vista-busqueda').style.display = 'block';
+  }
+
+  async function buscarProspecto(q) {
+    const buscando = document.getElementById('buscando');
+    try {
+      const res = await fetch(WEBHOOK + 'crm.lead.list.json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filter: { '%TITLE': q },
+          select: ['ID', 'TITLE', 'NAME', 'LAST_NAME', 'STATUS_ID', 'COMPANY_TITLE'],
+          order: { DATE_MODIFY: 'DESC' },
+          start: 0
+        })
+      });
+      const data = await res.json();
+      buscando.classList.remove('visible');
+      mostrarResultados(data.result || []);
+    } catch {
+      buscando.classList.remove('visible');
+      mostrarResultados([]);
+    }
+  }
+
+  function mostrarResultados(lista) {
+    const div = document.getElementById('resultados');
+    if (!lista.length) {
+      div.innerHTML = '<div class="sin-resultados">Sin resultados. Intenta con otro nombre.</div>';
+      div.classList.add('visible');
+      return;
+    }
+
+    const activos     = lista.filter(p => p.STATUS_ID !== 'CONVERTED' && p.STATUS_ID !== 'JUNK');
+    const convertidos = lista.filter(p => p.STATUS_ID === 'CONVERTED');
+
+    let html = '';
+
+    if (activos.length) {
+      html += activos.map(p => {
+        const etapa = etapaPorId(p.STATUS_ID);
+        return `<div class="resultado-item" onclick="seleccionarProspecto(${p.ID})">
+          <div class="resultado-nombre">${p.TITLE || (p.NAME + ' ' + p.LAST_NAME)}</div>
+          <div class="resultado-etapa">${etapa.nombre}${p.COMPANY_TITLE ? ' · ' + p.COMPANY_TITLE : ''}</div>
+        </div>`;
+      }).join('');
+    }
+
+    if (convertidos.length) {
+      html += `<div style="font-size:11px;font-weight:700;color:#3b82f6;text-transform:uppercase;letter-spacing:0.5px;padding:10px 16px 4px;background:#f8fafc;">Ya en negociación</div>`;
+      html += convertidos.map(p => {
+        return `<div class="resultado-item" style="opacity:0.7;" onclick="seleccionarProspecto(${p.ID})">
+          <div class="resultado-nombre" style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:10px;background:#dbeafe;color:#1e40af;padding:2px 6px;border-radius:4px;font-weight:700;">NEGOCIACIÓN</span>
+            ${p.TITLE || (p.NAME + ' ' + p.LAST_NAME)}
+          </div>
+          <div class="resultado-etapa">${p.COMPANY_TITLE || ''}</div>
+        </div>`;
+      }).join('');
+    }
+
+    if (!html) html = '<div class="sin-resultados">Sin resultados. Intenta con otro nombre.</div>';
+
+    div.innerHTML = html;
+    div.classList.add('visible');
+    window._resultados = lista;
+  }
+
+  async function seleccionarProspecto(id) {
+    // Obtener datos completos del lead
+    const res = await fetch(WEBHOOK + 'crm.lead.get.json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    const data = await res.json();
+    const p = data.result;
+    if (!p) return;
+    prospectoActual = p;
+
+    document.getElementById('p-nombre').textContent = p.TITLE || (p.NAME + ' ' + p.LAST_NAME);
+    document.getElementById('p-empresa').textContent = p.COMPANY_TITLE || '';
+
+    const etapaActual = etapaPorId(p.STATUS_ID);
+    document.getElementById('p-etapa-actual').textContent = etapaActual.nombre;
+
+    const sig = siguienteEtapa(p.STATUS_ID);
+    const yaConvertido = p.STATUS_ID === 'CONVERTED';
+    const esJunk       = p.STATUS_ID === 'JUNK';
+
+    // Ocultar todo primero
+    document.getElementById('btn-avanzar').style.display = 'none';
+    document.getElementById('bloque-negociacion').style.display = 'none';
+    document.getElementById('bloque-ya-negociacion').style.display = 'none';
+    document.getElementById('wrap-sig').style.display = 'none';
+    document.getElementById('flecha-sig').style.display = 'none';
+    document.getElementById('btn-no-util').style.display = 'block';
+
+    if (yaConvertido) {
+      // Ya tiene negociación — mostrar solo botón de ir a tareas
+      document.getElementById('bloque-ya-negociacion').style.display = 'block';
+      document.getElementById('btn-no-util').style.display = 'none';
+    } else if (!esJunk && sig) {
+      // Prospecto activo con siguiente etapa
+      document.getElementById('p-etapa-sig').textContent = sig.nombre;
+      document.getElementById('wrap-sig').style.display = 'flex';
+      document.getElementById('flecha-sig').style.display = 'block';
+      document.getElementById('btn-avanzar').style.display = 'block';
+      document.getElementById('btn-negociacion').style.display = 'block';
+    } else {
+      // Sin siguiente etapa (último paso antes de convertir o JUNK)
+      document.getElementById('btn-negociacion').style.display = esJunk ? 'none' : 'block';
+    }
+
+    document.getElementById('vista-busqueda').style.display = 'none';
+    document.getElementById('vista-prospecto').style.display = 'block';
+  }
+
+  function irANegociacion() {
+    const nombre = prospectoActual
+      ? (prospectoActual.TITLE || (prospectoActual.NAME + ' ' + prospectoActual.LAST_NAME)).trim()
+      : '';
+    localStorage.setItem('solart_neg_preload', nombre);
+    window.location.href = 'https://gestiondeclientes.bitrix24.site/tareas/';
+  }
+
+  let sunwiseSeleccion = null; // null | false | true
+
+  function seleccionarSunwise(tieneSunwise) {
+    sunwiseSeleccion = tieneSunwise;
+    const btnNo = document.getElementById('btn-no-sunwise');
+    const btnSi = document.getElementById('btn-si-sunwise');
+    const wrap  = document.getElementById('wrap-link-sunwise');
+
+    btnNo.style.background = tieneSunwise ? '#fff' : '#fef3c7';
+    btnNo.style.borderColor = tieneSunwise ? '#e5e7eb' : '#f59e0b';
+    btnSi.style.background = tieneSunwise ? '#fef3c7' : '#fff';
+    btnSi.style.borderColor = tieneSunwise ? '#f59e0b' : '#e5e7eb';
+    wrap.style.display = tieneSunwise ? 'block' : 'none';
+  }
+
+  function toggleFormNegociacion() {
+    const bloque = document.getElementById('bloque-negociacion');
+    const visible = bloque.style.display !== 'none';
+    bloque.style.display = visible ? 'none' : 'block';
+    // Cerrar el otro formulario si está abierto
+    if (!visible) document.getElementById('bloque-visita-cfe').style.display = 'none';
+  }
+
+  // ── FORM: CFE + VISITA TÉCNICA ────────────────────────────────────────
+  let vcSunwise = null;
+
+  function toggleFormVisitaCFE() {
+    const bloque = document.getElementById('bloque-visita-cfe');
+    const visible = bloque.style.display !== 'none';
+    bloque.style.display = visible ? 'none' : 'block';
+    // Cerrar el otro formulario si está abierto
+    if (!visible) document.getElementById('bloque-negociacion').style.display = 'none';
+    // Poner fecha mínima = hoy
+    if (!visible) {
+      const hoy = new Date().toISOString().split('T')[0];
+      document.getElementById('vc-fecha-visita').min = hoy;
+    }
+  }
+
+  function vcOnArchivo(input) {
+    const texto = input.files[0] ? input.files[0].name : 'Seleccionar archivo…';
+    document.getElementById('vc-archivo-texto').textContent = texto;
+    document.getElementById('vc-label-archivo').style.borderColor = '#f59e0b';
+    document.getElementById('vc-err-recibo').style.display = 'none';
+  }
+
+  function vcSelSunwise(val) {
+    vcSunwise = val;
+    document.getElementById('vc-btn-no-sunwise').style.background  = val ? '#fff' : '#fef3c7';
+    document.getElementById('vc-btn-no-sunwise').style.borderColor = val ? '#e5e7eb' : '#f59e0b';
+    document.getElementById('vc-btn-si-sunwise').style.background  = val ? '#fef3c7' : '#fff';
+    document.getElementById('vc-btn-si-sunwise').style.borderColor = val ? '#f59e0b' : '#e5e7eb';
+    document.getElementById('vc-wrap-sunwise').style.display = val ? 'block' : 'none';
+  }
+
+  async function pasarANegociacionConVisita() {
+    const monto   = document.getElementById('vc-monto-cfe').value.trim();
+    const archivo = document.getElementById('vc-archivo-cfe').files[0];
+    const fecha   = document.getElementById('vc-fecha-visita').value;
+    const dir     = document.getElementById('vc-direccion').value.trim();
+    const quien   = document.getElementById('vc-quien').value.trim();
+    const kwp     = document.getElementById('vc-kwp').value.trim();
+    const energia = document.getElementById('vc-energia').value.trim();
+    const proyecto  = document.getElementById('vc-proyecto').value.trim();
+    const potencial = document.getElementById('vc-potencial').value.trim();
+    const entidad   = document.getElementById('vc-entidad').value;
+    const origen    = document.getElementById('vc-origen').value;
+    const tipos     = [...document.querySelectorAll('input[name="vc-tipo"]:checked')].map(c => c.value);
+
+    // Validaciones
+    const markRed = id => document.getElementById(id).style.borderColor = '#ef4444';
+    let ok = true;
+    if (!monto)   { markRed('vc-monto-cfe'); ok = false; }
+    if (!archivo) { document.getElementById('vc-err-recibo').style.display = 'block'; ok = false; }
+    if (vcSunwise === null) { alert('Indica si tiene link de propuesta Sunwise o no.'); return; }
+    const linkSunwise = vcSunwise ? document.getElementById('vc-link-sunwise').value.trim() : '00';
+    if (vcSunwise && !linkSunwise) { document.getElementById('vc-err-sunwise').style.display = 'block'; ok = false; }
+    const montoNeg = vcSunwise ? document.getElementById('vc-monto-neg').value.trim() : null;
+    if (vcSunwise && !montoNeg) { markRed('vc-monto-neg'); ok = false; }
+    if (!proyecto)  { markRed('vc-proyecto'); ok = false; }
+    if (!potencial) { markRed('vc-potencial'); ok = false; }
+    if (!entidad)   { markRed('vc-entidad'); ok = false; }
+    if (!origen)    { markRed('vc-origen'); ok = false; }
+    if (!tipos.length) { alert('Selecciona al menos un tipo de proyecto.'); return; }
+    if (!fecha)   { markRed('vc-fecha-visita'); ok = false; }
+    if (!dir)     { markRed('vc-direccion'); ok = false; }
+    if (!quien)   { markRed('vc-quien'); ok = false; }
+    if (!kwp)     { markRed('vc-kwp'); ok = false; }
+    if (!energia) { markRed('vc-energia'); ok = false; }
+    if (!ok) return;
+
+    mostrarEstado('vista-cargando');
+
+    try {
+      const base64 = await leerArchivoBase64(archivo);
+      const nombre = prospectoActual.TITLE || (prospectoActual.NAME + ' ' + prospectoActual.LAST_NAME);
+
+      // 1. Actualizar lead con CFE y cerrarlo
+      await fetch(WEBHOOK + 'crm.lead.update.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: prospectoActual.ID,
+          fields: {
+            STATUS_ID: 'CONVERTED',
+            OPPORTUNITY: monto, CURRENCY_ID: 'MXN',
+            UF_CRM_1738726555477: monto + '|MXN',
+            UF_CRM_1738719216071: { fileData: [archivo.name, base64] }
+          }
+        })
+      });
+
+      // 2. Crear contacto
+      let contactId = prospectoActual.CONTACT_ID || null;
+      if (!contactId) {
+        const contactFields = { NAME: prospectoActual.NAME, LAST_NAME: prospectoActual.LAST_NAME };
+        if (prospectoActual.PHONE?.length) contactFields.PHONE = prospectoActual.PHONE;
+        if (prospectoActual.EMAIL?.length) contactFields.EMAIL = prospectoActual.EMAIL;
+        const r = await fetch(WEBHOOK + 'crm.contact.add.json', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: contactFields })
+        });
+        const d = await r.json();
+        if (d.result) contactId = d.result;
+      }
+
+      // 3. Crear compañía
+      let companyId = prospectoActual.COMPANY_ID || null;
+      if (!companyId && prospectoActual.COMPANY_TITLE) {
+        const r = await fetch(WEBHOOK + 'crm.company.add.json', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { TITLE: prospectoActual.COMPANY_TITLE } })
+        });
+        const d = await r.json();
+        if (d.result) companyId = d.result;
+      }
+
+      // 4. Crear negociación en PREPARATION (inicio normal)
+      const dealFields = {
+        TITLE: nombre, CATEGORY_ID: 0, STAGE_ID: 'PREPARATION',
+        CURRENCY_ID: 'MXN', LEAD_ID: prospectoActual.ID,
+        SOURCE_ID: prospectoActual.SOURCE_ID || undefined,
+        UF_CRM_67A2ED1D84E1E: monto + '|MXN',
+        UF_CRM_67A2ED1D67C2B: { fileData: [archivo.name, base64] },
+        UF_CRM_67A2ED1D7ADD0: (vcSunwise && linkSunwise) ? linkSunwise : '00',
+        UF_CRM_1741392978542: proyecto,
+        UF_CRM_1753772115014: potencial,
+        UF_CRM_688863CF9A0BF: entidad,
+        UF_CRM_1743795019024: tipos,
+        UF_CRM_67A2F843DB11D: origen
+      };
+      if (montoNeg) { dealFields.OPPORTUNITY = montoNeg; dealFields.IS_MANUAL_OPPORTUNITY = 'Y'; }
+      if (contactId) dealFields.CONTACT_IDS = [contactId];
+      if (companyId) dealFields.COMPANY_ID = companyId;
+
+      const rDeal = await fetch(WEBHOOK + 'crm.deal.add.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: dealFields })
+      });
+      const dDeal = await rDeal.json();
+      if (!dDeal.result) throw new Error(dDeal.error_description || 'Error al crear negociación');
+      const dealId = dDeal.result;
+
+      // 5. Mover a EXECUTING con los datos de visita → dispara automatización
+      await fetch(WEBHOOK + 'crm.deal.update.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: dealId,
+          fields: {
+            STAGE_ID: 'EXECUTING',
+            UF_CRM_1739419686845: fecha,
+            UF_CRM_1739419805605: quien,
+            UF_CRM_1741208352117: kwp,
+            UF_CRM_1753209254287: energia
+          }
+        })
+      });
+
+      // 6. Guardar dirección en la compañía
+      if (companyId && dir) {
+        await fetch(WEBHOOK + 'crm.company.update.json', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: companyId, fields: { ADDRESS: dir } })
+        });
+      }
+
+      // 7. Vincular lead ↔ deal y actualizar lead
+      const leadUpdate = { STATUS_ID: 'CONVERTED' };
+      if (contactId) leadUpdate.CONTACT_ID = contactId;
+      if (companyId) leadUpdate.COMPANY_ID = companyId;
+      await fetch(WEBHOOK + 'crm.lead.update.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: prospectoActual.ID, fields: leadUpdate })
+      });
+      await fetch(WEBHOOK + 'crm.item.link.add.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: { entityTypeId: 2, entityId: dealId, linkedEntityTypeId: 1, linkedEntityId: prospectoActual.ID } })
+      }).catch(() => {});
+
+      document.getElementById('exito-titulo').textContent = '¡Visita técnica agendada!';
+      document.getElementById('exito-detalle').textContent =
+        nombre + ' → negociación creada y visita técnica programada para ' + fecha;
+      mostrarEstado('vista-exito');
+
+    } catch(e) {
+      alert('Error: ' + e.message);
+      mostrarEstado(null);
+      document.getElementById('vista-prospecto').style.display = 'block';
+    }
+  }
+
+  function onArchivoSeleccionado(input) {
+    const texto = input.files[0] ? input.files[0].name : 'Seleccionar archivo…';
+    document.getElementById('archivo-texto').textContent = texto;
+    document.getElementById('label-archivo').style.borderColor = '#f59e0b';
+    document.getElementById('err-recibo').style.display = 'none';
+  }
+
+  async function pasarANegociacion() {
+    const monto = document.getElementById('monto-cfe').value.trim();
+    const archivo = document.getElementById('archivo-cfe').files[0];
+
+    if (!monto) {
+      document.getElementById('monto-cfe').style.borderColor = '#ef4444';
+      return;
+    }
+    if (!archivo) {
+      document.getElementById('err-recibo').style.display = 'block';
+      return;
+    }
+    if (sunwiseSeleccion === null) {
+      alert('Indica si tiene link de propuesta Sunwise o no.');
+      return;
+    }
+    const linkSunwise = sunwiseSeleccion
+      ? document.getElementById('link-sunwise').value.trim()
+      : '00';
+    if (sunwiseSeleccion && !linkSunwise) {
+      document.getElementById('err-sunwise').style.display = 'block';
+      return;
+    }
+    const montoNegociacion = sunwiseSeleccion
+      ? document.getElementById('monto-negociacion').value.trim()
+      : null;
+    if (sunwiseSeleccion && !montoNegociacion) {
+      document.getElementById('monto-negociacion').style.borderColor = '#ef4444';
+      return;
+    }
+
+    const negProyecto  = document.getElementById('neg-proyecto').value.trim();
+    const negPotencial = document.getElementById('neg-potencial').value.trim();
+    const negEntidad   = document.getElementById('neg-entidad').value;
+    const negOrigen    = document.getElementById('neg-origen').value;
+    const negTipos     = [...document.querySelectorAll('input[name="tipo-proyecto"]:checked')].map(c => c.value);
+
+    if (!negProyecto)  { document.getElementById('neg-proyecto').style.borderColor='#ef4444'; return; }
+    if (!negPotencial) { document.getElementById('neg-potencial').style.borderColor='#ef4444'; return; }
+    if (!negEntidad)   { document.getElementById('neg-entidad').style.borderColor='#ef4444'; return; }
+    if (!negOrigen)    { document.getElementById('neg-origen').style.borderColor='#ef4444'; return; }
+    if (!negTipos.length) { alert('Selecciona al menos un tipo de proyecto.'); return; }
+
+    mostrarEstado('vista-cargando');
+
+    try {
+      // 1. Leer archivo como base64
+      const base64 = await leerArchivoBase64(archivo);
+
+      // 2. Guardar recibo CFE + monto en el lead
+      const resUpdate = await fetch(WEBHOOK + 'crm.lead.update.json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: prospectoActual.ID,
+          fields: {
+            STATUS_ID: 'CONVERTED',
+            OPPORTUNITY: monto,
+            CURRENCY_ID: 'MXN',
+            UF_CRM_1738726555477: monto + '|MXN',
+            UF_CRM_1738719216071: { fileData: [archivo.name, base64] }
+          }
+        })
+      });
+      const dataUpdate = await resUpdate.json();
+      if (!dataUpdate.result) throw new Error(dataUpdate.error_description || 'Error al actualizar lead');
+
+      const nombre = prospectoActual.TITLE || (prospectoActual.NAME + ' ' + prospectoActual.LAST_NAME);
+
+      // 3. Crear contacto desde datos del lead
+      let contactId = prospectoActual.CONTACT_ID || null;
+      if (!contactId) {
+        const contactFields = { NAME: prospectoActual.NAME, LAST_NAME: prospectoActual.LAST_NAME };
+        if (prospectoActual.PHONE?.length) contactFields.PHONE = prospectoActual.PHONE;
+        if (prospectoActual.EMAIL?.length) contactFields.EMAIL = prospectoActual.EMAIL;
+        const resContact = await fetch(WEBHOOK + 'crm.contact.add.json', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: contactFields })
+        });
+        const dataContact = await resContact.json();
+        if (dataContact.result) contactId = dataContact.result;
+      }
+
+      // 4. Crear compañía desde datos del lead
+      let companyId = prospectoActual.COMPANY_ID || null;
+      if (!companyId && prospectoActual.COMPANY_TITLE) {
+        const resCompany = await fetch(WEBHOOK + 'crm.company.add.json', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { TITLE: prospectoActual.COMPANY_TITLE } })
+        });
+        const dataCompany = await resCompany.json();
+        if (dataCompany.result) companyId = dataCompany.result;
+      }
+
+      // 5. Crear negociación vinculada a lead, contacto y compañía
+      const dealFields = {
+        TITLE: nombre,
+        CATEGORY_ID: 0,
+        STAGE_ID: 'PREPARATION',
+        CURRENCY_ID: 'MXN',
+        LEAD_ID: prospectoActual.ID,
+        SOURCE_ID: prospectoActual.SOURCE_ID || undefined,
+        UF_CRM_67A2ED1D84E1E: monto + '|MXN',
+        UF_CRM_67A2ED1D67C2B: { fileData: [archivo.name, base64] },
+        UF_CRM_67A2ED1D7ADD0: (sunwiseSeleccion && linkSunwise) ? linkSunwise : '00',
+        UF_CRM_1741392978542: negProyecto,
+        UF_CRM_1753772115014: negPotencial,
+        UF_CRM_688863CF9A0BF: negEntidad,
+        UF_CRM_1743795019024: negTipos,
+        UF_CRM_67A2F843DB11D: negOrigen
+      };
+      if (montoNegociacion) {
+        dealFields.OPPORTUNITY = montoNegociacion;
+        dealFields.IS_MANUAL_OPPORTUNITY = 'Y';
+      }
+      if (contactId) dealFields.CONTACT_IDS = [contactId];
+      if (companyId) dealFields.COMPANY_ID = companyId;
+
+      const resDeal = await fetch(WEBHOOK + 'crm.deal.add.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: dealFields })
+      });
+      const dataDeal = await resDeal.json();
+      if (!dataDeal.result) throw new Error(dataDeal.error_description || 'Error al crear negociación');
+      const dealId = dataDeal.result;
+
+      // 6. Vincular contacto y compañía al lead también
+      const leadUpdate = { STATUS_ID: 'CONVERTED' };
+      if (contactId) leadUpdate.CONTACT_ID = contactId;
+      if (companyId) leadUpdate.COMPANY_ID = companyId;
+      await fetch(WEBHOOK + 'crm.lead.update.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: prospectoActual.ID, fields: leadUpdate })
+      });
+
+      // 7. Crear relación lead ↔ deal
+      await fetch(WEBHOOK + 'crm.item.link.add.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fields: {
+            entityTypeId: 2,
+            entityId: dealId,
+            linkedEntityTypeId: 1,
+            linkedEntityId: prospectoActual.ID
+          }
+        })
+      }).catch(() => {});
+
+      // Comentario en el lead referenciando la negociación creada
+      await fetch(WEBHOOK + 'crm.timeline.comment.add.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fields: {
+            ENTITY_ID: prospectoActual.ID,
+            ENTITY_TYPE: 'lead',
+            COMMENT: `Negociación creada: #${dealId} — ${nombre}`
+          }
+        })
+      }).catch(() => {});
+
+      document.getElementById('exito-detalle').textContent =
+        nombre + ' — recibo adjunto, monto $' + Number(monto).toLocaleString('es-MX') + ' MXN';
+      document.getElementById('exito-titulo').textContent = '¡Recibo validado!';
+      mostrarEstado('vista-exito');
+
+    } catch (e) {
+      alert('Error: ' + e.message);
+      mostrarEstado(null);
+      document.getElementById('vista-prospecto').style.display = 'block';
+    }
+  }
+
+  function leerArchivoBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function avanzarEtapa() {
+    if (!prospectoActual) return;
+    const sig = siguienteEtapa(prospectoActual.STATUS_ID);
+    if (!sig) return;
+
+    mostrarEstado('vista-cargando');
+
+    try {
+      const res = await fetch(WEBHOOK + 'crm.lead.update.json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: prospectoActual.ID,
+          fields: { STATUS_ID: sig.id }
+        })
+      });
+      const data = await res.json();
+      if (data.result) {
+        const nombre = prospectoActual.TITLE || (prospectoActual.NAME + ' ' + prospectoActual.LAST_NAME);
+        document.getElementById('exito-detalle').textContent =
+          nombre + ' → ' + sig.nombre;
+        mostrarEstado('vista-exito');
+      } else {
+        throw new Error(data.error_description || 'Error');
+      }
+    } catch (e) {
+      alert('Error al actualizar: ' + e.message);
+      mostrarEstado(null);
+      document.getElementById('vista-prospecto').style.display = 'block';
+    }
+  }
+
+  function abrirModal() { document.getElementById('overlay-noutil').classList.add('visible'); }
+  function cerrarModal() { document.getElementById('overlay-noutil').classList.remove('visible'); }
+
+  async function confirmarNoUtil() {
+    cerrarModal();
+    if (!prospectoActual) return;
+
+    mostrarEstado('vista-cargando');
+
+    try {
+      const res = await fetch(WEBHOOK + 'crm.lead.update.json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: prospectoActual.ID,
+          fields: { STATUS_ID: ETAPA_NOUTIL.id }
+        })
+      });
+      const data = await res.json();
+      if (data.result) {
+        const nombre = prospectoActual.TITLE || (prospectoActual.NAME + ' ' + prospectoActual.LAST_NAME);
+        document.getElementById('exito-detalle').textContent =
+          nombre + ' marcado como No útil.';
+        mostrarEstado('vista-exito');
+      } else {
+        throw new Error(data.error_description || 'Error');
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+      mostrarEstado(null);
+      document.getElementById('vista-prospecto').style.display = 'block';
+    }
+  }
+
+  function mostrarEstado(id) {
+    ['vista-busqueda','vista-prospecto','vista-deal','vista-cargando','vista-exito'].forEach(v => {
+      const el = document.getElementById(v);
+      if (!el) return;
+      if (el.classList.contains('estado')) el.classList.remove('visible');
+      else el.style.display = 'none';
+    });
+    if (!id) return;
+    const target = document.getElementById(id);
+    if (target.classList.contains('estado')) target.classList.add('visible');
+    else target.style.display = 'block';
+  }
+
+  function volver() {
+    prospectoActual = null;
+    document.getElementById('busqueda').value = '';
+    document.getElementById('vista-prospecto').style.display = 'none';
+    document.getElementById('vista-deal').style.display = 'none';
+    document.getElementById('vista-busqueda').style.display = 'block';
+  }
+
+  function reiniciar() {
+    prospectoActual = null;
+    dealActual = null;
+    document.getElementById('busqueda').value = '';
+    mostrarEstado(null);
+    document.getElementById('vista-busqueda').style.display = 'block';
+  }
+
+  // Auto-cargar al iniciar si el usuario ya está logueado
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      const u = JSON.parse(localStorage.getItem('solart_user'));
+      if (u?.id) {
+        autocargar();
+        const av = document.getElementById('sb-avatar');
+        const nm = document.getElementById('sb-nombre');
+        if (av) av.textContent = u.nombre.charAt(0).toUpperCase();
+        if (nm) nm.textContent = u.nombre;
+      }
+    } catch {}
+  });
+</script>
+
+</div><!-- /page-main -->
+</body>
+</html>

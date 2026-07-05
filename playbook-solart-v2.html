@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOLART · Playbook Comercial, CRM & Marketing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================
+   SOLART PLAYBOOK v2
+   - Tipografía normalizada (escala única, ver TOKENS)
+   - Lenguaje simple para vendedores (a prueba de errores)
+   - Sin fotos base64 (archivo ligero para Bitrix)
+   ========================================================== */
+:root{
+  --blue:#006796;
+  --blue2:#0B78A5;
+  --blueDeep:#00557D;
+  --blueDark:#074766;
+  --gold:#F5B51B;
+  --gold2:#F9C948;
+  --green:#20A35B;
+  --sky:#EAF6FB;
+  --ink:#17384A;
+  --muted:#657E8C;
+  --line:#D9E7EE;
+  --soft:#F6FAFC;
+  --white:#FFFFFF;
+  --danger:#D64242;
+  --shadow:0 18px 50px rgba(0,70,105,.14);
+
+  /* ===== TOKENS DE TIPOGRAFÍA (escala única) =====
+     Regla: SOLO estos tamaños se usan en todo el documento.
+     h1 = título de página · h2 = título de sección
+     h3 = título de bloque · body = texto normal · small = notas */
+  --fs-h1:54px;
+  --fs-h2:34px;
+  --fs-h3:18px;
+  --fs-body:16px;
+  --fs-small:13px;
+  --fs-tag:11px;
+
+  /* ===== FOTOS (opcional) =====
+     El playbook v2 usa degradados para pesar poco en Bitrix.
+     Si quieres fotos: sube las imágenes a Bitrix y pega aquí
+     las URLs, por ejemplo:
+     --img-cover: url('https://TU-URL/portada.jpg');            */
+  --img-cover: linear-gradient(120deg,#003a58 0%,#006796 55%,#0B78A5 100%);
+  --grad-solar: linear-gradient(135deg,#0B78A5,#00557D);
+  --grad-gold: linear-gradient(135deg,#B57E00,#F5B51B);
+  --grad-green: linear-gradient(135deg,#137942,#20A35B);
+  --grad-close: linear-gradient(120deg,#00557D,#006796 60%,#F5B51B 140%);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:Inter,Arial,sans-serif;background:#fff;color:var(--ink);font-size:var(--fs-body);line-height:1.6;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.shell{display:flex;min-height:100vh}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:292px;min-width:292px;position:fixed;inset:0 auto 0 0;background:linear-gradient(180deg,#fff 0%,#F6FBFD 72%,#EAF6FB 100%);border-right:1px solid var(--line);z-index:50;display:flex;flex-direction:column;box-shadow:8px 0 30px rgba(0,80,115,.06);overflow:auto}
+.sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid var(--line)}
+.sidebar-logo-official{display:block;width:230px;max-width:100%;height:auto;object-fit:contain;margin-bottom:16px}
+.logo-pill{display:inline-flex;background:var(--blue);color:#fff;border-radius:999px;padding:7px 12px;font-size:var(--fs-tag);font-weight:700;letter-spacing:.3px}
+.nav-section{padding:17px 14px 4px}
+.nav-label{font-size:10px;letter-spacing:2.2px;text-transform:uppercase;color:var(--gold);font-weight:800;padding:0 10px;margin-bottom:8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#507083;font-size:14px;font-weight:700;cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:.15s}
+.nav-item:hover{background:#EAF6FB;color:var(--blue);transform:translateX(2px)}
+.nav-item.active{background:linear-gradient(90deg,var(--blue),var(--blue2));color:#fff;box-shadow:0 8px 20px rgba(0,103,150,.16)}
+.nav-icon{width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:18px 24px;border-top:1px solid var(--line);font-size:var(--fs-small);color:var(--muted)}
+
+/* ===== LAYOUT ===== */
+.main{margin-left:292px;width:calc(100% - 292px);min-height:100vh}
+.section{display:none;max-width:1180px;padding:46px 58px 86px;animation:fade .25s ease}
+.section.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.topbar{height:13px;background:linear-gradient(90deg,var(--blue) 0 72%,var(--gold) 72% 100%);border-radius:0 0 0 18px;margin:-46px -58px 32px}
+
+/* ===== HERO ===== */
+.hero{position:relative;min-height:460px;border-radius:0 0 32px 32px;overflow:hidden;margin:-46px -58px 42px;background:var(--img-cover) center/cover no-repeat;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between}
+.hero-logo-wrap{padding:44px 58px 0}
+.hero-logo-official{display:block;width:340px;max-width:80%;height:auto;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,30,50,.4))}
+.hero-title{padding:0 58px 54px;color:#fff;max-width:980px}
+.hero-title h1{font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-h1);line-height:.98;letter-spacing:.5px;font-weight:700;margin-bottom:16px;color:#fff;text-shadow:0 10px 30px rgba(0,38,56,.5)}
+.hero-title p{font-size:var(--fs-h3);color:#F6FCFF;font-weight:600;text-shadow:0 4px 18px rgba(0,52,80,.45)}
+
+/* ===== TIPOGRAFÍA (usa solo tokens) ===== */
+.page-label{font-size:10px;text-transform:uppercase;letter-spacing:3px;color:var(--gold);font-weight:900;margin-bottom:10px}
+h1{font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-h1);line-height:.98;font-weight:500;color:var(--blue);letter-spacing:.2px;margin-bottom:16px}
+h2{font-family:'Barlow Condensed',sans-serif;font-size:var(--fs-h2);line-height:1.05;font-weight:500;color:var(--blue);margin:42px 0 14px;padding-bottom:8px;border-bottom:2px dotted var(--gold)}
+h3{font-size:var(--fs-h3);color:var(--blueDark);font-weight:800;margin:22px 0 8px}
+p{color:#38586A;margin-bottom:12px;font-size:var(--fs-body)}
+.lead{font-size:var(--fs-h3);color:#486B7D;max-width:820px;margin-bottom:28px;font-weight:500}
+small,.small{font-size:var(--fs-small)}
+
+.deck-header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:28px}
+.section-kicker{display:inline-block;padding:7px 11px;background:#fff7df;border:1px solid #F4DA83;color:#B57E00;border-radius:999px;font-size:var(--fs-tag);font-weight:800;text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
+
+/* ===== TARJETAS ===== */
+.card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:22px 0}
+.card-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:22px 0}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px;box-shadow:0 10px 30px rgba(0,80,120,.06);position:relative;overflow:hidden}
+.card:before{content:"";position:absolute;left:0;top:0;width:6px;height:100%;background:var(--gold)}
+.card-icon{font-size:24px;margin-bottom:10px}
+.card-title{font-weight:900;color:var(--blue);font-size:var(--fs-body);margin-bottom:7px}
+.card-body{font-size:var(--fs-small);color:#516F80;line-height:1.55}
+
+/* Tarjetas visuales con degradado (sin foto = archivo ligero) */
+.photo-card{min-height:220px;border-radius:22px;overflow:hidden;position:relative;box-shadow:var(--shadow);display:flex;align-items:flex-end}
+.photo-card .caption{position:relative;z-index:2;margin:22px;padding:20px 22px;color:#fff;background:rgba(0,45,70,.42);border:1px solid rgba(255,255,255,.22);border-radius:16px}
+.photo-card h3{color:#fff;font-family:'Barlow Condensed';font-size:var(--fs-h2);font-weight:600;margin:0 0 8px}
+.photo-card p{color:#fff;margin:0;font-weight:500;font-size:var(--fs-body)}
+.g-solar{background:var(--grad-solar)}
+.g-gold{background:var(--grad-gold)}
+.g-green{background:var(--grad-green)}
+
+.info-box{background:linear-gradient(180deg,#fff,#F7FBFD);border:1px solid var(--line);border-radius:18px;padding:24px 28px;margin:20px 0;box-shadow:0 10px 28px rgba(0,80,120,.05)}
+.highlight{background:#FDF8E7;border:1px solid #F1D66A;border-left:7px solid var(--gold);border-radius:14px;padding:17px 20px;margin:22px 0;color:#5F4D16;font-size:var(--fs-body)}
+.highlight strong{color:#9A6A00}
+
+/* ===== SEMÁFOROS POKA-YOKE ===== */
+.check-ok,.check-warn,.check-stop{border-radius:14px;padding:15px 18px;margin:14px 0;font-size:var(--fs-body)}
+.check-ok{background:#E9F9F0;border:1px solid #BDECCF;border-left:7px solid var(--green);color:#0E5A32}
+.check-warn{background:#FDF8E7;border:1px solid #F1D66A;border-left:7px solid var(--gold);color:#6B5312}
+.check-stop{background:#FFF0F0;border:1px solid #F1BABA;border-left:7px solid var(--danger);color:#7E2323}
+.check-ok strong,.check-warn strong,.check-stop strong{display:block;margin-bottom:4px}
+
+.tag{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;background:#EAF6FB;color:var(--blue);border:1px solid #C8E3EE;font-size:var(--fs-tag);font-weight:900;text-transform:uppercase;letter-spacing:1px}
+.tag-gold{background:#FFF5D1;color:#9A6A00;border-color:#F1D66A}
+.tag-green{background:#E9F9F0;color:#137942;border-color:#BDECCF}
+
+/* ===== TABLAS ===== */
+table{width:100%;border-collapse:separate;border-spacing:0;margin:20px 0;font-size:var(--fs-small);border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 10px 26px rgba(0,80,120,.04)}
+th{background:var(--blue);color:#fff;text-align:left;padding:13px 15px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px}
+td{padding:13px 15px;border-bottom:1px solid var(--line);color:#3E5D6F;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#F8FCFD}
+
+/* ===== ORGANIGRAMA ===== */
+.org-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0}
+.org-card{background:#fff;border:1px solid var(--line);border-top:7px solid var(--blue);border-radius:18px;padding:20px;box-shadow:0 10px 28px rgba(0,80,120,.06)}
+.org-card.primary{grid-column:1/-1;background:linear-gradient(90deg,var(--blue),var(--blue2));border-color:transparent;color:#fff}
+.org-card.primary .org-role,.org-card.primary .org-desc,.org-card.primary .org-name{color:#fff}
+.org-card.gold{border-top-color:var(--gold)}
+.org-card.green{border-top-color:var(--green)}
+.org-name{font-weight:900;color:var(--blue);font-size:var(--fs-body)}
+.org-role{font-size:var(--fs-tag);color:var(--gold);font-weight:900;text-transform:uppercase;letter-spacing:1.4px;margin:4px 0 8px}
+.org-desc{font-size:var(--fs-small);color:#5B7483}
+
+/* ===== TIMELINE / PIPELINE ===== */
+.timeline{position:relative;margin:24px 0;padding:8px 0}
+.timeline:before{content:"";position:absolute;left:24px;top:0;bottom:0;width:4px;background:linear-gradient(var(--gold),var(--blue));border-radius:999px}
+.step{display:grid;grid-template-columns:52px 1fr;gap:16px;margin-bottom:18px;position:relative}
+.step-num{width:52px;height:52px;border-radius:50%;background:#fff;border:3px solid var(--gold);display:grid;place-items:center;color:var(--blue);font-weight:900;box-shadow:0 8px 22px rgba(0,80,120,.08);z-index:1}
+.step-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:0 8px 22px rgba(0,80,120,.04)}
+.step-title{font-weight:900;color:var(--blue);margin-bottom:3px;font-size:var(--fs-body)}
+.step-desc{font-size:var(--fs-small);color:#5B7483}
+.pipeline{display:flex;gap:10px;overflow:auto;padding:8px 0 14px;margin:20px 0}
+.pipeline-stage{min-width:172px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 14px;box-shadow:0 8px 20px rgba(0,80,120,.05);position:relative}
+.pipeline-stage:before{content:"";position:absolute;left:0;top:0;right:0;height:6px;background:var(--gold);border-radius:16px 16px 0 0}
+.pipeline-pct{font-family:'Barlow Condensed';font-size:var(--fs-h2);color:var(--blue);line-height:1;font-weight:600}
+.pipeline-name{font-size:var(--fs-small);font-weight:900;color:var(--ink);line-height:1.2;margin:7px 0}
+.pipeline-action{font-size:var(--fs-small);color:#66808F;line-height:1.4}
+.pipeline-lock{margin-top:8px;font-size:var(--fs-tag);color:#A92B2B;font-weight:800}
+
+/* ===== SCRIPTS / OBJECIONES ===== */
+.script-block{background:#fff;border:1px solid var(--line);border-radius:16px;margin:16px 0;overflow:hidden;box-shadow:0 8px 24px rgba(0,80,120,.04)}
+.script-role{background:var(--blue);color:#fff;padding:11px 18px;font-size:10px;text-transform:uppercase;letter-spacing:1.8px;font-weight:900}
+.script-role.note{background:#FFF4C9;color:#9A6A00}
+.script-text{padding:16px 18px;color:#3F5C6E;font-size:var(--fs-body)}
+.objection{background:#fff;border:1px solid var(--line);border-radius:18px;padding:19px 22px;margin:16px 0;box-shadow:0 8px 22px rgba(0,80,120,.04)}
+.objection-q{font-weight:900;color:#B93232;margin-bottom:10px;font-size:var(--fs-body)}
+.objection-a{border-left:5px solid var(--green);padding-left:14px;color:#3F5C6E;font-size:var(--fs-body)}
+
+/* ===== KPI ===== */
+.kpi-row{display:grid;grid-template-columns:1fr 130px 90px;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);align-items:center;font-size:var(--fs-body)}
+.kpi-row:last-child{border-bottom:none}
+.kpi-name{font-weight:800;color:var(--blue)}
+.kpi-target{font-weight:900;color:#9A6A00;text-align:right}
+.kpi-freq{color:#6C8492;font-size:var(--fs-small);text-align:right}
+
+/* ===== CIERRE ===== */
+.footer-slide{margin:54px -58px -86px;min-height:280px;background:var(--grad-close);position:relative;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px}
+.footer-slide h2{color:#fff;border:none;font-size:44px;margin:0 0 10px}
+.footer-slide p{color:#fff}
+.print-btn{position:fixed;right:24px;bottom:104px;background:var(--gold);color:#16384A;border:none;border-radius:999px;padding:12px 22px;font-weight:900;box-shadow:0 10px 28px rgba(245,181,27,.34);cursor:pointer;z-index:9999;font-family:Inter,Arial,sans-serif;font-size:var(--fs-body)}
+.print-btn:hover{transform:translateY(-1px)}
+
+/* ===== RECURSOS: LISTA DESPLEGABLE ÚNICA ===== */
+.res-list{margin:26px 0;border:1px solid var(--line);border-radius:24px;background:#fff;box-shadow:var(--shadow);overflow:hidden}
+.res-item{border-bottom:1px solid var(--line)}
+.res-item:last-child{border-bottom:none}
+.res-item>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:46px 1fr auto;gap:16px;align-items:center;padding:20px 26px;transition:.15s}
+.res-item>summary::-webkit-details-marker{display:none}
+.res-item>summary:hover{background:#F6FBFD}
+.res-item[open]>summary{background:#EAF6FB}
+.res-icon{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;display:grid;place-items:center;font-size:20px;flex:0 0 auto}
+.res-name{font-weight:900;color:var(--blueDeep);font-size:var(--fs-h3);line-height:1.2}
+.res-what{font-size:var(--fs-small);color:var(--muted);margin-top:3px}
+.res-when{font-size:var(--fs-tag);font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#9A6A00;background:#FFF5D1;border:1px solid #F1D66A;border-radius:999px;padding:6px 11px;white-space:nowrap}
+.res-open-hint{font-size:var(--fs-tag);color:var(--blue);font-weight:800;margin-top:5px}
+.res-item[open] .res-open-hint .abre{display:none}
+.res-item:not([open]) .res-open-hint .cierra{display:none}
+.res-body{padding:6px 26px 26px 88px;background:#FBFDFE}
+.res-body p{font-size:var(--fs-body)}
+.res-body ul{margin:8px 0 14px;padding-left:20px;color:#425A6C}
+.res-body li{margin-bottom:6px;font-size:var(--fs-body)}
+.res-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.res-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border-radius:999px;background:var(--blue);color:#fff;font-size:var(--fs-small);font-weight:900;cursor:pointer;border:none;font-family:Inter}
+.res-btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--line)}
+.res-link-list{display:grid;gap:8px;margin:10px 0 6px}
+.res-link{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 16px;font-size:var(--fs-body)}
+.res-link b{color:var(--blueDeep)}
+.res-link span{color:var(--muted);font-size:var(--fs-small)}
+.res-link a{color:var(--blue);font-weight:900;white-space:nowrap;font-size:var(--fs-small)}
+
+/* ===== GENERADOR DE LINKS MEDIBLES (UTM) ===== */
+.utm-panel{margin-top:24px;border:1px solid var(--line);border-radius:24px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+.utm-row{border-bottom:1px solid var(--line);background:#fff}
+.utm-row:last-child{border-bottom:none}
+.utm-row summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px 26px;font-weight:900;color:var(--blueDeep);font-size:var(--fs-h3)}
+.utm-row summary::-webkit-details-marker{display:none}
+.utm-row summary small{font-size:var(--fs-tag);text-transform:uppercase;color:#A46E00;background:#FFF6DA;border:1px solid #F6CD63;border-radius:999px;padding:7px 12px;letter-spacing:.1em;white-space:nowrap}
+.utm-form{padding:0 26px 26px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;align-items:end}
+.utm-form label{display:flex;flex-direction:column;gap:8px;font-size:var(--fs-tag);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800}
+.utm-form input,.utm-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:var(--fs-body);color:var(--ink);font-family:Inter,Arial,sans-serif;background:#F9FCFD;outline:none}
+.utm-form input:focus,.utm-form textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,103,150,.12);background:#fff}
+.utm-form .utm-output{grid-column:1 / span 2;min-height:60px;resize:vertical;text-transform:none;letter-spacing:0;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 16px;border-radius:999px;background:var(--blue);color:#fff;font-weight:900;font-size:var(--fs-small);border:none;cursor:pointer;font-family:Inter}
+.btn.secondary{background:#fff;color:var(--blueDeep);border:2px solid var(--blue)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:980px){
+  .sidebar{position:relative;width:100%;min-width:100%;height:auto}
+  .shell{display:block}
+  .main{margin-left:0;width:100%}
+  .section{padding:30px 22px 70px}
+  .hero{margin:-30px -22px 34px;border-radius:0 0 24px 24px;min-height:380px}
+  .hero-logo-wrap{padding:30px 22px 0}
+  .hero-logo-official{width:260px}
+  .hero-title{padding:0 22px 34px}
+  .card-grid,.card-grid-3,.org-grid{grid-template-columns:1fr}
+  .topbar{margin:-30px -22px 28px}
+  .res-item>summary{grid-template-columns:46px 1fr}
+  .res-when{display:none}
+  .res-body{padding:6px 22px 24px}
+  .utm-form{grid-template-columns:1fr}
+  .utm-form .utm-output{grid-column:auto}
+  .utm-row summary{align-items:flex-start;flex-direction:column}
+  .footer-slide{margin:44px -22px -70px}
+  .deck-header{flex-direction:column}
+}
+
+/* ===== IMPRESIÓN / PDF ===== */
+@media print{
+  @page{size:A4;margin:10mm}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  html,body{background:#fff!important;height:auto!important;overflow:visible!important}
+  .shell{display:block!important}
+  .sidebar,.print-btn,[class*="b24-widget"],[class*="landing-page-transition"]{display:none!important;visibility:hidden!important}
+  .main{display:block!important;margin:0!important;width:100%!important;overflow:visible!important}
+  .section,.section.active{display:block!important;visibility:visible!important;opacity:1!important;max-width:none!important;width:100%!important;padding:14mm 8mm!important;margin:0!important;page-break-after:always;break-after:page;box-shadow:none!important}
+  .section:last-of-type{page-break-after:auto;break-after:auto}
+  .topbar{display:none!important}
+  .hero{margin:0 0 10mm!important;border-radius:0!important;min-height:110mm!important;box-shadow:none!important}
+  h2{break-after:avoid;page-break-after:avoid}
+  table,.card,.org-card,.info-box,.highlight,.res-item,.check-ok,.check-warn,.check-stop{break-inside:avoid;page-break-inside:avoid}
+  details{}
+  .res-item,.utm-row{}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/64822dc4f06b2c492045493c_SOLART%20logo.png" alt="SOLART · Tu huella por el planeta" class="sidebar-logo-official">
+    <div class="logo-pill">Playbook Comercial · CRM · Marketing</div>
+  </div>
+  <div class="nav-section"><div class="nav-label">Dirección</div>
+    <a class="nav-item active" onclick="show('portada')"><span class="nav-icon">☀️</span> Visión</a>
+    <a class="nav-item" onclick="show('organigrama')"><span class="nav-icon">🏢</span> Quién hace qué</a>
+    <a class="nav-item" onclick="show('oferta')"><span class="nav-icon">⚡</span> Qué vendemos</a>
+    <a class="nav-item" onclick="show('icp')"><span class="nav-icon">🎯</span> Cliente ideal</a>
+  </div>
+  <div class="nav-section"><div class="nav-label">Crecimiento</div>
+    <a class="nav-item" onclick="show('marca')"><span class="nav-icon">🎨</span> Marca y redes</a>
+    <a class="nav-item" onclick="show('webseo')"><span class="nav-icon">🌐</span> Página web y Google</a>
+    <a class="nav-item" onclick="show('recursos')"><span class="nav-icon">🧰</span> Recursos</a>
+    <a class="nav-item" onclick="show('pipeline')"><span class="nav-icon">🔁</span> Etapas en Bitrix</a>
+    <a class="nav-item" onclick="show('sunwise')"><span class="nav-icon">📐</span> Cómo se arma la propuesta</a>
+    <a class="nav-item" onclick="show('financiero')"><span class="nav-icon">💰</span> Números para decidir</a>
+  </div>
+  <div class="nav-section"><div class="nav-label">Ejecución</div>
+    <a class="nav-item" onclick="show('scripts')"><span class="nav-icon">💬</span> Qué decir (guiones)</a>
+    <a class="nav-item" onclick="show('objeciones')"><span class="nav-icon">🛡️</span> Respuestas a dudas</a>
+    <a class="nav-item" onclick="show('kpis')"><span class="nav-icon">📊</span> Cómo medimos</a>
+    <a class="nav-item" onclick="show('reglas')"><span class="nav-icon">⚙️</span> Reglas de oro</a>
+  </div>
+  <div class="sidebar-footer">Uso interno · SOLART<br>Escrito en lenguaje simple para todo el equipo de ventas.</div>
+</nav>
+
+<main class="main">
+
+<!-- ============ VISIÓN ============ -->
+<section class="section active" id="portada">
+  <div class="hero">
+    <div class="hero-logo-wrap"><img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/64822dc4f06b2c492045493c_SOLART%20logo.png" alt="SOLART" class="hero-logo-official"></div>
+    <div class="hero-title"><div class="page-label">Ventas · CRM · Marketing · Operación</div><h1>PLAYBOOK SOLART</h1><p>La guía paso a paso para vender proyectos de energía solar a empresas: desde el primer contacto hasta la firma, la instalación y el seguimiento. Sin adivinar: cada paso dice qué hacer, qué pedir y qué revisar antes de avanzar.</p></div>
+  </div>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">☀️</div><div class="card-title">A qué nos dedicamos</div><div class="card-body">Ayudamos a empresas a pagar menos luz. Revisamos su recibo de CFE, calculamos cuánto pueden ahorrar y les proponemos una solución con números claros.</div></div>
+    <div class="card"><div class="card-icon">🔁</div><div class="card-title">Todo se registra en Bitrix</div><div class="card-body">Bitrix es nuestra libreta común: quién atiende a cada cliente, en qué paso va, qué sigue y para cuándo. Si no está en Bitrix, no existe.</div></div>
+    <div class="card"><div class="card-icon">📐</div><div class="card-title">No prometemos sin revisar</div><div class="card-body">La propuesta se arma con una herramienta (Sunwise), pero antes de prometer algo al cliente, ingeniería revisa que sí se pueda hacer.</div></div>
+    <div class="card"><div class="card-icon">💰</div><div class="card-title">El cliente decide con números</div><div class="card-body">Erik traduce la propuesta a lenguaje de dinero: cuánto cuesta, cuánto ahorra al año, en cuánto tiempo lo recupera y qué riesgos hay.</div></div>
+  </div>
+  <div class="highlight"><strong>Idea central:</strong> SOLART no vende "paneles". Vende ahorro comprobable, tranquilidad técnica y acompañamiento, para que la empresa tome una buena decisión con su gasto de luz.</div>
+</section>
+
+<!-- ============ QUIÉN HACE QUÉ ============ -->
+<section class="section" id="organigrama"><div class="topbar"></div>
+  <div class="deck-header"><div><div class="page-label">Equipo</div><h1>QUIÉN HACE QUÉ</h1><p class="lead">Este mapa evita errores: antes de prometer algo a un cliente, aquí ves con quién debes validarlo.</p></div><span class="section-kicker">Responsables claros</span></div>
+  <div class="org-grid">
+    <div class="org-card primary"><div class="org-name">Victor Linaldi</div><div class="org-role">Dirección / Dueño</div><div class="org-desc">Define el rumbo de la empresa, las prioridades y las metas de crecimiento.</div></div>
+    <div class="org-card gold"><div class="org-name">Arturo López Gallo</div><div class="org-role">Director Comercial · reporta a Víctor</div><div class="org-desc">Manda en todo lo de ventas: estrategia, seguimiento del equipo, condiciones de negociación y decisiones comerciales importantes.</div></div>
+    <div class="org-card"><div class="org-name">Luis Amor Botello</div><div class="org-role">CRM / Marketing · reporta a Víctor</div><div class="org-desc">Configura Bitrix, la página web, las redes, la publicidad y los reportes. Se encarga de que lleguen prospectos y de que todo quede medido.</div></div>
+    <div class="org-card green"><div class="org-name">Daniel González</div><div class="org-role">Operaciones / Ingeniería · reporta a Víctor</div><div class="org-desc">Responsable de que los proyectos sí se puedan hacer y se instalen bien.</div></div>
+    <div class="org-card gold"><div class="org-name">Erik</div><div class="org-role">Números / Finanzas · reporta a Arturo</div><div class="org-desc">Ayuda a explicar el proyecto en dinero: inversión, ahorro anual, beneficio en impuestos, tiempo de recuperación y formas de pago.</div></div>
+    <div class="org-card"><div class="org-name">Equipo Comercial</div><div class="org-role">Vendedores · reportan a Arturo</div><div class="org-desc">Buscan clientes, hacen el primer contacto, piden el recibo de luz, dan seguimiento y mantienen Bitrix al día.</div></div>
+    <div class="org-card green"><div class="org-name">Javier Olmos</div><div class="org-role">Jefe de Ingeniería · reporta a Daniel</div><div class="org-desc">Revisa que lo que se ofrece al cliente sea técnicamente posible, antes de presentarlo.</div></div>
+    <div class="org-card green"><div class="org-name">Misael Chávez</div><div class="org-role">Coordinador de Proyectos · reporta a Daniel</div><div class="org-desc">Coordina la instalación: tiempos, entrega y transición cuando el cliente ya firmó.</div></div>
+    <div class="org-card green"><div class="org-name">Gerardo Vite</div><div class="org-role">Ingeniero de Proyectos · reporta a Javier</div><div class="org-desc">Hace visitas al sitio, revisa techos e instalaciones y apoya en las validaciones técnicas.</div></div>
+    <div class="org-card"><div class="org-name">Eduardo Lozada</div><div class="org-role">Administración</div><div class="org-desc">Apoya con papeleo, contratos, control administrativo y trámites internos.</div></div>
+  </div>
+  <h2>Candado para no equivocarnos</h2>
+  <div class="check-stop"><strong>⛔ Prohibido prometer sin validar.</strong> Ningún vendedor promete precio, fecha, alcance, garantía o crédito sin confirmar antes con el responsable correcto: Arturo (comercial), ingeniería (técnico), Erik (números) o administración (papeles).</div>
+</section>
+
+<!-- ============ QUÉ VENDEMOS ============ -->
+<section class="section" id="oferta"><div class="topbar"></div>
+  <div class="deck-header"><div><div class="page-label">Nuestra oferta</div><h1>QUÉ VENDEMOS</h1><p class="lead">SOLART acompaña a las empresas en todo su tema de energía: desde revisar su recibo hasta instalar, dar mantenimiento y seguir con ellas a largo plazo.</p></div><span class="section-kicker">5 soluciones + diagnóstico</span></div>
+  <div class="card-grid">
+    <div class="photo-card g-solar"><div class="caption"><h3>Solución completa</h3><p>Del recibo de CFE a la propuesta, los números, la instalación, el monitoreo y el seguimiento después de la venta.</p></div></div>
+    <div class="photo-card g-gold"><div class="caption"><h3>Decisión de negocio</h3><p>La plática no es de "paneles": es de ahorro, recuperación de la inversión, riesgo y control del gasto de luz.</p></div></div>
+  </div>
+
+  <h2>Las 6 líneas, explicadas en simple</h2>
+  <div class="card-grid-3">
+    <div class="card"><div class="card-icon">☀️</div><div class="card-title">Paneles solares (sistema fotovoltaico)</div><div class="card-body">Instalamos paneles en el techo o terreno de la empresa para que genere su propia luz y pague menos a CFE. Incluye diseño, instalación, trámites y monitoreo.</div></div>
+    <div class="card"><div class="card-icon">🔋</div><div class="card-title">Baterías (BESS)</div><div class="card-body">Baterías grandes para guardar energía. Sirven cuando la empresa no puede quedarse sin luz, o quiere controlar mejor sus horarios de consumo. Se evalúa caso por caso.</div></div>
+    <div class="card"><div class="card-icon">💰</div><div class="card-title">Financiamiento</div><div class="card-body">Opciones para pagar el proyecto sin descapitalizarse: de contado, a plazos o con esquemas donde la mensualidad se compara contra lo que ahorran.</div></div>
+    <div class="card"><div class="card-icon">🛠️</div><div class="card-title">Mantenimiento</div><div class="card-body">Cuidamos el sistema para que siga produciendo: limpieza, revisiones, monitoreo, reportes y atención de fallas. Se vende como protección de la inversión.</div></div>
+    <div class="card"><div class="card-icon">⚡</div><div class="card-title">Compra de energía (suministro calificado)</div><div class="card-body">Para empresas que gastan mucho: se analiza si les conviene comprar su luz de otra forma, más barata que la tarifa normal. Es un estudio, no una instalación.</div></div>
+    <div class="card"><div class="card-icon">📊</div><div class="card-title">Diagnóstico energético (la puerta de entrada)</div><div class="card-body">Con el recibo de CFE revisamos cuánto pagan, cómo consumen y cuánto podrían ahorrar. De aquí sale qué solución les conviene.</div></div>
+  </div>
+
+  <h2>Guía rápida por solución</h2>
+  <table>
+    <tr><th>Solución</th><th>Problema que resuelve</th><th>Qué debe pedir ventas</th><th>Qué recibe el cliente</th></tr>
+    <tr><td><strong>Paneles solares</strong></td><td>Recibo de luz muy alto y ganas de ahorrar</td><td>Recibo de CFE, dirección, giro, techo/espacio y quién decide</td><td>Propuesta con ahorro estimado, ya revisada por ingeniería</td></tr>
+    <tr><td><strong>Baterías</strong></td><td>No pueden quedarse sin luz / picos de consumo caros</td><td>Horarios de trabajo, equipos críticos y cuánto cuesta pararse</td><td>Estudio de si conviene y en qué escenario</td></tr>
+    <tr><td><strong>Financiamiento</strong></td><td>Quieren ahorrar pero no quieren gastar todo de golpe</td><td>Tamaño del proyecto, ahorro mensual y capacidad de pago</td><td>Comparativo: pagar CFE vs. pagar el proyecto</td></tr>
+    <tr><td><strong>Mantenimiento</strong></td><td>El sistema produce menos o nadie lo revisa</td><td>Tipo de sistema, antigüedad, fallas y acceso al sitio</td><td>Plan de mantenimiento con fechas y reportes</td></tr>
+    <tr><td><strong>Compra de energía</strong></td><td>Gastan mucho y quieren pagar menos por cada kWh</td><td>Consumo, demanda, recibos y forma actual de compra</td><td>Análisis de si califican y qué ruta seguir</td></tr>
+  </table>
+
+  <h2>El camino de toda venta (6 pasos)</h2>
+  <div class="card-grid-3">
+    <div class="card"><div class="card-title">1. Entrada</div><div class="card-body">Mensaje simple: "revisamos tu recibo y te decimos cuánto puedes ahorrar". De ahí sale la solución adecuada.</div></div>
+    <div class="card"><div class="card-title">2. Diagnóstico</div><div class="card-body">No se avanza sin lo mínimo: recibo de CFE, dirección, tipo de negocio, quién decide y qué busca el cliente.</div></div>
+    <div class="card"><div class="card-title">3. Propuesta</div><div class="card-body">Debe explicar: cuánto cuesta, cuánto ahorra, en cuánto se recupera, qué incluye, qué NO incluye y qué sigue.</div></div>
+    <div class="card"><div class="card-title">4. Revisión técnica</div><div class="card-body">Ingeniería confirma que sí se puede: techo, espacio, conexión, tiempos y equipos.</div></div>
+    <div class="card"><div class="card-title">5. Números claros</div><div class="card-body">Erik convierte todo a dinero: inversión, ahorro, recuperación, riesgo y forma de pago que más conviene.</div></div>
+    <div class="card"><div class="card-title">6. Firma y arranque</div><div class="card-body">La venta no termina en la firma: sigue anticipo, instalación, monitoreo, mantenimiento y relación de largo plazo.</div></div>
+  </div>
+
+  <div class="highlight"><strong>Frase guía:</strong> SOLART ayuda a las empresas a convertir su gasto de luz en una decisión inteligente: ahorro con paneles, respaldo con baterías, facilidad con financiamiento, tranquilidad con mantenimiento y mejor precio con compra de energía.</div>
+</section>
+
+<!-- ============ CLIENTE IDEAL ============ -->
+<section class="section" id="icp"><div class="topbar"></div>
+  <div class="page-label">A quién buscamos</div>
+  <h1>CLIENTE IDEAL Y FILTROS</h1>
+  <p class="lead">No perseguimos a cualquiera. Buscamos empresas que pagan mucha luz, tienen operación estable, un lugar donde instalar y alguien que pueda decidir.</p>
+
+  <div class="highlight"><strong>Regla base:</strong> el cliente ideal NO es "el que quiere paneles". Es el que tiene un recibo alto, un problema claro (gasto o cortes de luz), un inmueble donde sí se puede instalar y una persona con poder de decisión dispuesta a ver los números.</div>
+
+  <h2>Industrias donde más nos conviene buscar</h2>
+  <table>
+    <tr><th>Industria</th><th>Por qué les duele la luz</th><th>Qué les queda mejor</th><th>Quién decide</th><th>Primer dato a pedir</th></tr>
+    <tr><td><strong>Fábricas / manufactura</strong></td><td>Recibo alto y no pueden parar la producción</td><td>Paneles + financiamiento + mantenimiento; baterías si hay picos</td><td>Dirección, operaciones, finanzas</td><td>Recibo de CFE y horarios de trabajo</td></tr>
+    <tr><td><strong>Alimentos y bebidas</strong></td><td>Refrigeración y cámaras frías consumen todo el día</td><td>Paneles + baterías para no perder producto</td><td>Dirección, planta, finanzas</td><td>Recibo y equipos críticos</td></tr>
+    <tr><td><strong>Agroindustria</strong></td><td>Bombeo, riego y empaque gastan mucho por temporada</td><td>Paneles + diagnóstico + financiamiento</td><td>Dueño, administración</td><td>Recibo, ubicación y temporada alta</td></tr>
+    <tr><td><strong>Comercios con sucursales</strong></td><td>Aires acondicionados y refrigeración en varios locales</td><td>Paneles por sucursal + monitoreo</td><td>Dueño, dirección, expansión</td><td>Recibos de las sucursales que más gastan</td></tr>
+    <tr><td><strong>Bodegas / logística</strong></td><td>Techos enormes desaprovechados y consumo diario</td><td>Paneles + mantenimiento; baterías si hay operación crítica</td><td>Operaciones, finanzas</td><td>Recibo y metros de techo</td></tr>
+    <tr><td><strong>Hoteles</strong></td><td>Aire, lavandería, bombeo y luces todo el día</td><td>Paneles + mantenimiento + números claros</td><td>Propietario, administración</td><td>Recibo y si operan 24/7</td></tr>
+    <tr><td><strong>Parques industriales / plazas</strong></td><td>Áreas comunes caras y techos grandes</td><td>Paneles + mantenimiento; requiere aprobación de administración</td><td>Propietario, comité, administración</td><td>Recibo de áreas comunes y quién aprueba</td></tr>
+    <tr><td><strong>Hospitales / clínicas</strong></td><td>No pueden quedarse sin luz nunca</td><td>Paneles + baterías (revisado por ingeniería) + mantenimiento</td><td>Dirección, mantenimiento, finanzas</td><td>Recibo y equipos que no pueden apagarse</td></tr>
+    <tr><td><strong>Escuelas / universidades</strong></td><td>Consumo de día y techos disponibles</td><td>Paneles + caso de ahorro + imagen ambiental</td><td>Dirección, consejo</td><td>Recibo y calendario escolar</td></tr>
+    <tr><td><strong>Automotriz, metal, plástico, química</strong></td><td>Maquinaria pesada, consumo intensivo</td><td>Paneles + baterías si aplica + financiamiento</td><td>Dirección, planta, finanzas</td><td>Recibo, demanda y objetivo financiero</td></tr>
+  </table>
+
+  <h2>Semáforo: ¿vale la pena este prospecto?</h2>
+  <div class="check-ok"><strong>✅ Verde — avanza:</strong> paga mucha luz, manda su recibo rápido, el inmueble es suyo (o tiene permiso), hablas con quien decide y acepta un siguiente paso con fecha.</div>
+  <div class="check-warn"><strong>⚠️ Amarillo — valida antes:</strong> promete el recibo pero no lo manda, el que habla no decide, o el inmueble es rentado y falta permiso del dueño. Confirma esos puntos antes de invertir más tiempo.</div>
+  <div class="check-stop"><strong>⛔ Rojo — no hagas propuesta:</strong> no comparte recibo, solo pregunta "precio de paneles", renta con contrato corto y sin permiso, o no hay fecha ni responsable del siguiente paso. Se queda en seguimiento con contenido, no en propuesta.</div>
+
+  <h2>Filtro obligatorio: ¿de quién es el inmueble?</h2>
+  <p class="lead">Antes de gastar tiempo en una propuesta, hay que saber si el cliente puede decidir sobre el techo o terreno. El recibo no basta: alguien tiene que autorizar la instalación.</p>
+  <table>
+    <tr><th>Situación</th><th>Qué significa para nosotros</th><th>Riesgo</th><th>Qué hacer</th></tr>
+    <tr><td><strong>El inmueble es suyo</strong></td><td>Prioridad alta: puede autorizar todo con poca fricción</td><td>Bajo</td><td>Pedir recibo, fotos y avanzar a diagnóstico</td></tr>
+    <tr><td><strong>Lo está pagando (crédito)</strong></td><td>Buen prospecto si controla el inmueble</td><td>Medio: puede necesitar permiso del banco o socios</td><td>Confirmar quién autoriza cambios antes de la visita técnica</td></tr>
+    <tr><td><strong>Renta con contrato largo</strong></td><td>Viable si el contrato dura lo suficiente y el dueño da permiso</td><td>Medio-alto</td><td>Pedir plazo del contrato y permiso por escrito del dueño</td></tr>
+    <tr><td><strong>Renta con contrato corto</strong></td><td>Prioridad baja para instalar paneles propios</td><td>Alto: puede irse antes de recuperar la inversión</td><td>NO hacer propuesta completa; ofrecer diagnóstico u otras soluciones</td></tr>
+    <tr><td><strong>Parque / plaza / condominio</strong></td><td>Puede ser bueno, pero decide la administración o el comité</td><td>Medio</td><td>Identificar propietario, administración y reglamento antes de avanzar</td></tr>
+  </table>
+  <div class="card-grid-3">
+    <div class="card"><div class="card-title">Pregunta obligatoria 1</div><div class="card-body">¿El inmueble es propio, rentado, a crédito o lo administra alguien más?</div></div>
+    <div class="card"><div class="card-title">Pregunta obligatoria 2</div><div class="card-body">¿Quién puede autorizar cambios en el techo, la instalación eléctrica y los permisos?</div></div>
+    <div class="card"><div class="card-title">Pregunta obligatoria 3</div><div class="card-body">Si renta: ¿cuánto contrato le queda y el dueño firmaría el permiso?</div></div>
+  </div>
+
+  <h2>Con quién hablar dentro de la empresa</h2>
+  <p class="lead">Casi nunca decide una sola persona. Hay que identificar: quién sufre el problema, quién revisa lo técnico, quién aprueba el dinero y quién firma.</p>
+  <table>
+    <tr><th>Puesto</th><th>Qué le importa</th><th>Cómo hablarle</th><th>Su papel en el cierre</th></tr>
+    <tr><td><strong>Dueño / socios</strong></td><td>Ahorro, recuperación de la inversión, valor del inmueble</td><td>En términos de dinero y garantías</td><td>Decide o patrocina el proyecto</td></tr>
+    <tr><td><strong>Dirección general</strong></td><td>Rentabilidad, continuidad, reputación</td><td>Resumen ejecutivo: problema, solución, inversión, ahorro, siguiente paso</td><td>Autoriza y alinea a las áreas</td></tr>
+    <tr><td><strong>Finanzas</strong></td><td>Cuánto cuesta, cómo se paga, deducción de impuestos, flujo mensual</td><td>Con escenarios: contado vs. financiado, ahorro y plazo</td><td>Valida que los números convengan</td></tr>
+    <tr><td><strong>Operaciones / planta</strong></td><td>Que la instalación no detenga el trabajo</td><td>Explicando cómo y cuándo se instala, con responsables</td><td>Valida la ejecución</td></tr>
+    <tr><td><strong>Mantenimiento</strong></td><td>Estado del techo, la instalación eléctrica y las fallas</td><td>Con evidencia técnica: revisión de sitio y plan de mantenimiento</td><td>Puede acelerar o frenar el proyecto</td></tr>
+    <tr><td><strong>Compras / legal</strong></td><td>Contratos, garantías, seguros, papeleo</td><td>Con claridad de entregables y documentos</td><td>Formaliza las condiciones</td></tr>
+    <tr><td><strong>Dueño del inmueble (si renta)</strong></td><td>Que su edificio no se dañe y quede claro quién responde</td><td>Explicando que el permiso protege a todos</td><td>Indispensable cuando el cliente no es dueño</td></tr>
+  </table>
+
+  <div class="highlight"><strong>Calificación mínima SOLART:</strong> sin recibo + sin problema claro + sin persona que decida + sin siguiente paso con fecha = NO es una oportunidad todavía. Se queda en seguimiento de marketing hasta que muestre interés real.</div>
+</section>
+
+<!-- ============ MARCA Y REDES ============ -->
+<section class="section" id="marca"><div class="topbar"></div>
+  <div class="deck-header"><div><div class="page-label">Marca y redes</div><h1>QUÉ COMUNICAMOS Y DÓNDE</h1><p class="lead">La marca SOLART debe transmitir tres cosas: ahorro real, respaldo técnico y acompañamiento. No vendemos "paneles baratos"; ayudamos a empresas a gastar menos en luz y decidir mejor.</p></div><span class="section-kicker">Tu huella por el planeta</span></div>
+
+  <div class="card-grid">
+    <div class="photo-card g-green"><div class="caption"><h3>Casos reales</h3><p>Mostrar proyectos, techos, comparativos de antes/después, garantías y resultados. La evidencia vende más que el diseño bonito.</p></div></div>
+    <div class="photo-card g-solar"><div class="caption"><h3>Cuidado del planeta</h3><p>El impacto ambiental suma reputación, pero el argumento principal siempre es: ahorro, recuperación de la inversión y control del gasto.</p></div></div>
+  </div>
+
+  <h2>De qué hablamos (temas de contenido)</h2>
+  <div class="card-grid-3">
+    <div class="card"><div class="card-title">Ahorro y recuperación</div><div class="card-body">Recibos reales, comparativos, cuánto se ahorra al año y en cuánto tiempo se recupera lo invertido.</div></div>
+    <div class="card"><div class="card-title">Cómo funcionan los paneles</div><div class="card-body">Explicaciones simples: qué se instala, cuánta luz genera, cómo se conecta y cómo se monitorea.</div></div>
+    <div class="card"><div class="card-title">Baterías y respaldo</div><div class="card-body">Contenido educativo: qué son, para quién sirven y cuándo conviene evaluarlas.</div></div>
+    <div class="card"><div class="card-title">Formas de pago</div><div class="card-body">Comparar: seguir pagando CFE vs. invertir; contado vs. financiado; mensualidad vs. ahorro.</div></div>
+    <div class="card"><div class="card-title">Mantenimiento</div><div class="card-body">Limpieza, revisiones, monitoreo y por qué protegen la inversión.</div></div>
+    <div class="card"><div class="card-title">Casos de éxito</div><div class="card-body">Antes/después: industria, tamaño del sistema, ahorro anual y qué aprendimos.</div></div>
+    <div class="card"><div class="card-title">Educación del recibo</div><div class="card-body">Cómo leer el recibo de CFE, qué es la demanda, la tarifa y los errores comunes al cotizar.</div></div>
+    <div class="card"><div class="card-title">Confianza</div><div class="card-body">Equipo, ingeniería, visitas, seguridad, proceso claro y seguimiento después de la venta.</div></div>
+    <div class="card"><div class="card-title">Compra de energía</div><div class="card-body">Explicar en simple qué es y para qué tamaño de empresa aplica, sin confundirlo con instalar paneles.</div></div>
+  </div>
+
+  <h2>Dónde publicamos y para qué sirve cada red</h2>
+  <table>
+    <tr><th>Canal</th><th>Para qué sirve</th><th>Qué publicar</th><th>Botón / llamado</th><th>Qué medimos</th></tr>
+    <tr><td><strong>LinkedIn</strong></td><td>Confianza con directivos</td><td>Casos, números, contenido para quien decide</td><td>"Agenda tu diagnóstico"</td><td>Prospectos calificados y conversaciones</td></tr>
+    <tr><td><strong>Instagram</strong></td><td>Imagen de marca</td><td>Instalaciones, videos cortos, testimonios, proceso</td><td>"Manda tu recibo por WhatsApp"</td><td>Mensajes y clics a WhatsApp</td></tr>
+    <tr><td><strong>Facebook</strong></td><td>Alcance local y anuncios</td><td>Casos, anuncios, explicación simple del ahorro</td><td>"Cotiza tu ahorro"</td><td>Costo por prospecto y formularios</td></tr>
+    <tr><td><strong>YouTube</strong></td><td>Educación y búsqueda</td><td>Videos explicativos, recorridos, cómo leer el recibo</td><td>"Solicita tu diagnóstico"</td><td>Retención y clics a la página</td></tr>
+    <tr><td><strong>Página web</strong></td><td>Convertir visitas en prospectos</td><td>Oferta, casos, proceso, garantías, formulario, WhatsApp</td><td>"Calcula tu ahorro"</td><td>De dónde llegó y si dejó su recibo</td></tr>
+  </table>
+
+  <h2>Qué mensaje enviar según la etapa del cliente</h2>
+  <table>
+    <tr><th>Etapa</th><th>Mensaje principal</th><th>Material recomendado</th><th>Objetivo</th></tr>
+    <tr><td><strong>Recién llega</strong></td><td>"Podemos revisar si tu empresa paga luz de más."</td><td>Página web, correo inicial, mensaje corto de WhatsApp</td><td>Que responda y mande su recibo</td></tr>
+    <tr><td><strong>Ya dio sus datos</strong></td><td>"Con tu recibo calculamos tu ahorro y si tu techo sirve."</td><td>Lista de datos que faltan, video corto</td><td>Completar la información mínima</td></tr>
+    <tr><td><strong>Ya tiene propuesta</strong></td><td>"Evalúa por ahorro, inversión y recuperación, no por precio."</td><td>Propuesta en PDF, caso parecido, tabla de números</td><td>Facilitarle el análisis a quien decide</td></tr>
+    <tr><td><strong>Lo está revisando adentro</strong></td><td>"Te acompañamos a resolver dudas con tu equipo."</td><td>Preguntas frecuentes, garantías, plan de mantenimiento</td><td>Quitar trabas y llegar al sí</td></tr>
+    <tr><td><strong>Va a firmar</strong></td><td>"Cerremos documentos y calendario de arranque."</td><td>Lista de documentos, calendario de instalación</td><td>Firma y anticipo</td></tr>
+  </table>
+
+  <h2>Reglas rápidas de contenido</h2>
+  <div class="check-ok"><strong>✅ Sí usar:</strong> datos reales, recibos, fotos de proyectos, ahorro, garantías, proceso y claridad de números.</div>
+  <div class="check-stop"><strong>⛔ No usar:</strong> promesas sin validar, "paneles baratos", palabras muy técnicas sin explicar, fotos genéricas de banco de imágenes, o publicaciones sin botón/llamado a la acción.</div>
+
+  <h2>Generador de links medibles</h2>
+  <p class="lead">Un "link medible" es un link normal con etiquetas al final que nos dicen de dónde llegó el cliente (de Facebook, de un correo, de un vendedor…). Así sabemos qué canal sí funciona. Úsalo así: <strong>1)</strong> pega tu link, <strong>2)</strong> escribe el nombre de la campaña, <strong>3)</strong> presiona "Generar" y <strong>4)</strong> copia el resultado. No hay que saber nada técnico.</p>
+  <div class="utm-panel" id="solartUtmPanel">
+    <details open class="utm-row">
+      <summary><span>🌐 Página principal</span><small>Conseguir prospectos</small></summary>
+      <div class="utm-form">
+        <label>Link a compartir<input class="utm-url" value="https://solartcomunicados1.bitrix24.site/" placeholder="Pega aquí el link"></label>
+        <label>De dónde viene (source)<input class="utm-source" value="bitrix"></label>
+        <label>Tipo de canal (medium)<input class="utm-medium" value="landing"></label>
+        <label>Nombre de campaña<input class="utm-campaign" value="playbook_solart"></label>
+        <label>Detalle (opcional)<input class="utm-content" value="recurso_comercial"></label>
+        <button type="button" class="btn utm-generate">Generar link</button>
+        <textarea class="utm-output" readonly placeholder="Aquí aparecerá tu link listo para copiar"></textarea>
+        <button type="button" class="btn secondary utm-copy">Copiar link</button>
+      </div>
+    </details>
+    <details class="utm-row">
+      <summary><span>💼 LinkedIn</span><small>Directivos</small></summary>
+      <div class="utm-form">
+        <label>Link a compartir<input class="utm-url" value="https://www.linkedin.com/company/solartmx/" placeholder="Pega el link de LinkedIn o de la página"></label>
+        <label>De dónde viene (source)<input class="utm-source" value="linkedin"></label>
+        <label>Tipo de canal (medium)<input class="utm-medium" value="social_organic"></label>
+        <label>Nombre de campaña<input class="utm-campaign" value="solart_b2b_energia"></label>
+        <label>Detalle (opcional)<input class="utm-content" value="post_decisores"></label>
+        <button type="button" class="btn utm-generate">Generar link</button>
+        <textarea class="utm-output" readonly></textarea>
+        <button type="button" class="btn secondary utm-copy">Copiar link</button>
+      </div>
+    </details>
+    <details class="utm-row">
+      <summary><span>📸 Instagram</span><small>Marca + WhatsApp</small></summary>
+      <div class="utm-form">
+        <label>Link a compartir<input class="utm-url" value="https://www.instagram.com/solart.energia" placeholder="Pega el link de Instagram o de la página"></label>
+        <label>De dónde viene (source)<input class="utm-source" value="instagram"></label>
+        <label>Tipo de canal (medium)<input class="utm-medium" value="social_organic"></label>
+        <label>Nombre de campaña<input class="utm-campaign" value="solart_contenido_rrss"></label>
+        <label>Detalle (opcional)<input class="utm-content" value="bio_reel_story"></label>
+        <button type="button" class="btn utm-generate">Generar link</button>
+        <textarea class="utm-output" readonly></textarea>
+        <button type="button" class="btn secondary utm-copy">Copiar link</button>
+      </div>
+    </details>
+    <details class="utm-row">
+      <summary><span>📘 Facebook</span><small>Alcance y anuncios</small></summary>
+      <div class="utm-form">
+        <label>Link a compartir<input class="utm-url" value="https://www.facebook.com/Solartmx" placeholder="Pega el link de Facebook o de la página"></label>
+        <label>De dónde viene (source)<input class="utm-source" value="facebook"></label>
+        <label>Tipo de canal (medium)<input class="utm-medium" value="social_organic"></label>
+        <label>Nombre de campaña<input class="utm-campaign" value="solart_remarketing"></label>
+        <label>Detalle (opcional)<input class="utm-content" value="post_caso_ahorro"></label>
+        <button type="button" class="btn utm-generate">Generar link</button>
+        <textarea class="utm-output" readonly></textarea>
+        <button type="button" class="btn secondary utm-copy">Copiar link</button>
+      </div>
+    </details>
+    <details class="utm-row">
+      <summary><span>▶️ YouTube</span><small>Educación</small></summary>
+      <div class="utm-form">
+        <label>Link a compartir<input class="utm-url" value="https://www.youtube.com/@Solart_energia_integral" placeholder="Pega el link de YouTube o de la página"></label>
+        <label>De dónde viene (source)<input class="utm-source" value="youtube"></label>
+        <label>Tipo de canal (medium)<input class="utm-medium" value="video"></label>
+        <label>Nombre de campaña<input class="utm-campaign" value="solart_educacion_energetica"></label>
+        <label>Detalle (opcional)<input class="utm-content" value="video_descripcion"></label>
+        <button type="button" class="btn utm-generate">Generar link</button>
+        <textarea class="utm-output" readonly></textarea>
+        <button type="button" class="btn secondary utm-copy">Copiar link</button>
+      </div>
+    </details>
+    <details class="utm-row">
+      <summary><span>💬 WhatsApp</span><small>Conversación de ventas</small></summary>
+      <div class="utm-form">
+        <label>Link a compartir<input class="utm-url" value="https://wa.me/525525024722" placeholder="Pega el link de WhatsApp o de la página"></label>
+        <label>De dónde viene (source)<input class="utm-source" value="whatsapp"></label>
+        <label>Tipo de canal (medium)<input class="utm-medium" value="direct_message"></label>
+        <label>Nombre de campaña<input class="utm-campaign" value="solart_ventas"></label>
+        <label>Detalle (opcional)<input class="utm-content" value="asesor_compartido"></label>
+        <button type="button" class="btn utm-generate">Generar link</button>
+        <textarea class="utm-output" readonly></textarea>
+        <button type="button" class="btn secondary utm-copy">Copiar link</button>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ============ WEB Y GOOGLE ============ -->
+<section class="section" id="webseo"><div class="topbar"></div>
+  <div class="page-label">Crecimiento digital</div><h1>PÁGINA WEB Y GOOGLE</h1>
+  <p class="lead">La página web no es un adorno: es un vendedor que trabaja 24 horas. Debe educar, dar confianza, capturar datos del prospecto y mandarlos directo a Bitrix.</p>
+  <div class="card-grid-3">
+    <div class="card"><div class="card-icon">🌐</div><div class="card-title">Página web</div><div class="card-body">Una página por servicio, formularios conectados a Bitrix, botón a WhatsApp, casos, garantías y preguntas frecuentes.</div></div>
+    <div class="card"><div class="card-icon">🔎</div><div class="card-title">Aparecer en Google gratis (SEO)</div><div class="card-body">Que nos encuentren cuando buscan "paneles solares para empresas", "ahorro en recibo de luz" o "energía solar para negocio".</div></div>
+    <div class="card"><div class="card-icon">💳</div><div class="card-title">Anuncios en Google (SEM)</div><div class="card-body">Pagar anuncios para aparecer primero cuando alguien ya está buscando cotizar. Es la búsqueda con más intención de compra.</div></div>
+    <div class="card"><div class="card-icon">🤖</div><div class="card-title">Aparecer en respuestas de IA (GEO)</div><div class="card-body">Cuando alguien le pregunta a ChatGPT o a Google IA sobre paneles, queremos que nos mencione. Se logra con contenido claro: preguntas y respuestas, comparativos y datos bien organizados.</div></div>
+    <div class="card"><div class="card-icon">📲</div><div class="card-title">WhatsApp</div><div class="card-body">El camino más rápido: pedir el recibo, agendar el estudio, resolver dudas y pasar a propuesta.</div></div>
+    <div class="card"><div class="card-icon">📊</div><div class="card-title">Medición</div><div class="card-body">Cada prospecto debe traer su origen: de qué red vino, de qué anuncio, y si llegó hasta mandar su recibo o recibir propuesta.</div></div>
+  </div>
+  <h2>Cómo debe estar armada la página</h2>
+  <table>
+    <tr><th>Página</th><th>Para qué sirve</th><th>Botón principal</th><th>Qué medimos</th></tr>
+    <tr><td>Inicio</td><td>Dar confianza y prometer ahorro</td><td>Estudio gratis de tu recibo</td><td>Clics al formulario / WhatsApp</td></tr>
+    <tr><td>Empresas</td><td>Atraer negocios que gastan mucho</td><td>Calcular ahorro</td><td>Prospectos que mandan recibo</td></tr>
+    <tr><td>Casos de éxito</td><td>Demostrar resultados</td><td>Ver un proyecto parecido al tuyo</td><td>Tiempo de lectura</td></tr>
+    <tr><td>Garantías y mantenimiento</td><td>Quitar miedo</td><td>Hablar con un asesor</td><td>Conversaciones iniciadas</td></tr>
+    <tr><td>Blog / recursos</td><td>Aparecer en Google y en la IA</td><td>Descargar guía</td><td>Visitas desde búsquedas</td></tr>
+  </table>
+</section>
+
+<!-- ============ RECURSOS (LISTA DESPLEGABLE) ============ -->
+<section class="section" id="recursos"><div class="topbar"></div>
+  <div class="deck-header"><div><div class="page-label">Caja de herramientas</div><h1>RECURSOS PARA VENDER</h1><p class="lead">Todo lo que el equipo puede compartir con un prospecto está aquí, en una sola lista. Toca cualquier fila para ver el detalle, los links y cuándo usarlo.</p></div><span class="section-kicker">Toca una fila para abrirla</span></div>
+
+  <div class="highlight"><strong>Regla de uso:</strong> nunca envíes un recurso "solo porque sí". Cada envío termina con una pregunta o petición concreta. Ejemplo: "Te comparto este video para darte contexto. ¿Me mandas tu recibo de CFE para revisar si aplica en tu operación?" Y siempre se registra en Bitrix: qué se envió, cuándo y qué sigue.</div>
+
+  <div class="res-list">
+
+    <details class="res-item">
+      <summary>
+        <div class="res-icon">🌐</div>
+        <div><div class="res-name">Página "Calcula tu ahorro"</div><div class="res-what">La página principal para prospectos: explica la solución, muestra casos y lleva a WhatsApp.</div><div class="res-open-hint"><span class="abre">▾ Ver detalle</span><span class="cierra">▴ Cerrar</span></div></div>
+        <span class="res-when">Primer contacto</span>
+      </summary>
+      <div class="res-body">
+        <p><strong>Cuándo usarla:</strong> al inicio de la conversación, para presentar a SOLART sin mandar una cotización prematura. También como destino de anuncios.</p>
+        <ul>
+          <li>Explica qué hacemos en lenguaje simple.</li>
+          <li>Muestra casos reales y garantías.</li>
+          <li>Su botón principal pide el recibo o abre WhatsApp.</li>
+        </ul>
+        <div class="res-actions">
+          <a class="res-btn" href="https://solartcomunicados1.bitrix24.site/" target="_blank" rel="noopener">Abrir página</a>
+        </div>
+      </div>
+    </details>
+
+    <details class="res-item">
+      <summary>
+        <div class="res-icon">📄</div>
+        <div><div class="res-name">Resumen ejecutivo (one pager)</div><div class="res-what">Una sola hoja que el contacto puede reenviar a su jefe: problema, solución, números y siguiente paso.</div><div class="res-open-hint"><span class="abre">▾ Ver detalle</span><span class="cierra">▴ Cerrar</span></div></div>
+        <span class="res-when">Antes de propuesta</span>
+      </summary>
+      <div class="res-body">
+        <p><strong>Para qué sirve:</strong> que la persona con la que hablas pueda "vender" la idea adentro de su empresa (al dueño, a finanzas, a operaciones) sin perder el mensaje.</p>
+        <ul>
+          <li><strong>Estructura:</strong> 1) el problema del gasto de luz → 2) el diagnóstico → 3) la solución SOLART → 4) los números → 5) el siguiente paso.</li>
+          <li><strong>Antes de enviarlo, verifica:</strong> ✅ que los ejemplos sean de su industria · ✅ que sepas si el inmueble es propio o rentado · ✅ que vaya con un llamado a la acción (recibo, llamada o visita).</li>
+          <li>Marketing arma la pieza; ventas la personaliza; ingeniería y Erik validan los datos delicados.</li>
+        </ul>
+        <div class="res-actions">
+          <a class="res-btn" href="https://playbooksolart.bitrix24.site/emptypage_zqet/" target="_blank" rel="noopener">Abrir one pager</a>
+          <button class="res-btn secondary" onclick="show('financiero')">Ver números para decidir</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="res-item">
+      <summary>
+        <div class="res-icon">🎬</div>
+        <div><div class="res-name">Videos de YouTube (7)</div><div class="res-what">Videos oficiales para compartir según el momento: presentar, educar, dar confianza o reactivar.</div><div class="res-open-hint"><span class="abre">▾ Ver los 7 videos</span><span class="cierra">▴ Cerrar</span></div></div>
+        <span class="res-when">Todas las etapas</span>
+      </summary>
+      <div class="res-body">
+        <p><strong>Cómo usarlos:</strong> elige el video según el momento, envíalo con una pregunta concreta, y registra en Bitrix "Video enviado" con fecha y siguiente paso.</p>
+        <div class="res-link-list">
+          <div class="res-link"><div><b>1 · Presentación de SOLART</b><br><span>Para el primer contacto: quiénes somos, antes de pedir el recibo.</span></div><a href="https://youtu.be/MYfUTGhH8rY" target="_blank" rel="noopener">Ver video →</a></div>
+          <div class="res-link"><div><b>2 · Cómo funciona la energía solar</b><br><span>Explica el ahorro y por qué el recibo de CFE es el punto de partida.</span></div><a href="https://youtu.be/vhtSq4iKqs4" target="_blank" rel="noopener">Ver video →</a></div>
+          <div class="res-link"><div><b>3 · Nuestro proceso de trabajo</b><br><span>Refuerza el diagnóstico y el acompañamiento; útil para conseguir la reunión.</span></div><a href="https://youtu.be/uri-j8drm_c" target="_blank" rel="noopener">Ver video →</a></div>
+          <div class="res-link"><div><b>4 · Para quien toma la decisión</b><br><span>Enfocado en ahorro, riesgo y continuidad; ideal para dirección o finanzas.</span></div><a href="https://youtu.be/vKfbXq_NGsc" target="_blank" rel="noopener">Ver video →</a></div>
+          <div class="res-link"><div><b>5 · Contenido educativo</b><br><span>Para seguimiento cuando el prospecto aún no manda su recibo.</span></div><a href="https://youtu.be/lhzG2GhoW2E" target="_blank" rel="noopener">Ver video →</a></div>
+          <div class="res-link"><div><b>6 · Respaldo y experiencia</b><br><span>Marca la diferencia frente a cotizaciones genéricas de "paneles baratos".</span></div><a href="https://youtu.be/ADgXZbk_Zxc" target="_blank" rel="noopener">Ver video →</a></div>
+          <div class="res-link"><div><b>7 · Cierre y seguimiento</b><br><span>Para reactivar prospectos dormidos o enviar después de la propuesta.</span></div><a href="https://youtu.be/fc-TLhYydII" target="_blank" rel="noopener">Ver video →</a></div>
+        </div>
+        <div class="res-actions">
+          <a class="res-btn" href="https://www.youtube.com/@Solart_energia_integral" target="_blank" rel="noopener">Abrir canal completo</a>
+        </div>
+      </div>
+    </details>
+
+    <details class="res-item">
+      <summary>
+        <div class="res-icon">✉️</div>
+        <div><div class="res-name">Correos automáticos (5 correos)</div><div class="res-what">Correos que Bitrix envía solo, uno tras otro, a los prospectos nuevos, para educarlos y abrir conversación.</div><div class="res-open-hint"><span class="abre">▾ Ver la secuencia</span><span class="cierra">▴ Cerrar</span></div></div>
+        <span class="res-when">Etapa: Prospectos</span>
+      </summary>
+      <div class="res-body">
+        <p><strong>Qué es:</strong> cuando entra un prospecto nuevo, Bitrix le manda estos correos en orden, uno tras otro. Ventas no tiene que hacer nada, solo estar atento a las respuestas.</p>
+        <div class="res-link-list">
+          <div class="res-link"><div><b>Correo 1 · Soluciones de energía</b><br><span>Presenta a SOLART como aliado para pagar menos luz. Botón: "Conocer SOLART".</span></div></div>
+          <div class="res-link"><div><b>Correo 2 · ¿Cuánto te cuesta la luz?</b><br><span>Mueve la plática del producto al dinero: cuánto pesa la luz en su negocio. Botón: "Hablar con asesor".</span></div></div>
+          <div class="res-link"><div><b>Correo 3 · Cómo trabajamos</b><br><span>Explica que no cotizamos al aire: primero diagnóstico, luego propuesta. Botón: "Asesor SOLART".</span></div></div>
+          <div class="res-link"><div><b>Correo 4 · ¿Compras bien tu energía?</b><br><span>Presenta la compra de energía como opción para empresas grandes. Botón: "Evaluar consumo".</span></div></div>
+          <div class="res-link"><div><b>Correo 5 · Baterías y respaldo</b><br><span>Detecta empresas que no pueden quedarse sin luz. Botón: "Hablar con asesor".</span></div></div>
+        </div>
+        <div class="check-warn"><strong>⚠️ Nota:</strong> el diseño completo de cada correo está guardado dentro de Bitrix como plantilla.</div>
+      </div>
+    </details>
+
+    <details class="res-item">
+      <summary>
+        <div class="res-icon">✅</div>
+        <div><div class="res-name">Lista de captura en Bitrix</div><div class="res-what">Los datos mínimos que toda oportunidad debe tener. Si falta uno, no está bien capturada.</div><div class="res-open-hint"><span class="abre">▾ Ver la lista</span><span class="cierra">▴ Cerrar</span></div></div>
+        <span class="res-when">Siempre</span>
+      </summary>
+      <div class="res-body">
+        <p><strong>Antes de guardar una oportunidad, verifica que tenga:</strong></p>
+        <ul>
+          <li>✅ De dónde llegó (canal y campaña)</li>
+          <li>✅ Vendedor responsable</li>
+          <li>✅ Empresa y persona de contacto</li>
+          <li>✅ Recibo de luz (o fecha compromiso para conseguirlo)</li>
+          <li>✅ Etapa correcta</li>
+          <li>✅ Siguiente paso con fecha y responsable</li>
+        </ul>
+        <div class="res-actions">
+          <button class="res-btn secondary" onclick="show('pipeline')">Ver etapas en Bitrix</button>
+          <button class="res-btn secondary" onclick="show('reglas')">Ver reglas de oro</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="res-item">
+      <summary>
+        <div class="res-icon">💬</div>
+        <div><div class="res-name">Guiones y respuestas a dudas</div><div class="res-what">Qué decir en el primer contacto, al pedir el recibo, al presentar la propuesta y ante objeciones.</div><div class="res-open-hint"><span class="abre">▾ Ver detalle</span><span class="cierra">▴ Cerrar</span></div></div>
+        <span class="res-when">Al hablar con clientes</span>
+      </summary>
+      <div class="res-body">
+        <p><strong>Para qué sirve:</strong> que todo el equipo diga lo mismo, con las mismas palabras probadas, sin improvisar promesas.</p>
+        <div class="res-actions">
+          <button class="res-btn" onclick="show('scripts')">Abrir guiones</button>
+          <button class="res-btn secondary" onclick="show('objeciones')">Abrir respuestas a dudas</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="res-item">
+      <summary>
+        <div class="res-icon">🎨</div>
+        <div><div class="res-name">Banco de contenidos para redes</div><div class="res-what">Piezas listas para LinkedIn, Instagram, Facebook y YouTube, organizadas por tema.</div><div class="res-open-hint"><span class="abre">▾ Ver detalle</span><span class="cierra">▴ Cerrar</span></div></div>
+        <span class="res-when">Marketing</span>
+      </summary>
+      <div class="res-body">
+        <p><strong>Temas disponibles:</strong> ahorro y recuperación, casos de éxito, garantías, proceso, educación del recibo y confianza en el equipo.</p>
+        <div class="res-actions">
+          <button class="res-btn secondary" onclick="show('marca')">Ver plan de marca y redes</button>
+          <button class="res-btn secondary" onclick="show('webseo')">Ver página web y Google</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="res-item">
+      <summary>
+        <div class="res-icon">📊</div>
+        <div><div class="res-name">Tablero para dirección</div><div class="res-what">Vista rápida para Víctor y Arturo: prospectos, recibos, propuestas, firmas y de dónde vino cada venta.</div><div class="res-open-hint"><span class="abre">▾ Ver detalle</span><span class="cierra">▴ Cerrar</span></div></div>
+        <span class="res-when">Dirección</span>
+      </summary>
+      <div class="res-body">
+        <p><strong>Qué muestra:</strong> prospectos nuevos, recibos conseguidos, propuestas generadas y validadas, propuestas con revisión de números, "sí" verbales, firmas, anticipos y el origen de cada venta ganada.</p>
+        <div class="res-actions">
+          <a class="res-btn" href="https://solartdirectivo.bitrix24.site/" target="_blank" rel="noopener">Abrir tablero</a>
+          <button class="res-btn secondary" onclick="show('kpis')">Ver cómo medimos</button>
+        </div>
+      </div>
+    </details>
+
+  </div>
+</section>
+
+<!-- ============ ETAPAS EN BITRIX ============ -->
+<section class="section" id="pipeline"><div class="topbar"></div>
+  <div class="page-label">CRM</div><h1>ETAPAS EN BITRIX</h1>
+  <p class="lead">Cada oportunidad avanza solo cuando hay evidencia, no cuando "se siente que va bien". Cada etapa tiene un candado: si falta el requisito, la tarjeta NO se mueve.</p>
+
+  <h2>Embudo 1 · Prospectos</h2>
+  <div class="pipeline">
+    <div class="pipeline-stage"><div class="pipeline-pct">01</div><div class="pipeline-name">Confirmar datos</div><div class="pipeline-action">Nombre, empresa, teléfono y de dónde llegó.</div><div class="pipeline-lock">🔒 Sin teléfono no avanza</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">02</div><div class="pipeline-name">Lograr contacto</div><div class="pipeline-action">Que la persona nos conteste por primera vez.</div><div class="pipeline-lock">🔒 Sin respuesta no avanza</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">03</div><div class="pipeline-name">Datos confirmados</div><div class="pipeline-action">Todo verificado; listo para asignar vendedor.</div><div class="pipeline-lock">🔒 Datos incompletos no avanza</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">04</div><div class="pipeline-name">Primera plática</div><div class="pipeline-action">Entender su problema con la luz.</div><div class="pipeline-lock">🔒 Sin dolor claro no avanza</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">05</div><div class="pipeline-name">Presentar SOLART</div><div class="pipeline-action">Quiénes somos y cómo trabajamos.</div><div class="pipeline-lock">🔒 Sin interés no avanza</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">06</div><div class="pipeline-name">Recibo de luz</div><div class="pipeline-action">Conseguir el documento clave.</div><div class="pipeline-lock">🔒 Sin recibo no hay propuesta</div></div>
+  </div>
+
+  <h2>Embudo 2 · Negociación</h2>
+  <div class="pipeline">
+    <div class="pipeline-stage"><div class="pipeline-pct">10%</div><div class="pipeline-name">Armar propuesta</div><div class="pipeline-action">Se genera en Sunwise con el recibo.</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">25%</div><div class="pipeline-name">Revisión de ingeniería</div><div class="pipeline-action">Confirmar que sí se puede hacer.</div><div class="pipeline-lock">🔒 Sin visto bueno no se presenta</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">40%</div><div class="pipeline-name">Propuesta inicial</div><div class="pipeline-action">Primer escenario listo.</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">55%</div><div class="pipeline-name">Presentada</div><div class="pipeline-action">En reunión o envío con seguimiento.</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">65%</div><div class="pipeline-name">Visita al sitio</div><div class="pipeline-action">Se revisó el techo/lugar en persona.</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">75%</div><div class="pipeline-name">Propuesta final</div><div class="pipeline-action">Ya incluye lo que se vio en la visita.</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">85%</div><div class="pipeline-name">El cliente la revisa</div><div class="pipeline-action">Evaluación interna del cliente.</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">90%</div><div class="pipeline-name">Sí de palabra</div><div class="pipeline-action">El cliente dice que quiere avanzar.</div></div>
+  </div>
+
+  <h2>Embudo 3 · Cierre</h2>
+  <div class="pipeline">
+    <div class="pipeline-stage"><div class="pipeline-pct">91%</div><div class="pipeline-name">Confirmar el sí</div><div class="pipeline-action">Formalizar el avance.</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">94%</div><div class="pipeline-name">Documentos</div><div class="pipeline-action">Contrato en preparación.</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">97%</div><div class="pipeline-name">Firma</div><div class="pipeline-action">Contrato firmado.</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">99%</div><div class="pipeline-name">Esperando anticipo</div><div class="pipeline-action">Seguimiento del pago.</div></div>
+    <div class="pipeline-stage"><div class="pipeline-pct">100%</div><div class="pipeline-name">Anticipo pagado</div><div class="pipeline-action">Se entrega a operaciones. 🎉</div></div>
+  </div>
+
+  <div class="check-stop"><strong>⛔ Candado general:</strong> ninguna tarjeta puede estar sin "siguiente paso + fecha + responsable". Si perdemos la oportunidad, es obligatorio anotar la razón (precio, tiempos, competencia, técnico, no decidió, no contestó).</div>
+</section>
+
+<!-- ============ CÓMO SE ARMA LA PROPUESTA ============ -->
+<section class="section" id="sunwise"><div class="topbar"></div>
+  <div class="page-label">Propuesta</div><h1>CÓMO SE ARMA LA PROPUESTA</h1>
+  <p class="lead">La propuesta no es una cotización suelta: es un pequeño plan de negocio. Se arma con una herramienta llamada Sunwise, pero pasa por 3 filtros antes de llegar al cliente.</p>
+  <div class="timeline">
+    <div class="step"><div class="step-num">1</div><div class="step-card"><div class="step-title">Tenemos el recibo</div><div class="step-desc">Sin saber cuánto consume el cliente, no hay propuesta seria. Es el candado número uno.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-card"><div class="step-title">Se arma en Sunwise</div><div class="step-desc">La herramienta calcula: tamaño del sistema, cuánta luz genera, cuánto ahorra y cuánto cuesta.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-card"><div class="step-title">Filtro 1: ingeniería</div><div class="step-desc">Javier o Gerardo revisan que los números técnicos tengan sentido y que sí se pueda instalar.</div></div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-card"><div class="step-title">Filtro 2: números</div><div class="step-desc">Erik revisa la parte de dinero: inversión, ahorro, impuestos y tiempo de recuperación.</div></div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-card"><div class="step-title">Se presenta al cliente</div><div class="step-desc">Se cuenta como historia: su problema, la solución, el ahorro, el riesgo y qué sigue.</div></div></div>
+    <div class="step"><div class="step-num">6</div><div class="step-card"><div class="step-title">Filtro 3: la visita</div><div class="step-desc">Después de ver el sitio en persona, la propuesta se corrige si hace falta y se vuelve formal.</div></div></div>
+  </div>
+  <div class="photo-card g-solar"><div class="caption"><h3>El monitoreo da confianza</h3><p>Cuando la propuesta lo incluye, mostrar que el cliente podrá ver en su celular cuánta luz genera su sistema en tiempo real.</p></div></div>
+</section>
+
+<!-- ============ NÚMEROS PARA DECIDIR ============ -->
+<section class="section" id="financiero"><div class="topbar"></div>
+  <div class="page-label">Números</div><h1>NÚMEROS PARA DECIDIR</h1>
+  <p class="lead">El trabajo de Erik es traducir la propuesta técnica a lenguaje de dinero, para que el dueño o finanzas del cliente pueda decidir sin ser experto en energía.</p>
+  <div class="card-grid-3">
+    <div class="card"><div class="card-title">Lo que paga hoy</div><div class="card-body">Cuánto gasta en luz al mes, si varía por temporada y qué tarifa tiene.</div></div>
+    <div class="card"><div class="card-title">Lo que ahorraría al año</div><div class="card-body">El ahorro estimado y de dónde sale ese cálculo (sin inflar números).</div></div>
+    <div class="card"><div class="card-title">Lo que cuesta el proyecto</div><div class="card-body">Sistema, IVA, instalación, trámites y qué incluye exactamente.</div></div>
+    <div class="card"><div class="card-title">Beneficio en impuestos</div><div class="card-body">El proyecto puede deducirse. Se explica como orientación y siempre se sugiere validarlo con el contador del cliente.</div></div>
+    <div class="card"><div class="card-title">Tiempo de recuperación</div><div class="card-body">¿En cuántos años lo pagado regresa vía ahorro? Se muestra con y sin beneficio de impuestos.</div></div>
+    <div class="card"><div class="card-title">Riesgos</div><div class="card-body">Vigencias, permisos, conexión a la red, crédito y qué podría cambiar el resultado.</div></div>
+  </div>
+  <h2>Lista de verificación antes de presentar números</h2>
+  <table>
+    <tr><th>Pregunta</th><th>Quién responde</th><th>Debe quedar claro</th></tr>
+    <tr><td>¿Cuánto paga hoy el cliente?</td><td>Vendedor</td><td>Recibo y consumo base</td></tr>
+    <tr><td>¿Cuánto ahorra al año?</td><td>Vendedor / Erik</td><td>Ahorro estimado y sus supuestos</td></tr>
+    <tr><td>¿Cuál es el costo real?</td><td>Erik</td><td>Inversión, IVA y beneficio en impuestos</td></tr>
+    <tr><td>¿En cuánto lo recupera?</td><td>Erik</td><td>Un número claro y defendible</td></tr>
+    <tr><td>¿Qué sigue para decidir?</td><td>Arturo / Vendedor</td><td>Fecha, responsable y quién más participa</td></tr>
+  </table>
+  <div class="check-stop"><strong>⛔ Candado:</strong> si alguna de estas 5 preguntas no tiene respuesta, la reunión de números NO se agenda todavía.</div>
+</section>
+
+<!-- ============ GUIONES ============ -->
+<section class="section" id="scripts"><div class="topbar"></div>
+  <div class="page-label">Ejecución</div><h1>QUÉ DECIR (GUIONES)</h1>
+  <p class="lead">Frases probadas para que todo el equipo comunique lo mismo. Se pueden adaptar al estilo de cada quien, pero el mensaje no cambia.</p>
+  <h2>Primer contacto</h2>
+  <div class="script-block"><div class="script-role">Vendedor</div><div class="script-text">"Hola [Nombre], soy [Nombre] de SOLART. Ayudamos a empresas a pagar menos luz con energía solar. Para saber si tiene sentido en tu caso, el primer paso es revisar tu recibo de luz. ¿Me lo puedes compartir para preparar un análisis inicial?"</div></div>
+  <h2>Al pedir el recibo</h2>
+  <div class="script-block"><div class="script-role note">Clave</div><div class="script-text">El recibo no es un trámite: es EL dato que nos permite calcular consumo, ahorro, inversión y recuperación. Sin recibo, cualquier propuesta sería inventada — y nosotros no inventamos.</div></div>
+  <h2>Al presentar la propuesta</h2>
+  <div class="script-block"><div class="script-role">Vendedor</div><div class="script-text">"Te lo voy a presentar como caso de negocio: primero cuánto pagan hoy, después qué sistema proponemos, cuánto pueden ahorrar, en cuánto tiempo lo recuperan y cuáles son los siguientes pasos para hacerlo realidad."</div></div>
+</section>
+
+<!-- ============ OBJECIONES ============ -->
+<section class="section" id="objeciones"><div class="topbar"></div>
+  <div class="page-label">Venta consultiva</div><h1>RESPUESTAS A DUDAS FRECUENTES</h1>
+  <p class="lead">Cuando el cliente pone un "pero", no se discute: se le responde con números claros y con nuestro proceso.</p>
+  <div class="objection"><div class="objection-q">"Está caro."</div><div class="objection-a">"Te entiendo. Por eso no lo veamos como precio de paneles, sino como inversión contra el gasto de luz que ya tienes. Revisemos juntos el ahorro anual, el beneficio en impuestos y en cuánto tiempo se recupera, para ver si los números convienen."</div></div>
+  <div class="objection"><div class="objection-q">"Lo tengo que revisar con mi socio / con finanzas."</div><div class="objection-a">"Perfecto. Para facilitar esa plática, armemos un resumen de una hoja con inversión, ahorro, recuperación, riesgos y siguientes pasos. ¿Quién más debería estar en esa conversación?"</div></div>
+  <div class="objection"><div class="objection-q">"Tengo otra cotización más barata."</div><div class="objection-a">"Tiene sentido comparar. Lo importante es comparar lo mismo: ¿es el mismo tamaño de sistema? ¿Incluye garantías, instalación, monitoreo, mantenimiento y trámites? ¿Con qué datos calcularon la generación? Revisémoslo punto por punto."</div></div>
+  <div class="objection"><div class="objection-q">"No sé si mi techo sirve."</div><div class="objection-a">"Justo para eso está la revisión técnica. Primero vemos tu recibo y armamos una propuesta inicial; después nuestro ingeniero visita tu sitio y confirma las condiciones reales antes de comprometer nada."</div></div>
+</section>
+
+<!-- ============ CÓMO MEDIMOS ============ -->
+<section class="section" id="kpis"><div class="topbar"></div>
+  <div class="page-label">Control</div><h1>CÓMO MEDIMOS</h1>
+  <p class="lead">Medimos todo el camino, no solo cuántos prospectos llegan. Cada número tiene un dueño y una frecuencia de revisión.</p>
+  <div class="info-box">
+    <div class="kpi-row"><div class="kpi-name">Prospectos nuevos</div><div class="kpi-target">Cada semana</div><div class="kpi-freq">Marketing</div></div>
+    <div class="kpi-row"><div class="kpi-name">% de prospectos con datos completos</div><div class="kpi-target">70% o más</div><div class="kpi-freq">Quien recibe prospectos</div></div>
+    <div class="kpi-row"><div class="kpi-name">% de contactos que mandan su recibo</div><div class="kpi-target">45% o más</div><div class="kpi-freq">Ventas</div></div>
+    <div class="kpi-row"><div class="kpi-name">Tiempo entre que llega y le hablamos</div><div class="kpi-target">Menos de 2 hrs</div><div class="kpi-freq">CRM</div></div>
+    <div class="kpi-row"><div class="kpi-name">Propuestas generadas</div><div class="kpi-target">Cada semana</div><div class="kpi-freq">Ventas</div></div>
+    <div class="kpi-row"><div class="kpi-name">Propuestas revisadas por ingeniería</div><div class="kpi-target">100%</div><div class="kpi-freq">Ingeniería</div></div>
+    <div class="kpi-row"><div class="kpi-name">Propuestas con revisión de números</div><div class="kpi-target">Casos clave</div><div class="kpi-freq">Erik</div></div>
+    <div class="kpi-row"><div class="kpi-name">De propuesta a "sí" de palabra</div><div class="kpi-target">Cada mes</div><div class="kpi-freq">Arturo</div></div>
+    <div class="kpi-row"><div class="kpi-name">Origen de cada venta ganada</div><div class="kpi-target">100% registrado</div><div class="kpi-freq">Marketing</div></div>
+  </div>
+</section>
+
+<!-- ============ REGLAS DE ORO ============ -->
+<section class="section" id="reglas"><div class="topbar"></div>
+  <div class="page-label">Gobierno comercial</div><h1>REGLAS DE ORO</h1>
+  <p class="lead">Seis reglas simples. Cada una es un candado que evita un error común.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-title">1. Sin siguiente paso, no hay oportunidad</div><div class="card-body">Toda tarjeta en Bitrix debe tener: qué sigue, para cuándo y quién es responsable. Sin eso, no es una oportunidad, es una duda.</div></div>
+    <div class="card"><div class="card-title">2. Sin recibo, no hay propuesta</div><div class="card-body">El recibo de luz es el dato mínimo para calcular ahorro. Sin él, cualquier número sería inventado.</div></div>
+    <div class="card"><div class="card-title">3. Sin ingeniería, no hay promesa técnica</div><div class="card-body">Nadie promete que "sí se puede", cuánto genera o cuándo se instala, sin visto bueno técnico.</div></div>
+    <div class="card"><div class="card-title">4. Sin Erik, no hay números finos</div><div class="card-body">En proyectos importantes, la reunión con finanzas del cliente se hace con el caso de dinero ya listo y revisado.</div></div>
+    <div class="card"><div class="card-title">5. Sin origen, marketing no aprende</div><div class="card-body">Todo prospecto debe traer de dónde llegó (red, anuncio, campaña). Así sabemos en qué invertir.</div></div>
+    <div class="card"><div class="card-title">6. Sin razón de pérdida, no hay aprendizaje</div><div class="card-body">Si perdemos, anotamos por qué: precio, tiempos, competencia, técnico, no decidió o no contestó.</div></div>
+  </div>
+  <div class="photo-card g-green"><div class="caption"><h3>Trabajar con método</h3><p>Este playbook existe para que ventas, CRM, marketing, ingeniería y finanzas funcionen como un solo equipo, sin depender de la memoria de nadie.</p></div></div>
+  <div class="footer-slide"><div><h2>¡ES HORA DE ACTUAR Y UNIRNOS A LA REVOLUCIÓN SOLAR!</h2><p>hola@solart.mx · www.solart.mx</p></div></div>
+</section>
+
+</main>
+</div>
+<button class="print-btn" id="solartPrintBtn" type="button" aria-label="Imprimir o guardar el playbook en PDF">Imprimir / PDF</button>
+
+<script>
+function show(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  const target=document.getElementById(id);
+  if(target) target.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const current=[...document.querySelectorAll('.nav-item')].find(n=>(n.getAttribute('onclick')||'').includes("'"+id+"'"));
+  if(current) current.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+
+<script>
+(function(){
+  function solartPrintPlaybook(){
+    try {
+      window.focus();
+      setTimeout(function(){ window.print(); }, 150);
+    } catch(e) {
+      alert('Para guardar en PDF: Archivo > Imprimir > Guardar como PDF.');
+    }
+  }
+  function bindPrint(){
+    var btn = document.getElementById('solartPrintBtn');
+    if(btn && !btn.dataset.bound){
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', solartPrintPlaybook);
+    }
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', bindPrint);
+  } else {
+    bindPrint();
+  }
+})();
+</script>
+
+<script>
+(function(){
+  var previousStates = [];
+  function prepareSolartPrint(){
+    previousStates = [];
+    /* abrir todos los desplegables para que salgan en el PDF */
+    document.querySelectorAll('details').forEach(function(d){
+      previousStates.push([d, d.open]);
+      d.open = true;
+    });
+    document.querySelectorAll('.section').forEach(function(section){
+      section.style.setProperty('display','block','important');
+      section.style.setProperty('visibility','visible','important');
+      section.style.setProperty('opacity','1','important');
+    });
+  }
+  function restoreSolartPrint(){
+    previousStates.forEach(function(pair){ pair[0].open = pair[1]; });
+    previousStates = [];
+    document.querySelectorAll('.section').forEach(function(section){
+      section.removeAttribute('style');
+    });
+  }
+  window.addEventListener('beforeprint', prepareSolartPrint);
+  window.addEventListener('afterprint', restoreSolartPrint);
+})();
+</script>
+
+<script>
+(function(){
+  function buildUtm(form){
+    var urlInput=form.querySelector('.utm-url');
+    var output=form.querySelector('.utm-output');
+    var raw=(urlInput.value||'').trim();
+    if(!raw){ output.value='Paso 1: pega primero un link arriba.'; return; }
+    try{
+      var url=new URL(raw, window.location.href);
+      var fields=[['utm_source','.utm-source'],['utm_medium','.utm-medium'],['utm_campaign','.utm-campaign'],['utm_content','.utm-content']];
+      fields.forEach(function(pair){
+        var el=form.querySelector(pair[1]);
+        var val=el ? (el.value||'').trim() : '';
+        if(val) url.searchParams.set(pair[0], val);
+      });
+      output.value=url.toString();
+    }catch(e){ output.value='Ese link no es válido. Revisa que empiece con https://'; }
+  }
+  function copyOutput(form){
+    var output=form.querySelector('.utm-output');
+    if(!output.value || output.value.indexOf('http')!==0) buildUtm(form);
+    output.select();
+    output.setSelectionRange(0, 99999);
+    try{ document.execCommand('copy'); }catch(e){}
+  }
+  function bindUtm(){
+    document.querySelectorAll('.utm-form').forEach(function(form){
+      var gen=form.querySelector('.utm-generate');
+      var copy=form.querySelector('.utm-copy');
+      if(gen && !gen.dataset.bound){ gen.dataset.bound='1'; gen.addEventListener('click', function(){ buildUtm(form); }); }
+      if(copy && !copy.dataset.bound){ copy.dataset.bound='1'; copy.addEventListener('click', function(){ copyOutput(form); }); }
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindUtm); else bindUtm();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOLART — Gestión de Clientes</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f6f9; min-height: 100vh; }
+
+/* ── LOGIN ── */
+#screen-login {
+  min-height: 100vh; display: flex; align-items: center;
+  justify-content: center; padding: 24px 16px;
+  background: linear-gradient(145deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+}
+.login-card {
+  background: #fff; border-radius: 24px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  padding: 40px 32px; width: 100%; max-width: 360px;
+}
+.login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; justify-content: center; }
+.login-logo-icon {
+  width: 52px; height: 52px; background: #f59e0b; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; font-size: 26px;
+  box-shadow: 0 4px 12px rgba(245,158,11,0.4);
+}
+.login-logo-text { font-size: 26px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.5px; }
+.login-title { font-size: 17px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; text-align: center; }
+.login-sub { font-size: 13px; color: #6b7280; margin-bottom: 24px; text-align: center; }
+
+.login-field { margin-bottom: 16px; }
+.login-field label { display: block; font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.login-field select {
+  width: 100%; padding: 13px 14px; border: 1.5px solid #e5e7eb;
+  border-radius: 12px; font-size: 15px; outline: none;
+  background: #fafafa; transition: border-color 0.2s; font-family: inherit; color: #1a1a2e;
+  appearance: auto;
+}
+.login-field select:focus { border-color: #f59e0b; background: #fff; }
+
+.pin-label { font-size: 12px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.pin-dots { display: flex; gap: 14px; justify-content: center; margin-bottom: 16px; }
+.pin-dot { width: 16px; height: 16px; border-radius: 50%; background: #e5e7eb; transition: all 0.15s; }
+.pin-dot.lleno { background: #f59e0b; transform: scale(1.1); box-shadow: 0 2px 8px rgba(245,158,11,0.4); }
+
+.pin-teclado { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.pin-key {
+  padding: 16px; background: #f8fafc; border: 1.5px solid #e5e7eb;
+  border-radius: 14px; font-size: 20px; font-weight: 700; cursor: pointer;
+  text-align: center; transition: all 0.12s; color: #1a1a2e; user-select: none;
+}
+.pin-key:hover { background: #fef3c7; border-color: #fbbf24; }
+.pin-key:active { background: #fef3c7; border-color: #f59e0b; transform: scale(0.93); }
+.pin-key.borrar { font-size: 15px; color: #9ca3af; }
+
+.login-error { color: #ef4444; font-size: 13px; text-align: center; margin-top: 12px; min-height: 18px; font-weight: 600; }
+
+/* ── HOME ── */
+#screen-home { display: none; flex-direction: column; min-height: 100vh; }
+#screen-home.visible { display: flex; }
+
+.home-header {
+  background: #1a1a2e; padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+}
+.home-header-left { display: flex; align-items: center; gap: 10px; }
+.home-logo-sm { width: 32px; height: 32px; background: #f59e0b; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.home-logo-name { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+.home-user-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.08); border-radius: 20px; padding: 5px 12px 5px 5px;
+}
+.home-avatar {
+  width: 28px; height: 28px; background: #f59e0b; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+.home-username { font-size: 12px; font-weight: 600; color: #e5e7eb; }
+.btn-logout {
+  background: none; border: 1px solid #374151; color: #9ca3af;
+  padding: 5px 12px; border-radius: 8px; font-size: 12px; cursor: pointer;
+  font-weight: 600; transition: all 0.15s;
+}
+.btn-logout:hover { border-color: #ef4444; color: #ef4444; }
+
+.home-body { flex: 1; padding: 28px 16px 40px; max-width: 520px; margin: 0 auto; width: 100%; }
+
+.home-saludo { font-size: 22px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; }
+.home-fecha { font-size: 13px; color: #6b7280; margin-bottom: 28px; }
+
+.home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+
+.tool-card {
+  background: #fff; border-radius: 20px; padding: 24px 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  cursor: pointer; text-decoration: none; display: block;
+  transition: all 0.18s; border: 2px solid transparent;
+  position: relative; overflow: hidden;
+}
+.tool-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+.tool-card:active { transform: translateY(0); }
+
+.tool-card.amarillo { border-color: #fef3c7; }
+.tool-card.amarillo:hover { border-color: #f59e0b; }
+.tool-card.verde { border-color: #dcfce7; }
+.tool-card.verde:hover { border-color: #22c55e; }
+.tool-card.azul { border-color: #dbeafe; }
+.tool-card.azul:hover { border-color: #3b82f6; }
+.tool-card.morado { border-color: #ede9fe; }
+.tool-card.morado:hover { border-color: #7c3aed; }
+.tool-card.naranja { border-color: #ffedd5; }
+.tool-card.naranja:hover { border-color: #f97316; }
+
+.tool-card-accent {
+  position: absolute; top: 0; right: 0;
+  width: 60px; height: 60px; border-radius: 0 20px 0 60px;
+  opacity: 0.12;
+}
+.amarillo .tool-card-accent { background: #f59e0b; }
+.verde .tool-card-accent { background: #22c55e; }
+.azul .tool-card-accent { background: #3b82f6; }
+.morado .tool-card-accent { background: #7c3aed; }
+.naranja .tool-card-accent { background: #f97316; }
+
+.tool-icon { font-size: 32px; margin-bottom: 12px; display: block; }
+.tool-nombre { font-size: 15px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; line-height: 1.2; }
+.tool-desc { font-size: 11px; color: #6b7280; line-height: 1.4; }
+.tool-arrow {
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-top: 14px; font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: 20px;
+}
+.amarillo .tool-arrow { background: #fef3c7; color: #92400e; }
+.verde .tool-arrow { background: #dcfce7; color: #15803d; }
+.azul .tool-arrow { background: #dbeafe; color: #1e40af; }
+.morado .tool-arrow { background: #ede9fe; color: #5b21b6; }
+.naranja .tool-arrow { background: #ffedd5; color: #9a3412; }
+
+/* Card prospecto — ocupa todo el ancho */
+.tool-card-full {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 16px; padding: 20px 24px;
+}
+.tool-card-full .tool-icon { font-size: 28px; margin-bottom: 0; flex-shrink: 0; }
+.tool-card-full .tool-content { flex: 1; }
+.tool-card-full .tool-nombre { font-size: 16px; }
+.tool-card-full .tool-arrow { margin-top: 6px; }
+
+/* ── MODAL NUEVO PROSPECTO ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: none; align-items: flex-end; justify-content: center;
+  z-index: 100; padding: 0;
+}
+.overlay.visible { display: flex; }
+.modal-sheet {
+  background: #fff; border-radius: 24px 24px 0 0;
+  padding: 28px 24px 40px; width: 100%; max-width: 520px;
+  max-height: 90vh; overflow-y: auto;
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-handle { width: 40px; height: 4px; background: #e5e7eb; border-radius: 2px; margin: 0 auto 20px; }
+.modal-titulo { font-size: 20px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; }
+.modal-sub { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
+
+.campo { margin-bottom: 16px; }
+.campo label { display: block; font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+.req { color: #ef4444; }
+.campo input {
+  width: 100%; padding: 13px 14px; border: 1.5px solid #e5e7eb;
+  border-radius: 12px; font-size: 15px; color: #1a1a2e; outline: none;
+  background: #fafafa; transition: border-color 0.2s; font-family: inherit;
+}
+.campo input:focus { border-color: #f59e0b; background: #fff; }
+.campo input.error { border-color: #ef4444; }
+.err-msg { font-size: 12px; color: #ef4444; margin-top: 4px; display: none; font-weight: 600; }
+.err-msg.v { display: block; }
+
+.btn-prim {
+  width: 100%; padding: 16px; background: #f59e0b; color: #fff;
+  border: none; border-radius: 14px; font-size: 16px; font-weight: 800;
+  cursor: pointer; transition: all 0.15s; margin-top: 8px; letter-spacing: 0.2px;
+}
+.btn-prim:hover { background: #d97706; }
+.btn-prim:active { transform: scale(0.98); }
+.btn-prim:disabled { background: #d1d5db; cursor: not-allowed; transform: none; }
+.btn-sec {
+  width: 100%; padding: 13px; background: transparent; color: #6b7280;
+  border: 1.5px solid #e5e7eb; border-radius: 14px; font-size: 14px;
+  font-weight: 600; cursor: pointer; margin-top: 10px;
+}
+.btn-sec:hover { background: #f3f4f6; }
+
+.err-general { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 14px; font-size: 13px; color: #dc2626; margin-bottom: 16px; display: none; font-weight: 600; }
+.err-general.v { display: block; }
+
+/* Estados del modal */
+.modal-estado { display: none; text-align: center; padding: 24px 0; }
+.modal-estado.v { display: block; }
+.spinner { width: 44px; height: 44px; border: 4px solid #f3f3f3; border-top: 4px solid #f59e0b; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.exito-icon { font-size: 56px; margin-bottom: 12px; }
+.exito-titulo { font-size: 20px; font-weight: 800; color: #1a1a2e; margin-bottom: 6px; }
+.exito-sub { font-size: 14px; color: #6b7280; margin-bottom: 28px; }
+
+/* Tip footer */
+.home-tip {
+  background: #fff; border-radius: 16px; padding: 16px 18px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.home-tip-icon { font-size: 20px; flex-shrink: 0; }
+.home-tip-text { font-size: 12px; color: #6b7280; line-height: 1.5; }
+.home-tip-text strong { color: #374151; }
+
+/* ── SIDEBAR DESKTOP ── */
+@media (min-width: 768px) {
+  #screen-login { /* login no cambia, siempre centrado */ }
+  #screen-home { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 230px; flex-shrink: 0; background: #1a1a2e;
+    display: flex; flex-direction: column; padding: 28px 16px;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; overflow-y: auto;
+  }
+  .sidebar-logo { margin-bottom: 36px; padding: 0 4px; }
+  .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+    border-radius: 10px; color: #9ca3af; font-size: 14px; font-weight: 600;
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .sidebar-link:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .sidebar-link.activo { background: #f59e0b; color: #1a1a2e; }
+  .sidebar-link .sb-icon { font-size: 18px; width: 22px; text-align: center; }
+  .sidebar-sep { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 12px 0; }
+  .sidebar-user { display: flex; align-items: center; gap: 8px; padding: 10px 14px; margin-top: auto; }
+  .sidebar-user-avatar { width: 30px; height: 30px; border-radius: 50%; background: #f59e0b; color: #1a1a2e; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sidebar-user-name { font-size: 13px; color: #d1d5db; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sidebar-logout { background: none; border: none; color: #6b7280; font-size: 12px; cursor: pointer; padding: 0; }
+  .sidebar-logout:hover { color: #ef4444; }
+  .home-main { margin-left: 230px; flex: 1; }
+  .home-header { display: none; } /* el sidebar reemplaza el header en desktop */
+  .home-body { max-width: 800px; padding: 32px; }
+  .home-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 767px) {
+  .sidebar { display: none; }
+}
+@media (max-width: 340px) {
+  .home-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════════════════ -->
+<div id="screen-login">
+  <div class="login-card">
+
+    <div class="login-logo">
+      <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:48px;filter:brightness(0)">
+    </div>
+    <div class="login-title">Bienvenido al CRM</div>
+    <div class="login-sub">Selecciona tu nombre e ingresa tu PIN para entrar.</div>
+
+    <div class="login-field">
+      <label>¿Quién eres?</label>
+      <select id="sel-usuario" onchange="resetPin()">
+        <option value="">Seleccionar…</option>
+        <option value="8">Daniel González</option>
+        <option value="10">Eduardo Lozada</option>
+        <option value="12">Luis Amor</option>
+        <option value="34">Arturo Chávez</option>
+        <option value="36">Javier Olmos</option>
+        <option value="40">Carlos Mariscal</option>
+        <option value="44">Christian González</option>
+        <option value="46">Rafael De la Cuadra</option>
+        <option value="48">Samuel Capuano</option>
+        <option value="86">Gerardo Vite</option>
+        <option value="90">Lilia Ventura</option>
+        <option value="126">Adriana Madrid</option>
+        <option value="158">Victor Linaldi</option>
+        <option value="188">Arturo Lopez Gallo</option>
+        <option value="282">Ulises Navarro</option>
+        <option value="296">Alberto Atilano Taylor</option>
+        <option value="314">Javier Reyes</option>
+        <option value="344">Erick Hernandez</option>
+        <option value="356">Moises Jimenez</option>
+      </select>
+    </div>
+
+    <div class="pin-label">PIN (4 dígitos)</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="dot-0"></div>
+      <div class="pin-dot" id="dot-1"></div>
+      <div class="pin-dot" id="dot-2"></div>
+      <div class="pin-dot" id="dot-3"></div>
+    </div>
+    <div class="pin-teclado">
+      <div class="pin-key" onclick="pinKey('1')">1</div>
+      <div class="pin-key" onclick="pinKey('2')">2</div>
+      <div class="pin-key" onclick="pinKey('3')">3</div>
+      <div class="pin-key" onclick="pinKey('4')">4</div>
+      <div class="pin-key" onclick="pinKey('5')">5</div>
+      <div class="pin-key" onclick="pinKey('6')">6</div>
+      <div class="pin-key" onclick="pinKey('7')">7</div>
+      <div class="pin-key" onclick="pinKey('8')">8</div>
+      <div class="pin-key" onclick="pinKey('9')">9</div>
+      <div class="pin-key borrar" onclick="pinKey('C')">✕</div>
+      <div class="pin-key" onclick="pinKey('0')">0</div>
+      <div class="pin-key borrar" onclick="pinKey('B')">⌫</div>
+    </div>
+    <div class="login-error" id="login-error"></div>
+
+  </div>
+</div>
+
+<!-- ══ HOME ══════════════════════════════════════════════════════════ -->
+<div id="screen-home">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:28px;filter:brightness(0) invert(1)">
+    </div>
+    <nav class="sidebar-nav">
+      <a class="sidebar-link activo" href="https://gestiondeclientes.bitrix24.site/dashboard/"><span class="sb-icon">📊</span> Mi día</a>
+      <a class="sidebar-link" href="https://gestiondeclientes.bitrix24.site/tareas/"><span class="sb-icon">📋</span> Tareas</a>
+      <a class="sidebar-link" href="https://gestiondeclientes.bitrix24.site/cambiaretapa/"><span class="sb-icon">🔄</span> Cambiar etapa</a>
+      <a class="sidebar-link" id="sb-link-ing" href="https://gestiondeclientes.bitrix24.site/ingenieria/"><span class="sb-icon">🔧</span> Propuestas Ing.</a>
+    </nav>
+    <hr class="sidebar-sep">
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar" id="sb-avatar">?</div>
+      <span class="sidebar-user-name" id="sb-nombre">—</span>
+      <button class="sidebar-logout" onclick="logout()">Salir</button>
+    </div>
+  </aside>
+
+  <div class="home-main">
+  <div class="home-header">
+    <div class="home-header-left">
+      <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:24px">
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="home-user-chip">
+        <div class="home-avatar" id="home-avatar">?</div>
+        <span class="home-username" id="home-username">—</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="home-body">
+    <div class="home-saludo" id="home-saludo">Hola 👋</div>
+    <div class="home-fecha" id="home-fecha"></div>
+
+    <div class="home-grid">
+
+      <!-- NUEVO PROSPECTO — full width, abre modal -->
+      <div class="tool-card verde tool-card-full" onclick="abrirModalProspecto()">
+        <div class="tool-card-accent"></div>
+        <span class="tool-icon">➕</span>
+        <div class="tool-content">
+          <div class="tool-nombre">Tengo un cliente nuevo</div>
+          <div class="tool-desc">Registra nombre, teléfono y empresa. El CRM lo guarda al instante.</div>
+          <div class="tool-arrow">Registrar →</div>
+        </div>
+      </div>
+
+      <!-- CAMBIAR ETAPA -->
+      <a class="tool-card azul" href="https://gestiondeclientes.bitrix24.site/cambiaretapa/" onclick="guardarSesionYnavegar(event, this.href)">
+        <div class="tool-card-accent"></div>
+        <span class="tool-icon">🔄</span>
+        <div class="tool-nombre">Avancé con un cliente</div>
+        <div class="tool-desc">Mueve a la siguiente etapa del pipeline — prospectos o negociaciones</div>
+        <div class="tool-arrow">Abrir →</div>
+      </a>
+
+      <!-- NEGOCIACIONES / TAREAS -->
+      <a class="tool-card morado" href="https://gestiondeclientes.bitrix24.site/tareas/" onclick="guardarSesionYnavegar(event, this.href)">
+        <div class="tool-card-accent"></div>
+        <span class="tool-icon">📋</span>
+        <div class="tool-nombre">Necesito que ingeniería haga algo</div>
+        <div class="tool-desc">Pide visita técnica, propuesta formal o propuesta final</div>
+        <div class="tool-arrow">Abrir →</div>
+      </a>
+
+      <!-- DASHBOARD -->
+      <a class="tool-card amarillo" href="https://gestiondeclientes.bitrix24.site/dashboard/" onclick="guardarSesionYnavegar(event, this.href)">
+        <div class="tool-card-accent"></div>
+        <span class="tool-icon">📊</span>
+        <div class="tool-nombre">Ver mi situación del día</div>
+        <div class="tool-desc">Actividades pendientes, tareas y estado de todas tus negociaciones</div>
+        <div class="tool-arrow">Abrir →</div>
+      </a>
+
+      <!-- INGENIERÍA — solo equipo técnico -->
+      <a class="tool-card azul" id="card-ingenieria" href="https://gestiondeclientes.bitrix24.site/ingenieria/" style="display:none" onclick="guardarSesionYnavegar(event, this.href)">
+        <div class="tool-card-accent"></div>
+        <span class="tool-icon">🔧</span>
+        <div class="tool-nombre">Mis tareas de ingeniería</div>
+        <div class="tool-desc">Propuestas, revisiones y tareas del flujo técnico</div>
+        <div class="tool-arrow">Abrir →</div>
+      </a>
+
+      <!-- NUEVO CONTACTO -->
+      <div class="tool-card naranja" onclick="abrirModalContacto()">
+        <div class="tool-card-accent"></div>
+        <span class="tool-icon">👤</span>
+        <div class="tool-nombre">Conocí a alguien en una visita</div>
+        <div class="tool-desc">Agrega un contacto nuevo a una negociación existente</div>
+        <div class="tool-arrow">Registrar →</div>
+      </div>
+
+    </div>
+
+    <div class="home-tip">
+      <div class="home-tip-icon">💡</div>
+      <div class="home-tip-text">
+        ¿No sabes por dónde empezar? Entra a <strong>Ver mi situación del día</strong> — ahí están tus pendientes y clientes de hoy.
+      </div>
+    </div>
+  </div>
+  </div><!-- /home-main -->
+</div>
+
+<!-- ══ MODAL NUEVO PROSPECTO ══════════════════════════════════════════ -->
+<div class="overlay" id="overlay-prospecto">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+
+    <!-- FORM -->
+    <div id="np-form">
+      <div class="modal-titulo">➕ Nuevo prospecto</div>
+      <div class="modal-sub">Llena los datos y listo — el CRM hace el resto.</div>
+
+      <div class="err-general" id="np-err-general"></div>
+
+      <div class="campo">
+        <label>Nombre <span class="req">*</span></label>
+        <input type="text" id="np-nombre" placeholder="Ej. María" autocomplete="given-name">
+        <div class="err-msg" id="np-err-nombre">Escribe el nombre</div>
+      </div>
+      <div class="campo">
+        <label>Apellido <span class="req">*</span></label>
+        <input type="text" id="np-apellido" placeholder="Ej. González" autocomplete="family-name">
+        <div class="err-msg" id="np-err-apellido">Escribe el apellido</div>
+      </div>
+      <div class="campo">
+        <label>Teléfono <span class="req">*</span></label>
+        <input type="tel" id="np-telefono" placeholder="Ej. 8121234567" maxlength="15" autocomplete="tel">
+        <div class="err-msg" id="np-err-telefono">Escribe un teléfono válido</div>
+      </div>
+      <div class="campo">
+        <label>Email</label>
+        <input type="email" id="np-email" placeholder="Ej. maria@empresa.com" autocomplete="email">
+        <div class="err-msg" id="np-err-email">Escribe un email válido</div>
+      </div>
+      <div class="campo">
+        <label>Empresa <span class="req">*</span></label>
+        <input type="text" id="np-empresa" placeholder="Ej. Constructora Norte" autocomplete="organization">
+        <div class="err-msg" id="np-err-empresa">Escribe el nombre de la empresa</div>
+      </div>
+
+      <button class="btn-prim" id="np-btn-guardar" onclick="npGuardar()">Guardar prospecto</button>
+      <button class="btn-sec" onclick="cerrarModalProspecto()">Cancelar</button>
+    </div>
+
+    <!-- CARGANDO -->
+    <div class="modal-estado" id="np-cargando">
+      <div class="spinner"></div>
+      <div style="font-size:14px;color:#6b7280">Registrando en el CRM…</div>
+    </div>
+
+    <!-- ÉXITO -->
+    <div class="modal-estado" id="np-exito">
+      <div class="exito-icon">✅</div>
+      <div class="exito-titulo">¡Prospecto registrado!</div>
+      <div class="exito-sub" id="np-exito-nombre"></div>
+      <button class="btn-prim" onclick="npNuevo()">Agregar otro</button>
+      <button class="btn-sec" onclick="cerrarModalProspecto()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL NUEVO CONTACTO ══════════════════════════════════════════ -->
+<div class="overlay" id="overlay-contacto">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+
+    <!-- PASO 1: Buscar negociación -->
+    <div id="nc-busqueda">
+      <div class="modal-titulo">👤 Nuevo contacto</div>
+      <div class="modal-sub">Primero busca la negociación de la empresa que visitaste.</div>
+      <div class="campo">
+        <label>Nombre de la empresa o negociación</label>
+        <input type="text" id="nc-q" placeholder="Ej. Constructora Norte" oninput="ncBuscar(this.value)">
+      </div>
+      <div id="nc-resultados" style="margin-top:4px"></div>
+      <button class="btn-sec" onclick="cerrarModalContacto()" style="margin-top:16px">Cancelar</button>
+    </div>
+
+    <!-- PASO 1.5: Contactos existentes del deal -->
+    <div id="nc-existentes" style="display:none">
+      <div class="modal-titulo">👥 Contactos del deal</div>
+      <div id="nc-deal-info2" style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#15803d;font-weight:700;"></div>
+      <div id="nc-lista-contactos" style="margin-bottom:14px"></div>
+      <button class="btn-prim" onclick="ncAbrirFormNuevo()" style="background:#f97316">➕ Agregar contacto nuevo</button>
+      <button class="btn-sec" onclick="ncVolverBusqueda()">← Cambiar negociación</button>
+    </div>
+
+    <!-- PASO 2: Datos del contacto (nuevo o edición) -->
+    <div id="nc-contacto" style="display:none">
+      <div class="modal-titulo" id="nc-form-titulo">👤 Datos del contacto</div>
+      <div id="nc-deal-info" style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#15803d;font-weight:700;"></div>
+
+      <div class="err-general" id="nc-err-general"></div>
+
+      <div class="campo">
+        <label>Nombre <span class="req">*</span></label>
+        <input type="text" id="nc-nombre" placeholder="Ej. Carlos" autocomplete="off">
+        <div class="err-msg" id="nc-err-nombre">Escribe el nombre</div>
+      </div>
+      <div class="campo">
+        <label>Apellido <span class="req">*</span></label>
+        <input type="text" id="nc-apellido" placeholder="Ej. Mendoza" autocomplete="off">
+        <div class="err-msg" id="nc-err-apellido">Escribe el apellido</div>
+      </div>
+      <div class="campo">
+        <label>Puesto / Cargo</label>
+        <input type="text" id="nc-puesto" placeholder="Ej. Gerente de Ventas" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label>Teléfono <span class="req">*</span></label>
+        <input type="tel" id="nc-telefono" placeholder="Ej. 8121234567" maxlength="15" autocomplete="off">
+        <div class="err-msg" id="nc-err-telefono">Escribe un teléfono válido</div>
+      </div>
+      <div class="campo">
+        <label>Email</label>
+        <input type="email" id="nc-email" placeholder="Ej. carlos@empresa.com" autocomplete="off">
+        <div class="err-msg" id="nc-err-email">Escribe un email válido</div>
+      </div>
+
+      <button class="btn-prim" id="nc-btn-guardar" onclick="ncGuardar()">Guardar contacto</button>
+      <button class="btn-sec" id="nc-btn-volver" onclick="ncVolverExistentes()">← Volver a contactos</button>
+    </div>
+
+    <!-- CARGANDO -->
+    <div class="modal-estado" id="nc-cargando">
+      <div class="spinner"></div>
+      <div style="font-size:14px;color:#6b7280">Guardando contacto en el CRM…</div>
+    </div>
+
+    <!-- ÉXITO -->
+    <div class="modal-estado" id="nc-exito">
+      <div class="exito-icon">✅</div>
+      <div class="exito-titulo">¡Contacto guardado!</div>
+      <div class="exito-sub" id="nc-exito-txt"></div>
+      <button class="btn-prim" onclick="ncOtro()">Agregar otro contacto</button>
+      <button class="btn-sec" onclick="cerrarModalContacto()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/';
+
+  const PINES = {
+    '8':'1234','10':'1234','12':'1234','34':'1234','36':'1234',
+    '40':'1234','44':'1234','46':'1234','48':'1234','86':'1234',
+    '90':'1234','126':'1234','158':'1234','188':'1234','282':'1234',
+    '296':'1234','314':'1234','344':'1234','356':'1234',
+  };
+
+  let pinActual = '';
+  let usuarioActual = null;
+
+  // ── PIN ─────────────────────────────────────────────────────────────
+  function pinKey(k) {
+    if (k === 'C') { pinActual = ''; }
+    else if (k === 'B') { pinActual = pinActual.slice(0,-1); }
+    else if (pinActual.length < 4) { pinActual += k; }
+    actualizarDots();
+    if (pinActual.length === 4) intentarLogin();
+  }
+
+  function actualizarDots() {
+    for (let i = 0; i < 4; i++)
+      document.getElementById('dot-' + i).classList.toggle('lleno', i < pinActual.length);
+  }
+
+  function resetPin() {
+    pinActual = '';
+    actualizarDots();
+    document.getElementById('login-error').textContent = '';
+  }
+
+  function intentarLogin() {
+    const uid = document.getElementById('sel-usuario').value;
+    if (!uid) { document.getElementById('login-error').textContent = 'Selecciona tu nombre.'; return; }
+    if (pinActual.length < 4) return;
+    if (PINES[uid] !== pinActual) {
+      document.getElementById('login-error').textContent = 'PIN incorrecto. Intenta de nuevo.';
+      pinActual = '';
+      actualizarDots();
+      return;
+    }
+    const nombre = document.getElementById('sel-usuario').options[document.getElementById('sel-usuario').selectedIndex].text;
+    usuarioActual = { id: uid, nombre };
+    localStorage.setItem('solart_user', JSON.stringify(usuarioActual));
+    mostrarHome();
+  }
+
+  function logout() {
+    localStorage.removeItem('solart_user');
+    usuarioActual = null;
+    pinActual = ''; actualizarDots();
+    document.getElementById('sel-usuario').value = '';
+    document.getElementById('login-error').textContent = '';
+    document.getElementById('screen-home').classList.remove('visible');
+    document.getElementById('screen-login').style.display = 'flex';
+  }
+
+  // ── HOME ─────────────────────────────────────────────────────────────
+  function mostrarHome() {
+    document.getElementById('screen-login').style.display = 'none';
+    document.getElementById('screen-home').classList.add('visible');
+
+    const u = usuarioActual;
+    const nombre = u.nombre.split(' ')[0];
+    document.getElementById('home-avatar').textContent = u.nombre.charAt(0).toUpperCase();
+    document.getElementById('home-username').textContent = u.nombre;
+    document.getElementById('home-saludo').textContent = `Hola, ${nombre} 👋`;
+
+    // Sidebar desktop
+    const av = document.getElementById('sb-avatar');
+    const nm = document.getElementById('sb-nombre');
+    if (av) av.textContent = u.nombre.charAt(0).toUpperCase();
+    if (nm) nm.textContent = u.nombre;
+
+    // Mostrar tarjeta de ingeniería solo para el equipo técnico
+    const EQUIPO_ING = ['8','34','36','86','40','344','158','188'];
+    const cardIng = document.getElementById('card-ingenieria');
+    if (cardIng) cardIng.style.display = EQUIPO_ING.includes(String(u.id)) ? 'block' : 'none';
+    // Victor (CEO) y Arturo López (Comercial): renombrar los accesos a su panel
+    if (String(u.id) === '158' || String(u.id) === '188') {
+      const esCEO = String(u.id) === '158';
+      const nombrePanel = esCEO ? 'Resultados Anuales SOLART' : 'Tablero Comercial';
+      const sbIng = document.getElementById('sb-link-ing');
+      if (sbIng) sbIng.innerHTML = '<span class="sb-icon">📊</span> ' + nombrePanel;
+      if (cardIng) {
+        cardIng.querySelector('.tool-icon').textContent = '📊';
+        cardIng.querySelector('.tool-nombre').textContent = nombrePanel;
+        cardIng.querySelector('.tool-desc').textContent = esCEO ? 'Facturación, conversión y rendimiento del equipo' : 'Resultados, prioridades y negociaciones estancadas';
+      }
+    }
+
+    const hoy = new Date();
+    const DIAS  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    document.getElementById('home-fecha').textContent =
+      `${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESES[hoy.getMonth()]} de ${hoy.getFullYear()}`;
+  }
+
+  function guardarSesionYnavegar(e, url) {
+    // localStorage ya está guardado, solo seguimos el link normal
+    // Esta función existe por si en el futuro se necesita algo antes de navegar
+  }
+
+  // ── MODAL NUEVO PROSPECTO ────────────────────────────────────────────
+  function abrirModalProspecto() {
+    npMostrar('np-form');
+    npLimpiar();
+    document.getElementById('overlay-prospecto').classList.add('visible');
+  }
+
+  function cerrarModalProspecto() {
+    document.getElementById('overlay-prospecto').classList.remove('visible');
+  }
+
+  // Cerrar al tocar el fondo
+  document.getElementById('overlay-prospecto').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalProspecto();
+  });
+
+  function npMostrar(id) {
+    ['np-form','np-cargando','np-exito'].forEach(v => {
+      const el = document.getElementById(v);
+      if (el.classList.contains('modal-estado')) el.classList.remove('v');
+      else el.style.display = v === id ? 'block' : 'none';
+    });
+    const target = document.getElementById(id);
+    if (target.classList.contains('modal-estado')) target.classList.add('v');
+  }
+
+  function npLimpiar() {
+    document.querySelectorAll('#np-form input').forEach(i => {
+      i.value = ''; i.classList.remove('error');
+    });
+    document.querySelectorAll('#np-form .err-msg').forEach(e => e.classList.remove('v'));
+    document.getElementById('np-err-general').classList.remove('v');
+    document.getElementById('np-btn-guardar').disabled = false;
+  }
+
+  function npValidar() {
+    document.querySelectorAll('#np-form .err-msg').forEach(e => e.classList.remove('v'));
+    document.querySelectorAll('#np-form input').forEach(i => i.classList.remove('error'));
+    document.getElementById('np-err-general').classList.remove('v');
+    let ok = true;
+    const f = id => document.getElementById(id).value.trim();
+    const mark = (inp, err) => { document.getElementById(inp).classList.add('error'); document.getElementById(err).classList.add('v'); ok = false; };
+    if (!f('np-nombre'))  mark('np-nombre',  'np-err-nombre');
+    if (!f('np-apellido')) mark('np-apellido','np-err-apellido');
+    if (!f('np-telefono') || f('np-telefono').length < 8) mark('np-telefono','np-err-telefono');
+    const email = f('np-email');
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) mark('np-email','np-err-email');
+    if (!f('np-empresa')) mark('np-empresa', 'np-err-empresa');
+    return ok;
+  }
+
+  async function npGuardar() {
+    if (!npValidar()) return;
+    document.getElementById('np-btn-guardar').disabled = true;
+    npMostrar('np-cargando');
+
+    const f = id => document.getElementById(id).value.trim();
+    const campos = {
+      NAME: f('np-nombre'), LAST_NAME: f('np-apellido'),
+      PHONE: [{ VALUE: f('np-telefono'), VALUE_TYPE: 'WORK' }],
+      COMPANY_TITLE: f('np-empresa'), STATUS_ID: 'NEW', SOURCE_ID: 'SELF'
+    };
+    if (f('np-email')) campos.EMAIL = [{ VALUE: f('np-email'), VALUE_TYPE: 'WORK' }];
+
+    try {
+      const res = await fetch(WEBHOOK + 'crm.lead.add.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: campos })
+      });
+      const data = await res.json();
+      if (!data.result) throw new Error(data.error_description || 'Error desconocido');
+      document.getElementById('np-exito-nombre').textContent =
+        f('np-nombre') + ' ' + f('np-apellido') + ' — ' + f('np-empresa');
+      npMostrar('np-exito');
+    } catch(err) {
+      npMostrar('np-form');
+      const eg = document.getElementById('np-err-general');
+      eg.textContent = 'No se pudo guardar. Intenta de nuevo. (' + err.message + ')';
+      eg.classList.add('v');
+      document.getElementById('np-btn-guardar').disabled = false;
+    }
+  }
+
+  function npNuevo() { npMostrar('np-form'); npLimpiar(); }
+
+  // ── MODAL NUEVO CONTACTO ─────────────────────────────────────────────
+  let ncDealActual = null;
+  let ncBuscarTimer = null;
+
+  function abrirModalContacto() {
+    ncDealActual = null;
+    ncReset();
+    document.getElementById('overlay-contacto').classList.add('visible');
+  }
+
+  function cerrarModalContacto() {
+    document.getElementById('overlay-contacto').classList.remove('visible');
+  }
+
+  document.getElementById('overlay-contacto').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalContacto();
+  });
+
+  function ncMostrar(id) {
+    ['nc-busqueda','nc-existentes','nc-contacto','nc-cargando','nc-exito'].forEach(v => {
+      const el = document.getElementById(v);
+      if (!el) return;
+      if (el.classList.contains('modal-estado')) {
+        el.classList.toggle('v', v === id);
+      } else {
+        el.style.display = v === id ? 'block' : 'none';
+      }
+    });
+  }
+
+  function ncReset() {
+    document.getElementById('nc-q').value = '';
+    document.getElementById('nc-resultados').innerHTML = '';
+    ['nc-nombre','nc-apellido','nc-puesto','nc-telefono','nc-email'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.value = ''; el.classList.remove('error'); }
+    });
+    document.querySelectorAll('#nc-contacto .err-msg').forEach(e => e.classList.remove('v'));
+    const eg = document.getElementById('nc-err-general');
+    if (eg) eg.classList.remove('v');
+    const btn = document.getElementById('nc-btn-guardar');
+    if (btn) btn.disabled = false;
+    ncMostrar('nc-busqueda');
+  }
+
+  function ncVolverBusqueda() {
+    ncDealActual = null;
+    ncMostrar('nc-busqueda');
+  }
+
+  async function ncBuscar(q) {
+    clearTimeout(ncBuscarTimer);
+    const res = document.getElementById('nc-resultados');
+    if (q.length < 2) { res.innerHTML = ''; return; }
+    ncBuscarTimer = setTimeout(async () => {
+      res.innerHTML = '<div style="font-size:13px;color:#9ca3af;padding:8px 0">Buscando…</div>';
+      try {
+        const data = await bx('crm.deal.list.json', {
+          filter: { '%TITLE': q, 'ASSIGNED_BY_ID': usuarioActual.id },
+          select: ['ID','TITLE','STAGE_ID','COMPANY_ID','COMPANY_TITLE'],
+          order: { DATE_MODIFY: 'DESC' }, start: 0
+        });
+        const deals = (data.result || []).filter(d =>
+          !['WON','LOSE','C2:WON','C2:LOSE'].includes(d.STAGE_ID)
+        ).slice(0, 6);
+
+        if (!deals.length) {
+          res.innerHTML = '<div style="font-size:13px;color:#9ca3af;padding:8px 0">Sin resultados. Prueba otro nombre.</div>';
+          return;
+        }
+        res.innerHTML = deals.map(d => `
+          <div onclick='ncSeleccionarDeal(${JSON.stringify(d).replace(/'/g,"\\'")})'
+               style="padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all 0.15s"
+               onmouseover="this.style.borderColor='#f97316';this.style.background='#fff7ed'"
+               onmouseout="this.style.borderColor='#e5e7eb';this.style.background=''">
+            <div style="font-size:14px;font-weight:700;color:#1a1a2e">${d.TITLE}</div>
+            ${d.COMPANY_TITLE ? `<div style="font-size:12px;color:#6b7280;margin-top:2px">🏢 ${d.COMPANY_TITLE}</div>` : ''}
+          </div>`).join('');
+      } catch(e) {
+        res.innerHTML = '<div style="font-size:13px;color:#ef4444;padding:8px 0">Error al buscar. Intenta de nuevo.</div>';
+      }
+    }, 350);
+  }
+
+  let ncContactoEditando = null; // null = nuevo, objeto = editar existente
+
+  async function ncSeleccionarDeal(deal) {
+    ncDealActual = deal;
+    const label = deal.COMPANY_TITLE
+      ? `🤝 ${deal.TITLE}  ·  🏢 ${deal.COMPANY_TITLE}`
+      : `🤝 ${deal.TITLE}`;
+    document.getElementById('nc-deal-info2').textContent = label;
+    document.getElementById('nc-deal-info').textContent = label;
+
+    // Cargar contactos existentes
+    ncMostrar('nc-cargando');
+    try {
+      const r = await bx('crm.deal.contact.items.get.json', { id: deal.ID });
+      const items = r.result || [];
+      const lista = document.getElementById('nc-lista-contactos');
+
+      if (!items.length) {
+        lista.innerHTML = '<div style="font-size:13px;color:#9ca3af;padding:8px 0 4px">Aún no hay contactos vinculados.</div>';
+      } else {
+        // Cargar detalles de cada contacto
+        const detalles = await Promise.all(
+          items.slice(0,10).map(c => bx('crm.contact.get.json', { id: c.CONTACT_ID }))
+        );
+        lista.innerHTML = detalles.map(r2 => {
+          const c = r2.result;
+          if (!c) return '';
+          const tel = (c.PHONE && c.PHONE[0]) ? c.PHONE[0].VALUE : '';
+          const email = (c.EMAIL && c.EMAIL[0]) ? c.EMAIL[0].VALUE : '';
+          const puesto = c.POST || '';
+          return `<div style="border:1.5px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:700;color:#1a1a2e">${c.NAME || ''} ${c.LAST_NAME || ''}</div>
+              ${puesto ? `<div style="font-size:11px;color:#7c3aed;font-weight:600;margin-top:1px">${puesto}</div>` : ''}
+              ${tel   ? `<div style="font-size:12px;color:#6b7280;margin-top:3px">📞 ${tel}</div>` : '<div style="font-size:12px;color:#f97316;margin-top:3px">⚠️ Sin teléfono</div>'}
+              ${email ? `<div style="font-size:12px;color:#6b7280">✉️ ${email}</div>` : ''}
+            </div>
+            <button onclick='ncEditarContacto(${JSON.stringify(c).replace(/'/g,"\\'")})'
+              style="flex-shrink:0;padding:6px 12px;border:1.5px solid #e5e7eb;border-radius:8px;background:#f9fafb;font-size:12px;font-weight:700;color:#374151;cursor:pointer">
+              Editar
+            </button>
+          </div>`;
+        }).join('');
+      }
+      ncMostrar('nc-existentes');
+    } catch(e) {
+      // Si falla, ir directo al form nuevo
+      ncAbrirFormNuevo();
+    }
+  }
+
+  function ncEditarContacto(c) {
+    ncContactoEditando = c;
+    document.getElementById('nc-form-titulo').textContent = '✏️ Actualizar contacto';
+    document.getElementById('nc-nombre').value   = c.NAME || '';
+    document.getElementById('nc-apellido').value = c.LAST_NAME || '';
+    document.getElementById('nc-puesto').value   = c.POST || '';
+    document.getElementById('nc-telefono').value = (c.PHONE && c.PHONE[0]) ? c.PHONE[0].VALUE : '';
+    document.getElementById('nc-email').value    = (c.EMAIL && c.EMAIL[0]) ? c.EMAIL[0].VALUE : '';
+    document.getElementById('nc-btn-guardar').textContent = 'Actualizar contacto';
+    document.getElementById('nc-err-general').classList.remove('v');
+    document.getElementById('nc-btn-guardar').disabled = false;
+    ncMostrar('nc-contacto');
+    document.getElementById('nc-nombre').focus();
+  }
+
+  function ncAbrirFormNuevo() {
+    ncContactoEditando = null;
+    document.getElementById('nc-form-titulo').textContent = '👤 Nuevo contacto';
+    document.getElementById('nc-btn-guardar').textContent = 'Guardar contacto';
+    ['nc-nombre','nc-apellido','nc-puesto','nc-telefono','nc-email'].forEach(id => {
+      const el = document.getElementById(id); if (el) { el.value = ''; el.classList.remove('error'); }
+    });
+    document.querySelectorAll('#nc-contacto .err-msg').forEach(e => e.classList.remove('v'));
+    document.getElementById('nc-err-general').classList.remove('v');
+    document.getElementById('nc-btn-guardar').disabled = false;
+    ncMostrar('nc-contacto');
+    document.getElementById('nc-nombre').focus();
+  }
+
+  function ncVolverExistentes() {
+    ncContactoEditando = null;
+    ncMostrar('nc-existentes');
+  }
+
+  function ncValidar() {
+    document.querySelectorAll('#nc-contacto .err-msg').forEach(e => e.classList.remove('v'));
+    document.querySelectorAll('#nc-contacto input').forEach(i => i.classList.remove('error'));
+    document.getElementById('nc-err-general').classList.remove('v');
+    let ok = true;
+    const f = id => document.getElementById(id).value.trim();
+    const mark = (inp, err) => {
+      document.getElementById(inp).classList.add('error');
+      document.getElementById(err).classList.add('v');
+      ok = false;
+    };
+    if (!f('nc-nombre'))  mark('nc-nombre',  'nc-err-nombre');
+    if (!f('nc-apellido')) mark('nc-apellido','nc-err-apellido');
+    if (!f('nc-telefono') || f('nc-telefono').length < 8) mark('nc-telefono','nc-err-telefono');
+    const email = f('nc-email');
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) mark('nc-email','nc-err-email');
+    return ok;
+  }
+
+  async function ncGuardar() {
+    if (!ncValidar()) return;
+    document.getElementById('nc-btn-guardar').disabled = true;
+    ncMostrar('nc-cargando');
+
+    const f = id => document.getElementById(id).value.trim();
+    const campos = {
+      NAME: f('nc-nombre'),
+      LAST_NAME: f('nc-apellido'),
+      POST: f('nc-puesto'),
+      PHONE: [{ VALUE: f('nc-telefono'), VALUE_TYPE: 'WORK' }],
+    };
+    if (f('nc-email')) campos.EMAIL = [{ VALUE: f('nc-email'), VALUE_TYPE: 'WORK' }];
+
+    const nombre = f('nc-nombre') + ' ' + f('nc-apellido');
+    const empresa = ncDealActual.COMPANY_TITLE || ncDealActual.TITLE;
+
+    try {
+      if (ncContactoEditando) {
+        // ACTUALIZAR contacto existente
+        const r = await bx('crm.contact.update.json', { id: ncContactoEditando.ID, fields: campos });
+        if (!r.result) throw new Error('No se pudo actualizar el contacto');
+        document.getElementById('nc-exito-txt').textContent =
+          `${nombre}${f('nc-puesto') ? ' (' + f('nc-puesto') + ')' : ''} actualizado en ${empresa}`;
+      } else {
+        // CREAR contacto nuevo
+        campos.ASSIGNED_BY_ID = usuarioActual.id;
+        if (ncDealActual.COMPANY_ID) campos.COMPANY_ID = ncDealActual.COMPANY_ID;
+        const r1 = await bx('crm.contact.add.json', { fields: campos });
+        if (!r1.result) throw new Error('No se pudo crear el contacto');
+        await bx('crm.deal.contact.add.json', { id: ncDealActual.ID, fields: { CONTACT_ID: r1.result } });
+        document.getElementById('nc-exito-txt').textContent =
+          `${nombre}${f('nc-puesto') ? ' (' + f('nc-puesto') + ')' : ''} vinculado a ${empresa}`;
+      }
+      ncMostrar('nc-exito');
+    } catch(err) {
+      ncMostrar('nc-contacto');
+      const eg = document.getElementById('nc-err-general');
+      eg.textContent = 'No se pudo guardar. Intenta de nuevo. (' + err.message + ')';
+      eg.classList.add('v');
+      document.getElementById('nc-btn-guardar').disabled = false;
+    }
+  }
+
+  function ncOtro() { ncReset(); }
+
+  async function bx(endpoint, params) {
+    const res = await fetch(WEBHOOK + endpoint, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    return res.json();
+  }
+
+  // ── INIT ─────────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('solart_user');
+  if (saved) {
+    try {
+      usuarioActual = JSON.parse(saved);
+      mostrarHome();
+    } catch { localStorage.removeItem('solart_user'); }
+  }
+</script>
+
+</body>
+</html>

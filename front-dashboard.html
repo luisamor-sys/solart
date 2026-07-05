@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — SOLART</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f6f9; min-height: 100vh; }
+
+  /* LOGIN */
+  .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px 16px; }
+  .login-card { background: #fff; border-radius: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); padding: 40px 32px; width: 100%; max-width: 360px; }
+  .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; justify-content: center; }
+  .login-logo-icon { width: 44px; height: 44px; background: #f59e0b; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .login-logo-text { font-size: 22px; font-weight: 800; color: #1a1a2e; }
+  .login-title { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; text-align: center; }
+  .login-sub { font-size: 13px; color: #6b7280; margin-bottom: 24px; text-align: center; }
+  .login-field { margin-bottom: 16px; }
+  .login-field label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+  .login-field select, .login-field input { width: 100%; padding: 12px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 15px; outline: none; background: #fafafa; transition: border-color 0.2s; font-family: inherit; }
+  .login-field select:focus, .login-field input:focus { border-color: #f59e0b; background: #fff; }
+  .pin-dots { display: flex; gap: 12px; justify-content: center; margin: 8px 0 4px; }
+  .pin-dot { width: 14px; height: 14px; border-radius: 50%; background: #e5e7eb; transition: background 0.15s; }
+  .pin-dot.lleno { background: #f59e0b; }
+  .pin-teclado { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 16px; }
+  .pin-key { padding: 14px; background: #f8fafc; border: 1.5px solid #e5e7eb; border-radius: 12px; font-size: 18px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.1s; color: #1a1a2e; user-select: none; }
+  .pin-key:active { background: #fef3c7; border-color: #f59e0b; transform: scale(0.95); }
+  .pin-key.borrar { font-size: 14px; color: #6b7280; }
+  .login-error { color: #ef4444; font-size: 13px; text-align: center; margin-top: 10px; min-height: 18px; }
+  .btn-login { width: 100%; padding: 14px; background: #f59e0b; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 16px; transition: background 0.2s; }
+  .btn-login:hover { background: #d97706; }
+  .btn-login:disabled { background: #d1d5db; cursor: not-allowed; }
+
+  /* DASHBOARD */
+  .dash { display: none; flex-direction: column; min-height: 100vh; }
+  .dash.visible { display: flex; }
+  .dash-header { background: #1a1a2e; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+  .dash-header-left { display: flex; align-items: center; gap: 10px; }
+  .dash-avatar { width: 36px; height: 36px; background: #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #fff; flex-shrink: 0; }
+  .dash-username { font-size: 15px; font-weight: 700; color: #fff; }
+  .dash-fecha { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+  .btn-logout { background: none; border: 1px solid #374151; color: #9ca3af; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; }
+  .btn-logout:hover { border-color: #f59e0b; color: #f59e0b; }
+
+  .dash-body { flex: 1; padding: 20px 16px; max-width: 600px; margin: 0 auto; width: 100%; }
+
+  /* Periodo */
+  .periodo-wrap { display: flex; gap: 6px; margin-bottom: 20px; background: #e5e7eb; border-radius: 10px; padding: 4px; }
+  .periodo-btn { flex: 1; padding: 8px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; background: transparent; color: #6b7280; transition: all 0.15s; }
+  .periodo-btn.activo { background: #fff; color: #1a1a2e; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+  /* KPIs */
+  .kpis { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 24px; }
+  .kpi-card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); }
+  .kpi-icono { font-size: 22px; margin-bottom: 6px; }
+  .kpi-valor { font-size: 28px; font-weight: 800; color: #1a1a2e; line-height: 1; }
+  .kpi-label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+  .kpi-card.amarillo { border-left: 4px solid #f59e0b; }
+  .kpi-card.verde { border-left: 4px solid #22c55e; }
+  .kpi-card.azul { border-left: 4px solid #3b82f6; }
+  .kpi-card.rojo { border-left: 4px solid #ef4444; }
+
+  /* Pestañas del dashboard */
+  .dash-tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .dtab-btn { flex-shrink: 0; border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280; border-radius: 20px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+  .dtab-btn span { background: #e5e7eb; color: #374151; border-radius: 20px; font-size: 11px; padding: 1px 7px; }
+  .dtab-btn.activo { background: #1a1a2e; border-color: #1a1a2e; color: #fff; }
+  .dtab-btn.activo span { background: rgba(255,255,255,.25); color: #fff; }
+  .dtab-panel { display: none; }
+
+  /* Modal emergente */
+  .modal-ov { position: fixed; inset: 0; background: rgba(15,23,42,.55); z-index: 200; display: none; align-items: flex-start; justify-content: center; padding: 24px 12px; overflow-y: auto; }
+  .modal-ov.visible { display: flex; }
+  .modal-box { background: #fff; border-radius: 18px; width: 100%; max-width: 560px; box-shadow: 0 24px 60px rgba(0,0,0,.3); margin: auto; }
+  .modal-head { display: flex; align-items: flex-start; gap: 10px; padding: 18px 20px 12px; border-bottom: 1px solid #f3f4f6; position: sticky; top: 0; background: #fff; border-radius: 18px 18px 0 0; }
+  .modal-head-tit { flex: 1; font-size: 15px; font-weight: 800; color: #111827; line-height: 1.35; }
+  .modal-x { background: #f3f4f6; border: none; border-radius: 8px; width: 30px; height: 30px; font-size: 16px; cursor: pointer; color: #6b7280; flex-shrink: 0; }
+  .modal-body { padding: 16px 20px 22px; }
+
+  /* Secciones */
+  .seccion { margin-bottom: 24px; }
+  .seccion-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .seccion-titulo { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+  .seccion-count { font-size: 12px; color: #6b7280; background: #f3f4f6; padding: 2px 8px; border-radius: 20px; }
+  .item-card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); display: flex; align-items: flex-start; gap: 10px; }
+  .item-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; margin-top: 5px; }
+  .item-dot.verde { background: #22c55e; }
+  .item-dot.rojo { background: #ef4444; }
+  .item-dot.azul { background: #3b82f6; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-nombre { font-size: 13px; font-weight: 600; color: #1a1a2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-meta { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .item-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #fef3c7; color: #92400e; white-space: nowrap; flex-shrink: 0; }
+  .item-badge.verde { background: #dcfce7; color: #15803d; }
+  .item-badge.rojo { background: #fee2e2; color: #991b1b; }
+  .empty-msg { text-align: center; padding: 20px; color: #9ca3af; font-size: 13px; }
+  .spinner-inline { text-align: center; padding: 16px; color: #9ca3af; font-size: 13px; }
+
+  /* Tareas pendientes */
+  .tarea-item { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .tarea-top { display: flex; align-items: flex-start; gap: 10px; }
+  .tarea-texto { flex: 1; min-width: 0; }
+  .tarea-nombre { font-size: 13px; font-weight: 600; color: #1a1a2e; line-height: 1.35; word-break: break-word; }
+  .tarea-status { font-size: 11px; color: #b45309; margin-top: 3px; }
+  .tarea-acciones { display: flex; gap: 6px; align-items: center; flex-shrink: 0; margin-top: 2px; }
+  .btn-tarea-ver { font-size: 11px; font-weight: 700; color: #b45309; text-decoration: none; padding: 4px 9px; border: 1px solid #fbbf24; border-radius: 6px; background: #fff; white-space: nowrap; cursor: pointer; }
+  .btn-tarea-detalle { font-size: 11px; font-weight: 700; color: #6b7280; padding: 4px 9px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; cursor: pointer; white-space: nowrap; }
+  .btn-completar-dash { font-size: 12px; font-weight: 700; color: #15803d; padding: 4px 9px; border: 1px solid #bbf7d0; border-radius: 6px; background: #f0fdf4; cursor: pointer; white-space: nowrap; }
+  .btn-completar-dash:hover { background: #dcfce7; }
+  .conf-dash { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: #374151; }
+  .btn-conf-si-dash { font-size: 11px; font-weight: 700; color: #fff; padding: 3px 8px; border: none; border-radius: 6px; background: #22c55e; cursor: pointer; }
+  .btn-conf-no-dash { font-size: 11px; font-weight: 700; color: #374151; padding: 3px 8px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; cursor: pointer; }
+  /* Panel detalle tarea */
+  .tarea-detalle { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f3f4f6; }
+  .tarea-detalle.abierto { display: block; }
+  .detalle-seccion-titulo { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .archivo-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; margin-bottom: 6px; }
+  .archivo-nombre { flex: 1; font-size: 12px; font-weight: 600; color: #0369a1; min-width: 0; word-break: break-word; }
+  .btn-descargar { font-size: 11px; font-weight: 700; color: #0369a1; padding: 3px 8px; border: 1px solid #7dd3fc; border-radius: 6px; background: #fff; text-decoration: none; white-space: nowrap; cursor: pointer; }
+  .comentario-item { padding: 8px 10px; background: #f9fafb; border-radius: 8px; margin-bottom: 6px; }
+  .comentario-autor { font-size: 11px; font-weight: 700; color: #374151; margin-bottom: 2px; }
+  .comentario-texto { font-size: 12px; color: #4b5563; line-height: 1.4; }
+  .comentario-fecha { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+  .chat-input-wrap { display: flex; gap: 6px; margin-top: 8px; }
+  .chat-input { flex: 1; padding: 8px 10px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; font-family: inherit; }
+  .chat-input:focus { border-color: #f59e0b; }
+  .btn-chat-enviar { padding: 8px 12px; background: #f59e0b; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  /* Panel detalle deal */
+  .deal-detalle { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f3f4f6; }
+  .deal-detalle.abierto { display: block; }
+  .deal-campo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f9fafb; font-size: 12px; }
+  .deal-campo:last-child { border-bottom: none; }
+  .deal-campo-label { color: #9ca3af; flex-shrink: 0; }
+  .deal-campo-valor { color: #1a1a2e; font-weight: 600; text-align: right; }
+
+  /* Cargando overlay */
+  .cargando-overlay { text-align: center; padding: 40px 20px; }
+  .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #f59e0b; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Deal cards */
+  .deal-card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .deal-top { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+  .deal-info { flex: 1; min-width: 0; }
+  .deal-nombre { font-size: 13px; font-weight: 600; color: #1a1a2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+  .deal-seguimiento { font-size: 11px; color: #6b7280; }
+  .deal-seguimiento.rojo { color: #ef4444; }
+  .deal-seguimiento.amarillo { color: #b45309; }
+  .deal-seguimiento.verde { color: #15803d; }
+  .deal-acciones { display: flex; gap: 8px; }
+  .btn-deal-ver { font-size: 11px; font-weight: 700; color: #3b82f6; text-decoration: none; padding: 5px 10px; border: 1px solid #bfdbfe; border-radius: 7px; background: #eff6ff; }
+  .btn-deal-ver:hover { background: #dbeafe; }
+  .btn-deal-actividad { font-size: 11px; font-weight: 700; color: #7c3aed; padding: 5px 10px; border: 1px solid #ddd6fe; border-radius: 7px; background: #f5f3ff; cursor: pointer; }
+  .btn-deal-actividad:hover { background: #ede9fe; }
+
+  /* Form actividad inline */
+  .form-actividad { margin-top: 12px; padding-top: 12px; border-top: 1px solid #f3f4f6; }
+  .tipo-actividad { display: flex; gap: 6px; margin-bottom: 10px; }
+  .btn-tipo { padding: 6px 12px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; background: #fff; color: #374151; transition: all 0.15s; }
+  .btn-tipo.activo { background: #f5f3ff; border-color: #7c3aed; color: #7c3aed; }
+  .act-textarea { width: 100%; padding: 9px 12px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; resize: vertical; min-height: 64px; font-family: inherit; margin-bottom: 8px; }
+  .act-textarea:focus { border-color: #7c3aed; }
+  .act-fecha-wrap { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+  .act-fecha { padding: 7px 10px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; font-family: inherit; }
+  .act-fecha:focus { border-color: #7c3aed; }
+  .act-acciones { display: flex; gap: 8px; }
+  .btn-act-guardar { flex: 1; padding: 8px; background: #7c3aed; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-act-guardar:hover { background: #6d28d9; }
+  .btn-act-guardar:disabled { background: #d1d5db; cursor: not-allowed; }
+  .btn-act-cancelar { padding: 8px 14px; background: #f3f4f6; color: #374151; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+  /* ── SIDEBAR DESKTOP ── */
+  @media (min-width: 768px) {
+    body { display: flex; padding: 0; align-items: stretch; background: #f4f6f9; }
+    .sidebar { width: 230px; flex-shrink: 0; background: #1a1a2e; display: flex; flex-direction: column; padding: 28px 16px; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; overflow-y: auto; }
+    .sidebar-logo { margin-bottom: 36px; padding: 0 4px; }
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 10px; color: #9ca3af; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.15s; }
+    .sidebar-link:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .sidebar-link.activo { background: #f59e0b; color: #1a1a2e; }
+    .sidebar-link .sb-icon { font-size: 18px; width: 22px; text-align: center; }
+    .sidebar-sep { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 12px 0; }
+    .sidebar-user { display: flex; align-items: center; gap: 8px; padding: 10px 14px; }
+    .sidebar-user-avatar { width: 30px; height: 30px; border-radius: 50%; background: #f59e0b; color: #1a1a2e; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sidebar-user-name { font-size: 13px; color: #d1d5db; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-logout { background: none; border: none; color: #6b7280; font-size: 12px; cursor: pointer; padding: 0; }
+    .sidebar-logout:hover { color: #ef4444; }
+    .page-main { margin-left: 230px; flex: 1; min-height: 100vh; }
+    .login-wrap { margin-left: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .dash { max-width: 100%; }
+    .dash-header { display: none; }
+    .dash-body { max-width: 960px; margin: 0 auto; padding: 32px; }
+  }
+  @media (max-width: 767px) { .sidebar { display: none !important; } .page-main { display: contents; } }
+  @media (max-width: 340px) { .kpis { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR (desktop) -->
+<aside class="sidebar" id="sidebar" style="display:none">
+  <div class="sidebar-logo">
+    <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:28px;filter:brightness(0) invert(1)">
+  </div>
+  <nav class="sidebar-nav">
+    <a class="sidebar-link activo" href="https://gestiondeclientes.bitrix24.site/dashboard/"><span class="sb-icon">📊</span> Mi día</a>
+    <a class="sidebar-link" href="https://gestiondeclientes.bitrix24.site/tareas/"><span class="sb-icon">📋</span> Tareas</a>
+    <a class="sidebar-link" href="https://gestiondeclientes.bitrix24.site/cambiaretapa/"><span class="sb-icon">🔄</span> Cambiar etapa</a>
+    <a class="sidebar-link" id="sb-link-ing" href="https://gestiondeclientes.bitrix24.site/ingenieria/"><span class="sb-icon">🔧</span> Propuestas Ing.</a>
+  </nav>
+  <hr class="sidebar-sep">
+  <div class="sidebar-user">
+    <div class="sidebar-user-avatar" id="sb-avatar">?</div>
+    <span class="sidebar-user-name" id="sb-nombre">—</span>
+    <button class="sidebar-logout" onclick="logout()">Salir</button>
+  </div>
+</aside>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="vista-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <a href="https://gestiondeclientes.bitrix24.site/" style="display:inline-block;line-height:0">
+        <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:42px;filter:brightness(0)">
+      </a>
+    </div>
+    <div class="login-title">Bienvenido</div>
+    <div class="login-sub">Selecciona tu nombre e ingresa tu PIN.</div>
+
+    <div class="login-field">
+      <label>¿Quién eres?</label>
+      <select id="select-usuario" onchange="resetPin()">
+        <option value="">Seleccionar…</option>
+        <option value="8">Daniel González</option>
+        <option value="10">Eduardo Lozada</option>
+        <option value="12">Luis Amor</option>
+        <option value="34">Arturo Chávez</option>
+        <option value="36">Javier Olmos</option>
+        <option value="40">Carlos Mariscal</option>
+        <option value="44">Christian González</option>
+        <option value="46">Rafael De la Cuadra</option>
+        <option value="48">Samuel Capuano</option>
+        <option value="86">Gerardo Vite</option>
+        <option value="90">Lilia Ventura</option>
+        <option value="126">Adriana Madrid</option>
+        <option value="158">Victor Linaldi</option>
+        <option value="188">Arturo Lopez Gallo</option>
+        <option value="282">Ulises Navarro</option>
+        <option value="296">Alberto Atilano Taylor</option>
+        <option value="314">Javier Reyes</option>
+        <option value="344">Erick Hernandez</option>
+        <option value="356">Moises Jimenez</option>
+      </select>
+    </div>
+
+    <div class="login-field">
+      <label>PIN (4 dígitos)</label>
+      <div class="pin-dots" id="pin-dots">
+        <div class="pin-dot" id="dot-0"></div>
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+      </div>
+      <div class="pin-teclado">
+        <div class="pin-key" onclick="pinKey('1')">1</div>
+        <div class="pin-key" onclick="pinKey('2')">2</div>
+        <div class="pin-key" onclick="pinKey('3')">3</div>
+        <div class="pin-key" onclick="pinKey('4')">4</div>
+        <div class="pin-key" onclick="pinKey('5')">5</div>
+        <div class="pin-key" onclick="pinKey('6')">6</div>
+        <div class="pin-key" onclick="pinKey('7')">7</div>
+        <div class="pin-key" onclick="pinKey('8')">8</div>
+        <div class="pin-key" onclick="pinKey('9')">9</div>
+        <div class="pin-key borrar" onclick="pinKey('C')">✕</div>
+        <div class="pin-key" onclick="pinKey('0')">0</div>
+        <div class="pin-key borrar" onclick="pinKey('B')">⌫</div>
+      </div>
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="btn-login" id="btn-login" onclick="intentarLogin()" disabled>Entrar</button>
+  </div>
+</div>
+
+<!-- MODAL EMERGENTE (detalle de tarea / negociación) -->
+<div class="modal-ov" id="modal-ov" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-head-tit" id="modal-tit">—</div>
+      <button class="modal-x" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<div class="page-main">
+<!-- DASHBOARD -->
+<div class="dash" id="vista-dash">
+  <div class="dash-header">
+    <div class="dash-header-left">
+      <div class="dash-avatar" id="dash-avatar">?</div>
+      <div>
+        <div class="dash-username" id="dash-username">—</div>
+        <div class="dash-fecha" id="dash-fecha">—</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <a href="https://gestiondeclientes.bitrix24.site/" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#374151;text-decoration:none;background:#f3f4f6;padding:6px 11px;border-radius:9px">🏠 Inicio</a>
+      <button class="btn-logout" onclick="logout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="dash-body">
+    <div id="dash-contenido">
+      <div class="cargando-overlay"><div class="spinner"></div>Cargando tu dashboard…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/';
+
+  // Abrir una negociación en NUESTRO front (/tareas/), no en Bitrix
+  function irANegociacion(dealId) {
+    localStorage.setItem('solart_deal_id_preload', String(dealId));
+    window.location.href = 'https://gestiondeclientes.bitrix24.site/tareas/';
+  }
+
+  // Profundidad del deal en el embudo (mismo modelo que el tablero directivo)
+  const STAGE_DEPTH = {
+    'PREPARATION': 1, 'NEW': 1, 'PREPAYMENT_INVOICE': 2, 'EXECUTING': 3,
+    'UC_OF6DF0': 4, 'FINAL_INVOICE': 4, 'UC_YTJ3M5': 4, 'UC_Y3LUYS': 4,
+    'UC_ODYVCM': 4, 'UC_LARNFI': 4, 'UC_60SZCS': 4, 'UC_Y71AO6': 4, 'WON': 5
+  };
+  function depthDeal(x) {
+    const st = x.STAGE_ID || '';
+    if (st.indexOf('C2:') === 0) return st === 'C2:WON' ? 6 : 5;
+    if (st.indexOf('C4:') === 0 || st.indexOf('C6:') === 0) return 6;
+    return STAGE_DEPTH[st] || 1;
+  }
+  const esChicaDeal = x => { const k = parseFloat(x.UF_CRM_1741208352117); return !!k && k < 100; };
+  function fMXNd(n) {
+    if (n >= 1000000) return '$' + (n/1000000).toFixed(1) + ' M';
+    if (n >= 1000) return '$' + Math.round(n/1000) + ' mil';
+    return '$' + Math.round(n).toLocaleString('es-MX');
+  }
+
+  // ── PINs por usuario (ID Bitrix → PIN) ──────────────────────────────
+  // Cambia los PINs aquí antes de publicar
+  const USER_NOMBRES = { '8':'Daniel González','12':'Luis Amor','34':'Arturo Chávez','36':'Javier Olmos','40':'Carlos Mariscal','86':'Gerardo Vite','344':'Erick Hernandez','188':'Arturo López','158':'Victor Linaldi','44':'Christian González','46':'Rafael De la cuadra','48':'Samuel Capuano','282':'Ulises Navarro','356':'Moises Jimenez','296':'Alberto Atilano','126':'Adriana Madrid' };
+  const PINES = {
+    '8':   '1234', // Daniel González
+    '10':  '1234', // Eduardo Lozada
+    '12':  '1234', // Luis Amor
+    '34':  '1234', // Arturo Chávez
+    '36':  '1234', // Javier Olmos
+    '40':  '1234', // Carlos Mariscal
+    '44':  '1234', // Christian González
+    '46':  '1234', // Rafael De la Cuadra
+    '48':  '1234', // Samuel Capuano
+    '86':  '1234', // Gerardo Vite
+    '90':  '1234', // Lilia Ventura
+    '126': '1234', // Adriana Madrid
+    '158': '1234', // Victor Linaldi
+    '188': '1234', // Arturo Lopez Gallo
+    '282': '1234', // Ulises Navarro
+    '296': '1234', // Alberto Atilano Taylor
+    '314': '1234', // Javier Reyes
+    '344': '1234', // Erick Hernandez
+    '356': '1234', // Moises Jimenez
+  };
+
+  const ETAPAS_LEAD = {
+    'UC_WWL2HT':'00_Validación estratégica','UC_6ZKIB2':'01_Datos por confirmar',
+    'UC_KF4DSF':'02_Primer contacto pendiente','UC_SOR5IW':'03_Datos confirmados',
+    'NEW':'04_Contacto comercial inicial','IN_PROCESS':'05_Credenciales presentadas',
+    'UC_CSHZAY':'06_Espera recibo CFE','UC_QN380W':'07_Recibo recibido',
+    'CONVERTED':'08_Recibo validado','JUNK':'99_No útil'
+  };
+  const ETAPAS_DEAL = {
+    'PREPARATION':'Gen. propuesta','NEW':'Propuesta preliminar',
+    'PREPAYMENT_INVOICE':'Presentación inicial','EXECUTING':'Visita técnica',
+    'UC_OF6DF0':'Propuesta formal','FINAL_INVOICE':'Evaluación interna',
+    'UC_Y3LUYS':'Propuesta final','UC_YTJ3M5':'Propuesta financiera',
+    'UC_ODYVCM':'Recibo SOLART','UC_LARNFI':'Email acelerador',
+    'UC_60SZCS':'Abrió email','UC_Y71AO6':'Recuperada','WON':'Ganado'
+  };
+  const ETAPAS_CIERRE_G = {
+    'C2:NEW':'Sí verbal (Cierre)','C2:UC_6WRMUD':'Documentos contrato','C2:PREPARATION':'Firma de contrato',
+    'C2:UC_LSBW8K':'Revisión financiera','C2:UC_B36RA8':'Espera anticipo','C2:WON':'Anticipo pagado'
+  };
+  // Campos editables del deal desde el modal (id Bitrix → etiqueta y tipo)
+  const CAMPOS_EDIT = [
+    { k:'UF_CRM_1741208352117', lbl:'⚡ Tamaño del sistema (kWp)', tipo:'num' },
+    { k:'UF_CRM_1753209254287', lbl:'🔋 % de energía que cubrimos', tipo:'text' },
+    { k:'UF_CRM_1765995370491', lbl:'🏠 Inmueble', tipo:'enum', mapa:'INMUEBLE_MAP' },
+    { k:'UF_CRM_1777320644093', lbl:'⚙️ Proveedor energético', tipo:'enum', mapa:'PROVEEDOR_MAP' },
+    { k:'OPPORTUNITY', lbl:'💰 Monto de la propuesta (MXN)', tipo:'num' },
+  ];
+
+  // Mapas de enums UF — se actualizan dinámicamente con crm.deal.fields
+  let INMUEBLE_MAP = {};
+  let PROVEEDOR_MAP = {};
+
+  async function cargarEnumsCampos() {
+    try {
+      const r = await bx('crm.deal.fields.json');
+      const campos = r.result || {};
+      const toMap = (items) => Object.fromEntries((items || []).map(i => [String(i.ID), i.VALUE]));
+      if (campos.UF_CRM_1765995370491?.items) INMUEBLE_MAP  = toMap(campos.UF_CRM_1765995370491.items);
+      if (campos.UF_CRM_1777320644093?.items) PROVEEDOR_MAP = toMap(campos.UF_CRM_1777320644093.items);
+    } catch {}
+  }
+  const STATUS_LABEL = {'2':'pendiente','3':'en curso','4':'revisión','5':'completada','6':'diferida'};
+  const STATUS_COLOR = {'2':'#6b7280','3':'#1d4ed8','4':'#a16207','5':'#15803d','6':'#9ca3af'};
+
+  // ── MODAL EMERGENTE ──────────────────────────────────────────────────
+  function cerrarModal() { document.getElementById('modal-ov').classList.remove('visible'); }
+  function abrirModal(titulo, cargando = true) {
+    document.getElementById('modal-tit').textContent = titulo || '';
+    document.getElementById('modal-body').innerHTML = cargando
+      ? '<div style="text-align:center;padding:30px;color:#9ca3af"><div class="spinner"></div>Cargando…</div>' : '';
+    document.getElementById('modal-ov').classList.add('visible');
+  }
+
+  async function abrirTareaModal(tareaId) {
+    abrirModal('Detalle de la tarea');
+    try {
+      const [rTarea, rCom] = await Promise.all([
+        bx('tasks.task.get.json', { taskId: tareaId, select: ['ID','TITLE','STATUS','DEADLINE','RESPONSIBLE_ID','CREATED_BY','DESCRIPTION','UF_TASK_WEBDAV_FILES','GROUP_ID'] }),
+        bx('tasks.task.comments.getList.json', { TASK_ID: tareaId, order: { ID: 'ASC' }, select: ['ID','AUTHOR_ID','TEXT','ADD_IN_TIME'] })
+      ]);
+      const t = rTarea?.result?.task || {};
+      const st = String(t.status || t.STATUS || '');
+      document.getElementById('modal-tit').textContent = t.title || t.TITLE || 'Tarea';
+      // Archivos: UF nativos + links en comentarios
+      const ufIds = (t.ufTaskWebdavFiles || t.UF_TASK_WEBDAV_FILES || []).filter(Boolean);
+      let archivos = [];
+      for (const fid of ufIds) {
+        try {
+          const ao = await bx('disk.attachedObject.get.json', { id: fid });
+          const oid = ao.result?.OBJECT_ID || fid;
+          const fr = await bx('disk.file.get.json', { id: oid });
+          if (fr.result) archivos.push({ n: fr.result.NAME, u: fr.result.DOWNLOAD_URL || fr.result.DETAIL_URL || '' });
+        } catch {}
+      }
+      const comentarios = rCom?.result || [];
+      // links de archivos en comentarios (formato del flujo de ingeniería)
+      comentarios.forEach(c => {
+        const msg = (c.TEXT || c.POST_MESSAGE || '');
+        const url = (msg.match(/Descargar:\s*(https?:\/\/[^\s]+)/)||[])[1];
+        const nom = (msg.match(/([^\s\/]+\.\w{2,5})\b/)||[])[1];
+        if (url && nom && !archivos.some(a => a.n === nom)) archivos.push({ n: nom, u: url });
+      });
+      const desc = ((t.description || t.DESCRIPTION || '').replace(/\[[^\]]*\]/g,'').replace(/<[^>]*>/g,'')).trim();
+      const emojiArch = n => { const e=(n.split('.').pop()||'').toUpperCase(); return e==='PDF'?'📕':['PPTX','PPT'].includes(e)?'📊':['XLSX','XLS'].includes(e)?'📗':['JPG','JPEG','PNG'].includes(e)?'🖼️':'📎'; };
+      const comHtml = comentarios.length ? comentarios.map(c => {
+        const fecha = c.ADD_IN_TIME ? new Date(c.ADD_IN_TIME*1000).toLocaleString('es-MX',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+        const txt = (c.TEXT||'').replace(/<[^>]*>/g,'').trim();
+        if (!txt) return '';
+        return `<div style="background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px"><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">${USER_NOMBRES[String(c.AUTHOR_ID)]||''} · ${fecha}</div><div style="font-size:12px;color:#374151;white-space:pre-line">${txt}</div></div>`;
+      }).join('') : '<div style="font-size:12px;color:#9ca3af">Sin comentarios.</div>';
+
+      document.getElementById('modal-body').innerHTML = `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:${(STATUS_COLOR[st]||'#6b7280')}22;color:${STATUS_COLOR[st]||'#6b7280'}">Estatus: ${STATUS_LABEL[st]||'—'}</span>
+          ${t.deadline||t.DEADLINE ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#f3f4f6;color:#374151">📅 Vence ${String(t.deadline||t.DEADLINE).substring(0,10)}</span>` : ''}
+          <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#f3f4f6;color:#374151">👤 ${USER_NOMBRES[String(t.responsibleId||t.RESPONSIBLE_ID)]||'Responsable'}</span>
+        </div>
+        ${desc ? `<div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px">Descripción</div><div style="font-size:13px;color:#374151;background:#f9fafb;border-radius:10px;padding:10px;margin-bottom:14px;white-space:pre-line;max-height:160px;overflow:auto">${desc}</div>` : ''}
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px">📎 Adjuntos ${archivos.length?`(${archivos.length})`:''}</div>
+        ${archivos.length ? archivos.map(a => `<div style="display:flex;align-items:center;gap:8px;background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px"><span style="font-size:18px">${emojiArch(a.n)}</span><span style="flex:1;font-size:12px;color:#374151;word-break:break-word">${a.n}</span>${a.u?`<a href="${a.u}" target="_blank" style="font-size:11px;font-weight:700;color:#1d4ed8;text-decoration:none;flex-shrink:0">⬇️</a>`:''}</div>`).join('') : '<div style="font-size:12px;color:#9ca3af;margin-bottom:12px">Sin adjuntos.</div>'}
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin:14px 0 6px">💬 Comentarios</div>
+        ${comHtml}
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <input id="modal-chat-inp" placeholder="Escribe un comentario…" style="flex:1;border:1px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px">
+          <button onclick="enviarComentarioModal(${tareaId})" style="background:#1a1a2e;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer">Enviar</button>
+        </div>
+        ${st!=='5' ? `<button onclick="completarDesdeModal(${tareaId})" style="width:100%;margin-top:12px;background:#16a34a;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">✓ Marcar como completada</button>` : ''}`;
+    } catch(e) {
+      document.getElementById('modal-body').innerHTML = '<div style="color:#ef4444;font-size:13px">Error al cargar el detalle.</div>';
+    }
+  }
+  async function enviarComentarioModal(tareaId) {
+    const inp = document.getElementById('modal-chat-inp');
+    const txt = inp?.value?.trim(); if (!txt) return;
+    inp.disabled = true;
+    try { await bx('tasks.task.commentadd.json', { TASK_ID: tareaId, fields: { POST_MESSAGE: txt } }); abrirTareaModal(tareaId); }
+    catch { inp.disabled = false; alert('No se pudo enviar.'); }
+  }
+  async function completarDesdeModal(tareaId) {
+    if (!confirm('¿Marcar la tarea como completada?')) return;
+    try { await bx('tasks.task.complete.json', { taskId: tareaId }); cerrarModal(); cargarDashboard(); }
+    catch { alert('No se pudo completar.'); }
+  }
+
+  // ── MODAL DE NEGOCIACIÓN (detalle + cambiar etapa + editar campos + tareas) ──
+  async function abrirDealModal(dealId) {
+    abrirModal('Detalle de la negociación');
+    try {
+      const [rDeal, rTareas] = await Promise.all([
+        bx('crm.deal.get.json', { id: dealId }),
+        bx('tasks.task.list.json', { filter: { UF_CRM_TASK: ['D_' + dealId] }, select: ['ID','TITLE','STATUS','RESPONSIBLE_ID','DEADLINE'], order: { ID: 'DESC' } })
+      ]);
+      const dl = rDeal?.result || {};
+      window._dealModal = dl;
+      const cat = String(dl.CATEGORY_ID || '0');
+      const mapa = cat === '2' ? ETAPAS_CIERRE_G : ETAPAS_DEAL;
+      document.getElementById('modal-tit').textContent = dl.TITLE || 'Negociación';
+      // Selector de etapa
+      const opciones = Object.entries(mapa).map(([id,nom]) => `<option value="${id}" ${dl.STAGE_ID===id?'selected':''}>${nom}</option>`).join('');
+      // Campos editables
+      const campos = CAMPOS_EDIT.map(c => {
+        const val = c.k === 'OPPORTUNITY' ? (dl.OPPORTUNITY||'') : (dl[c.k]||'');
+        if (c.tipo === 'enum') {
+          const m = c.mapa === 'INMUEBLE_MAP' ? INMUEBLE_MAP : PROVEEDOR_MAP;
+          const ops = ['<option value="">—</option>'].concat(Object.entries(m).map(([id,nom]) => `<option value="${id}" ${String(val)===String(id)?'selected':''}>${nom}</option>`)).join('');
+          return `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#6b7280">${c.lbl}</label><select data-campo="${c.k}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;margin-top:3px">${ops}</select></div>`;
+        }
+        const raw = c.k === 'UF_CRM_1758675881434' && typeof val === 'string' ? val.split('|')[0] : val;
+        return `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#6b7280">${c.lbl}</label><input data-campo="${c.k}" type="${c.tipo==='num'?'number':'text'}" value="${raw}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;margin-top:3px;box-sizing:border-box"></div>`;
+      }).join('');
+      // Tareas de la negociación
+      const tareas = rTareas?.result?.tasks || [];
+      const tareasHtml = tareas.length ? tareas.map(t => {
+        const st = String(t.status);
+        const done = st === '5';
+        return `<div style="display:flex;align-items:center;gap:8px;background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px">
+          <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</div><div style="font-size:10px;color:${STATUS_COLOR[st]||'#6b7280'}">${STATUS_LABEL[st]||'en curso'}</div></div>
+          <button onclick="abrirTareaModal(${t.id})" style="background:#eef2ff;color:#4338ca;border:none;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer">Ver</button>
+          ${!done?`<button onclick="aprobarTareaModal(${t.id},${dealId})" style="background:#16a34a;color:#fff;border:none;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer">✓ Aprobar</button>`:''}
+        </div>`;
+      }).join('') : '<div style="font-size:12px;color:#9ca3af">Sin tareas.</div>';
+
+      document.getElementById('modal-body').innerHTML = `
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px">🔄 Etapa</div>
+        <div style="display:flex;gap:6px;margin-bottom:16px">
+          <select id="deal-stage-sel" style="flex:1;border:1.5px solid #c7d2fe;border-radius:8px;padding:9px;font-size:13px;font-weight:700;color:#1e3a8a;background:#eef2ff">${opciones}</select>
+          <button onclick="guardarEtapaDeal(${dealId})" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">Mover</button>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">✏️ Datos de la negociación</div>
+        <div id="deal-campos">${campos}</div>
+        <button onclick="guardarCamposDeal(${dealId})" style="width:100%;background:#1a1a2e;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:16px">💾 Guardar cambios</button>
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">📋 Tareas de esta negociación</div>
+        ${tareasHtml}`;
+    } catch(e) {
+      document.getElementById('modal-body').innerHTML = '<div style="color:#ef4444;font-size:13px">Error al cargar la negociación.</div>';
+    }
+  }
+  async function guardarEtapaDeal(dealId) {
+    const sel = document.getElementById('deal-stage-sel');
+    const stage = sel?.value; if (!stage) return;
+    sel.disabled = true;
+    try { await bx('crm.deal.update.json', { id: dealId, fields: { STAGE_ID: stage } }); cerrarModal(); cargarDashboard(); }
+    catch { sel.disabled = false; alert('No se pudo cambiar la etapa.'); }
+  }
+  async function guardarCamposDeal(dealId) {
+    const fields = {};
+    document.querySelectorAll('#deal-campos [data-campo]').forEach(el => {
+      const k = el.dataset.campo;
+      let v = el.value;
+      if (k === 'UF_CRM_1758675881434' && v) v = v + '|MXN';
+      fields[k] = v;
+    });
+    try { await bx('crm.deal.update.json', { id: dealId, fields }); cerrarModal(); cargarDashboard(); }
+    catch { alert('No se pudieron guardar los cambios.'); }
+  }
+  async function aprobarTareaModal(tareaId, dealId) {
+    if (!confirm('¿Aprobar / completar esta tarea?')) return;
+    try { await bx('tasks.task.complete.json', { taskId: tareaId }); abrirDealModal(dealId); }
+    catch { alert('No se pudo aprobar.'); }
+  }
+
+  let pinActual = '';
+  let usuarioActual = null;
+  let periodoActual = 'semana';
+
+  // ── PIN ──────────────────────────────────────────────────────────────
+  function pinKey(k) {
+    if (k === 'C') { pinActual = ''; }
+    else if (k === 'B') { pinActual = pinActual.slice(0,-1); }
+    else if (pinActual.length < 4) { pinActual += k; }
+    actualizarDots();
+    if (pinActual.length === 4) intentarLogin();
+  }
+
+  function actualizarDots() {
+    for (let i = 0; i < 4; i++) {
+      document.getElementById('dot-' + i).classList.toggle('lleno', i < pinActual.length);
+    }
+    document.getElementById('btn-login').disabled = !(pinActual.length === 4 && document.getElementById('select-usuario').value);
+  }
+
+  function resetPin() {
+    pinActual = '';
+    actualizarDots();
+    document.getElementById('login-error').textContent = '';
+  }
+
+  function intentarLogin() {
+    const uid = document.getElementById('select-usuario').value;
+    if (!uid) { document.getElementById('login-error').textContent = 'Selecciona tu nombre.'; return; }
+    if (pinActual.length < 4) return;
+    if (PINES[uid] !== pinActual) {
+      document.getElementById('login-error').textContent = 'PIN incorrecto.';
+      pinActual = '';
+      actualizarDots();
+      return;
+    }
+    // Login exitoso
+    const nombre = document.getElementById('select-usuario').options[document.getElementById('select-usuario').selectedIndex].text;
+    usuarioActual = { id: uid, nombre };
+    localStorage.setItem('solart_user', JSON.stringify(usuarioActual));
+    abrirDashboard();
+  }
+
+  function logout() {
+    localStorage.removeItem('solart_user');
+    usuarioActual = null;
+    pinActual = '';
+    actualizarDots();
+    document.getElementById('select-usuario').value = '';
+    document.getElementById('login-error').textContent = '';
+    document.getElementById('vista-dash').classList.remove('visible');
+    document.getElementById('vista-login').style.display = 'flex';
+  }
+
+  // ── DASHBOARD ────────────────────────────────────────────────────────
+  function abrirDashboard() {
+    document.getElementById('vista-login').style.display = 'none';
+    document.getElementById('vista-dash').classList.add('visible');
+
+    const u = usuarioActual;
+    document.getElementById('dash-avatar').textContent = u.nombre.charAt(0).toUpperCase();
+    document.getElementById('dash-username').textContent = u.nombre;
+
+    const hoy = new Date();
+    const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    document.getElementById('dash-fecha').textContent = `${DIAS[hoy.getDay()]} ${hoy.getDate()} ${MESES[hoy.getMonth()]} ${hoy.getFullYear()}`;
+
+    mostrarSidebar(u);
+    cargarEnumsCampos().then(() => cargarDashboard());
+  }
+
+  function periodoFechas(periodo) {
+    const hoy = new Date();
+    const fin = new Date(hoy); fin.setHours(23,59,59,0);
+    const ini = new Date(hoy);
+    if (periodo === 'hoy')   { ini.setHours(0,0,0,0); }
+    if (periodo === 'semana'){ ini.setDate(ini.getDate()-7); ini.setHours(0,0,0,0); }
+    if (periodo === 'mes')   { ini.setDate(ini.getDate()-30); ini.setHours(0,0,0,0); }
+    const fmt = d => d.toISOString().slice(0,19).replace('T',' ');
+    return { ini: fmt(ini), fin: fmt(fin) };
+  }
+
+  async function cargarDashboard() {
+    document.getElementById('dash-contenido').innerHTML =
+      '<div class="cargando-overlay"><div class="spinner"></div>Cargando tu dashboard…</div>';
+
+    const uid = usuarioActual.id;
+    const { ini, fin } = periodoFechas(periodoActual);
+
+    const hoyIni = new Date(); hoyIni.setHours(0,0,0,0);
+    const hoyFin = new Date(); hoyFin.setHours(23,59,59,0);
+    const fmtAct = d => d.toISOString().slice(0,19).replace('T',' ');
+
+    const [leadsActivosRes, leadsConvRes, dealsRes, dealsWonRes, dealsCierreRes,
+           misTargetRes, tareasClienteRes, actividadesRes] = await Promise.all([
+      // Prospectos activos (excluir JUNK y CONVERTED client-side)
+      bx('crm.lead.list.json', {
+        filter: { ASSIGNED_BY_ID: uid },
+        select: ['ID','NAME','LAST_NAME','STATUS_ID','COMPANY_TITLE','DATE_MODIFY','DATE_CREATE'],
+        order: { DATE_MODIFY: 'DESC' }
+      }),
+      // Prospectos convertidos en el período (para KPI)
+      bx('crm.lead.list.json', {
+        filter: { ASSIGNED_BY_ID: uid, STATUS_ID: 'CONVERTED', '>=DATE_MODIFY': ini, '<=DATE_MODIFY': fin },
+        select: ['ID'], start: -1
+      }),
+      // Negociaciones PROCESO DE VENTA
+      bx('crm.deal.list.json', {
+        filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 0 },
+        select: ['ID','TITLE','STAGE_ID','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_ID','OPPORTUNITY','CURRENCY_ID','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1777320644093','UF_CRM_1758675881434'],
+        order: { DATE_MODIFY: 'DESC' }
+      }),
+      // Deals ganados en período (para KPI)
+      bx('crm.deal.list.json', {
+        filter: { ASSIGNED_BY_ID: uid, STAGE_ID: 'WON', '>=DATE_MODIFY': ini, '<=DATE_MODIFY': fin },
+        select: ['ID'], start: -1
+      }),
+      // Negociaciones PROCESO DE CIERRE
+      bx('crm.deal.list.json', {
+        filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 2 },
+        select: ['ID','TITLE','STAGE_ID','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_ID','OPPORTUNITY','CURRENCY_ID','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1777320644093','UF_CRM_1758675881434'],
+        order: { DATE_MODIFY: 'DESC' }
+      }),
+      // Mis tareas: yo soy responsable, pendientes
+      bx('tasks.task.list.json', {
+        filter: { RESPONSIBLE_ID: uid, '!STATUS': '5' },
+        select: ['ID','TITLE','STATUS','DEADLINE','CREATED_BY'],
+        order: { DEADLINE: 'ASC' }
+      }),
+      // Tareas de mis clientes: yo las creé, otro es responsable, pendientes
+      bx('tasks.task.list.json', {
+        filter: { CREATED_BY: uid, '!RESPONSIBLE_ID': uid, '!STATUS': '5' },
+        select: ['ID','TITLE','STATUS','DEADLINE','RESPONSIBLE_ID'],
+        order: { DEADLINE: 'ASC' }
+      }),
+      // Actividades de hoy: pendientes, soy responsable
+      bx('crm.activity.list.json', {
+        filter: {
+          RESPONSIBLE_ID: uid,
+          COMPLETED: 'N',
+          '>=DEADLINE': fmtAct(hoyIni),
+          '<=DEADLINE': fmtAct(hoyFin)
+        },
+        select: ['ID','SUBJECT','DESCRIPTION','TYPE_ID','DEADLINE','OWNER_TYPE_ID','OWNER_ID'],
+        order: { DEADLINE: 'ASC' }
+      }),
+    ]);
+
+    // Deals míos con actividad en los últimos 30 días (el timeline no refresca LAST_ACTIVITY_TIME)
+    const desde30 = new Date(Date.now() - 30*86400000).toISOString().slice(0,19);
+    const actRes = await bx('crm.activity.list.json', {
+      filter: { OWNER_TYPE_ID: 2, RESPONSIBLE_ID: uid, '>=CREATED': desde30 },
+      select: ['ID','OWNER_ID']
+    });
+    const dealsConAct = new Set((actRes.result || []).map(a => String(a.OWNER_ID)));
+    // También cuentan las tareas ligadas a deals con movimiento reciente
+    try {
+      const tActRes = await bx('tasks.task.list.json', {
+        filter: { '>=CHANGED_DATE': desde30 },
+        select: ['ID','UF_CRM_TASK']
+      });
+      (tActRes.result?.tasks || []).forEach(t => (t.ufCrmTask || []).forEach(u => {
+        const m = String(u).match(/^D_(\d+)$/);
+        if (m) dealsConAct.add(m[1]);
+      }));
+    } catch {}
+
+    // Mis ganadas (anticipo pagado o ya en instalación/entrega) — para la sección financiera
+    const [wonC2Res, cat4Res, cat6Res] = await Promise.all([
+      bx('crm.deal.list.json', { filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 2, STAGE_ID: 'C2:WON' }, select: ['ID','TITLE','OPPORTUNITY','MOVED_TIME','CLOSEDATE','DATE_CREATE','UF_CRM_1741208352117'] }),
+      bx('crm.deal.list.json', { filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 4 }, select: ['ID','TITLE','OPPORTUNITY','STAGE_ID','MOVED_TIME','CLOSEDATE','DATE_CREATE','UF_CRM_1741208352117'] }),
+      bx('crm.deal.list.json', { filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 6 }, select: ['ID','TITLE','OPPORTUNITY','STAGE_ID','MOVED_TIME','CLOSEDATE','DATE_CREATE','UF_CRM_1741208352117'] }),
+    ]);
+    const misGanadas = [
+      ...(wonC2Res.result || []),
+      ...((cat4Res.result || []).filter(d => !String(d.STAGE_ID).endsWith('LOSE'))),
+      ...((cat6Res.result || []).filter(d => !String(d.STAGE_ID).endsWith('LOSE')))
+    ];
+
+    const todosLeads    = leadsActivosRes.result || [];
+    const todosDeals    = dealsRes.result || [];
+    const misTareas     = (misTargetRes.result?.tasks) || [];
+    const tareasClien   = (tareasClienteRes.result?.tasks) || [];
+    const actividadesHoy = actividadesRes.result || [];
+
+    // Filtrar client-side
+    const leadsAct = todosLeads.filter(l => l.STATUS_ID !== 'JUNK' && l.STATUS_ID !== 'CONVERTED');
+    const leadsNew = todosLeads.filter(l => l.STATUS_ID !== 'JUNK' && l.DATE_CREATE >= ini && l.DATE_CREATE <= fin);
+    const dealsAct    = todosDeals.filter(d => d.STAGE_ID !== 'WON' && d.STAGE_ID !== 'LOSE');
+    const dealsCierre = (dealsCierreRes.result || []).filter(d => d.STAGE_ID !== 'WON' && d.STAGE_ID !== 'LOSE');
+
+    const kpis = {
+      leadsCreados: leadsNew.length,
+      convertidos:  leadsConvRes.total ?? (leadsConvRes.result?.length ?? 0),
+      dealsActivos: dealsAct.length + dealsCierre.length,
+      ganados:      dealsWonRes.total ?? (dealsWonRes.result?.length ?? 0),
+    };
+
+    // ── Embudo de hitos del vendedor (mismo modelo que Victor/Arturo) ──
+    const perdidas = [
+      ...todosDeals.filter(d => d.STAGE_ID === 'LOSE'),
+      ...((dealsCierreRes.result || []).filter(d => d.STAGE_ID === 'C2:LOSE'))
+    ];
+    const vivas = [...dealsAct, ...dealsCierre, ...misGanadas];
+    const conReciboAll = [...vivas, ...perdidas];
+    const sumOp = arr => arr.reduce((s,x) => s + (parseFloat(x.OPPORTUNITY)||0), 0);
+    const negociacion = vivas.filter(d => depthDeal(d) >= 4);
+    const enCierreH   = vivas.filter(d => depthDeal(d) >= 5);
+    const ganadasG    = misGanadas.filter(d => !esChicaDeal(d));
+    const ganadasC    = misGanadas.filter(esChicaDeal);
+    const totalProsH  = leadsAct.length + conReciboAll.length;
+    const hitos = {
+      prospectos: leadsAct.length,
+      conRecibo: conReciboAll.length, montoRecibo: sumOp(conReciboAll),
+      negociacion: negociacion.length,
+      cierre: enCierreH.length,
+      ganadas: ganadasG.length, ganadasChicas: ganadasC.length, montoGan: sumOp(ganadasG),
+      perdidas: perdidas.length,
+      cvProsp:  totalProsH ? Math.round(conReciboAll.length / totalProsH * 100) : 0,
+      cvRecNeg: conReciboAll.length ? Math.round(negociacion.length / conReciboAll.length * 100) : 0,
+      cvNegCie: negociacion.length ? Math.round(enCierreH.length / negociacion.length * 100) : 0,
+      cvCieGan: enCierreH.length ? Math.round(misGanadas.length / enCierreH.length * 100) : 0,
+      tasaPerdida: conReciboAll.length ? Math.round(perdidas.length / conReciboAll.length * 100) : 0,
+    };
+
+    renderDashboard(kpis, leadsAct, dealsAct, dealsCierre, misTareas, tareasClien, actividadesHoy, misGanadas, dealsConAct, hitos);
+  }
+
+  function renderDashboard(kpis, leads, deals, dealsCierre, misTareas, tareasCliente, actividadesHoy = [], misGanadas = [], dealsConAct = new Set(), hitos = null) {
+    const labels = { hoy: 'hoy', semana: 'esta semana', mes: 'este mes' };
+    const lbl = labels[periodoActual];
+
+    const periodoHtml = `
+      <div class="periodo-wrap">
+        <button class="periodo-btn ${periodoActual==='hoy'?'activo':''}" onclick="cambiarPeriodo('hoy')">Hoy</button>
+        <button class="periodo-btn ${periodoActual==='semana'?'activo':''}" onclick="cambiarPeriodo('semana')">Semana</button>
+        <button class="periodo-btn ${periodoActual==='mes'?'activo':''}" onclick="cambiarPeriodo('mes')">Mes</button>
+      </div>`;
+
+    const kpisHtml = `
+      <div class="kpis">
+        <div class="kpi-card amarillo">
+          <div class="kpi-icono">📥</div>
+          <div class="kpi-valor">${kpis.leadsCreados}</div>
+          <div class="kpi-label">Contactos nuevos captados ${lbl}</div>
+        </div>
+        <div class="kpi-card azul">
+          <div class="kpi-icono">📋</div>
+          <div class="kpi-valor">${kpis.convertidos}</div>
+          <div class="kpi-label">Pasaron a negociación real ${lbl}</div>
+        </div>
+        <div class="kpi-card verde">
+          <div class="kpi-icono">💼</div>
+          <div class="kpi-valor">${kpis.dealsActivos}</div>
+          <div class="kpi-label">Clientes en proceso activo</div>
+        </div>
+        <div class="kpi-card rojo">
+          <div class="kpi-icono">🏆</div>
+          <div class="kpi-valor">${kpis.ganados}</div>
+          <div class="kpi-label">Cierres logrados ${lbl}</div>
+        </div>
+      </div>`;
+
+    // ── 💵 Mi dinero ──
+    const fMXN = n => n >= 1000000 ? '$' + (n/1000000).toFixed(1) + ' M' : n >= 1000 ? '$' + Math.round(n/1000) + ' mil' : '$' + Math.round(n).toLocaleString('es-MX');
+    const sumaOp = arr => arr.reduce((s,x) => s + (parseFloat(x.OPPORTUNITY)||0), 0);
+    // ── Mi embudo (tira de hitos, igual que el tablero directivo) ──
+    const H = hitos || {};
+    const cajaH = (bg,bd,c1,c2,tit,num,sub) => `
+      <div style="background:${bg};border:1.5px solid ${bd};border-radius:12px;padding:10px 4px;text-align:center">
+        <div style="font-size:9px;font-weight:700;color:${c1}">${tit}</div>
+        <div style="font-size:19px;font-weight:800;color:${c2}">${num}</div>
+        <div style="font-size:9px;color:${c1}">${sub}</div>
+      </div>`;
+    const flechaH = (pct,color) => `
+      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center">
+        <div style="font-size:12px;font-weight:800;color:${color}">${pct}%</div>
+        <div style="font-size:12px;color:#9ca3af">→</div>
+        <div style="font-size:8px;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em">conversión</div>
+      </div>`;
+    const embudoHtml = hitos ? `
+      <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:2px">🎯 Mi embudo</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Tu recorrido de venta · las flechas son la conversión de un hito al siguiente</div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr;gap:3px;align-items:stretch;margin-bottom:8px">
+        ${cajaH('#fff7ed','#fed7aa','#c2410c','#7c2d12','PROSPECTOS',H.prospectos,'sin recibo')}
+        ${flechaH(H.cvProsp,'#d97706')}
+        ${cajaH('#fefce8','#fde68a','#a16207','#713f12','CON RECIBO',H.conRecibo,fMXNd(H.montoRecibo))}
+        ${flechaH(H.cvRecNeg,'#7c3aed')}
+        ${cajaH('#faf5ff','#e9d5ff','#7c3aed','#4c1d95','NEGOCIACIÓN',H.negociacion,'post-visita')}
+        ${flechaH(H.cvNegCie,'#1d4ed8')}
+        ${cajaH('#eff6ff','#bfdbfe','#1d4ed8','#1e3a8a','EN CIERRE',H.cierre,'contrato/anticipo')}
+        ${flechaH(H.cvCieGan,'#15803d')}
+        ${cajaH('#f0fdf4','#bbf7d0','#15803d','#14532d','GANADAS 🎉',H.ganadas,fMXNd(H.montoGan)+(H.ganadasChicas?` +${H.ganadasChicas} chica${H.ganadasChicas>1?'s':''}`:''))}
+      </div>
+      ${H.perdidas ? `<div style="text-align:right;margin-bottom:16px"><span style="font-size:11px;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:20px;padding:3px 10px">🔻 Tasa de pérdida: ${H.tasaPerdida}% · ${H.perdidas} perdidas</span></div>` : '<div style="margin-bottom:16px"></div>'}
+    ` : '';
+
+    const anioHoy = new Date().getFullYear();
+    const ganadasAnio = misGanadas.filter(d => new Date(d.MOVED_TIME || d.CLOSEDATE || d.DATE_CREATE).getFullYear() === anioHoy);
+    const finHtml = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px">
+        <div style="background:#faf5ff;border:1.5px solid #e9d5ff;border-radius:14px;padding:12px;text-align:center">
+          <div style="font-size:10px;font-weight:700;color:#7c3aed">EN JUEGO</div>
+          <div style="font-size:19px;font-weight:800;color:#4c1d95">${fMXN(sumaOp(deals))}</div>
+          <div style="font-size:10px;color:#8b5cf6">${deals.length} negociaciones</div>
+        </div>
+        <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:14px;padding:12px;text-align:center">
+          <div style="font-size:10px;font-weight:700;color:#1d4ed8">EN CIERRE</div>
+          <div style="font-size:19px;font-weight:800;color:#1e3a8a">${fMXN(sumaOp(dealsCierre))}</div>
+          <div style="font-size:10px;color:#3b82f6">${dealsCierre.length} por cerrar</div>
+        </div>
+        <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:14px;padding:12px;text-align:center">
+          <div style="font-size:10px;font-weight:700;color:#15803d">GANADO ${anioHoy}</div>
+          <div style="font-size:19px;font-weight:800;color:#14532d">${fMXN(sumaOp(ganadasAnio))}</div>
+          <div style="font-size:10px;color:#16a34a">${ganadasAnio.length} ganadas 🎉</div>
+        </div>
+      </div>`;
+
+    // ── 🎯 Prioridades del mes ──
+    const DIA_MS = 86400000;
+    const prioridades = [];
+    // 1. En cierre: lo más cerca del dinero
+    dealsCierre.slice().sort((a,b) => (parseFloat(b.OPPORTUNITY)||0) - (parseFloat(a.OPPORTUNITY)||0)).slice(0,3).forEach(d => {
+      prioridades.push({ icono:'🔥', color:'#dc2626', bg:'#fef2f2', accion:'Ciérrala', titulo:d.TITLE, extra:fMXN(parseFloat(d.OPPORTUNITY)||0), dealId:d.ID });
+    });
+    // 2. Casi cerradas o en evaluación: empujar el sí
+    deals.filter(d => ['UC_Y3LUYS','FINAL_INVOICE'].includes(d.STAGE_ID)).slice(0,3).forEach(d => {
+      prioridades.push({ icono:'🎯', color:'#7c3aed', bg:'#faf5ff', accion:'Empuja el sí', titulo:d.TITLE, extra:fMXN(parseFloat(d.OPPORTUNITY)||0), dealId:d.ID });
+    });
+    // 3. Estancadas: sin movimiento en 30+ días (ficha editada O actividad en timeline)
+    const ultimoMovD = d => Math.max(
+      d.DATE_MODIFY ? new Date(d.DATE_MODIFY).getTime() : 0,
+      d.LAST_ACTIVITY_TIME ? new Date(d.LAST_ACTIVITY_TIME).getTime() : 0
+    );
+    deals.filter(d => (Date.now() - ultimoMovD(d)) > 30*DIA_MS && !dealsConAct.has(String(d.ID))).slice(0,3).forEach(d => {
+      const dias = Math.floor((Date.now() - ultimoMovD(d)) / DIA_MS);
+      prioridades.push({ icono:'🕐', color:'#d97706', bg:'#fffbeb', accion:'Retómala', titulo:d.TITLE, extra:`${dias} días sin movimiento`, dealId:d.ID });
+    });
+    // 4. Tareas vencidas
+    misTareas.filter(t => t.deadline && new Date(t.deadline) < new Date()).slice(0,3).forEach(t => {
+      prioridades.push({ icono:'⏰', color:'#6b7280', bg:'#f9fafb', accion:'Tarea vencida', titulo:t.title, extra:`venció ${t.deadline.substring(0,10)}` });
+    });
+    const prioHtml = `
+      <div class="seccion">
+        <div class="seccion-header">
+          <span class="seccion-titulo">🎯 Prioridades del mes</span>
+          <span class="seccion-count">${prioridades.length}</span>
+        </div>
+        ${prioridades.length ? prioridades.slice(0,9).map((p,i) => `
+        <div ${p.dealId ? `onclick="irANegociacion(${p.dealId})"` : ''} style="display:flex;align-items:center;gap:10px;background:${p.bg};border:1px solid ${p.color}22;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
+          <div style="font-size:18px">${p.icono}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;font-weight:800;color:${p.color};text-transform:uppercase;letter-spacing:.03em">${i+1}. ${p.accion}</div>
+            <div style="font-size:13px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.titulo}</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:${p.color};flex-shrink:0">${p.extra}</div>
+        </div>`).join('') : '<div class="empty-msg">Sin prioridades pendientes — todo al corriente 🎉</div>'}
+      </div>`;
+
+    function renderTareaItem(t, conCompletar = false) {
+      const vence = t.deadline ? ` · vence ${t.deadline.substring(0,10)}` : '';
+      const btnCompletar = conCompletar
+        ? `<button class="btn-completar-dash" id="btn-cd-${t.id}" onclick="pedirConfDash(event,${t.id})">✓</button>`
+        : '';
+      const tt = (t.title||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      return `<div class="tarea-item" id="tarea-dash-${t.id}">
+        <div class="tarea-top">
+          <div class="item-dot azul" style="margin-top:4px;flex-shrink:0"></div>
+          <div class="tarea-texto">
+            <div class="tarea-nombre">${t.title}</div>
+            <div class="tarea-status">${STATUS_LABEL[t.status]||'en curso'}${vence}</div>
+          </div>
+        </div>
+        <div class="tarea-acciones" style="margin-top:8px;justify-content:flex-end">
+          ${btnCompletar}
+          <button class="btn-tarea-ver" onclick="abrirTareaModal(${t.id})">👁️ Ver detalle</button>
+        </div>
+      </div>`;
+    }
+
+    const misTareasHtml = misTareas.length
+      ? misTareas.slice(0,10).map(t => renderTareaItem(t, true)).join('')
+      : '<div class="empty-msg">Sin tareas pendientes 🎉</div>';
+
+    const tareasClienteHtml = tareasCliente.length
+      ? tareasCliente.slice(0,10).map(t => renderTareaItem(t, true)).join('')
+      : '<div class="empty-msg">Sin tareas en espera.</div>';
+
+    // Prospectos activos
+    const leadsHtml = leads.length
+      ? leads.slice(0,20).map(l => {
+          const etapa  = ETAPAS_LEAD[l.STATUS_ID] || l.STATUS_ID;
+          const nombre = [l.NAME, l.LAST_NAME].filter(Boolean).join(' ') || 'Sin nombre';
+          return `<div class="item-card">
+            <div class="item-dot"></div>
+            <div class="item-info">
+              <div class="item-nombre">${nombre}</div>
+              <div class="item-meta">${l.COMPANY_TITLE || ''}</div>
+            </div>
+            <div class="item-badge">${etapa}</div>
+          </div>`;
+        }).join('')
+      : '<div class="empty-msg">Sin prospectos activos.</div>';
+
+    function diasDesde(fechaStr) {
+      if (!fechaStr) return null;
+      const diff = Date.now() - new Date(fechaStr).getTime();
+      const dias = Math.floor(diff / 86400000);
+      if (dias === 0) return 'hoy';
+      if (dias === 1) return 'ayer';
+      return `hace ${dias} días`;
+    }
+
+    function renderDealItem(d, etapasMap) {
+      const etapa    = etapasMap[d.STAGE_ID] || d.STAGE_ID;
+      const ultimo   = diasDesde(d.LAST_ACTIVITY_TIME || d.DATE_MODIFY);
+      const urlBitrix = `https://crm-solart.bitrix24.mx/crm/deal/details/${d.ID}/`;
+      const antiguedad = (() => {
+        const dias = Math.floor((Date.now() - new Date(d.DATE_MODIFY).getTime()) / 86400000);
+        return dias > 14 ? 'rojo' : dias > 7 ? 'amarillo' : 'verde';
+      })();
+
+      // Campos UF
+      const kwp      = d.UF_CRM_1741208352117 || '';
+      const energia  = d.UF_CRM_1753209254287 || '';
+      const inmuebleId = d.UF_CRM_1765995370491 || '';
+      const inmueble = INMUEBLE_MAP[inmuebleId] || inmuebleId || '';
+      const provId   = d.UF_CRM_1777320644093 || '';
+      const prov     = PROVEEDOR_MAP[provId] || provId || '';
+      const valorRaw = d.UF_CRM_1758675881434 || '';
+      const valor    = valorRaw ? '$' + Number(valorRaw.split('|')[0]).toLocaleString('es-MX') + ' MXN' : (d.OPPORTUNITY ? '$' + Number(d.OPPORTUNITY).toLocaleString('es-MX') + ' MXN' : '');
+
+      const camposDeal = [
+        kwp     ? `<div class="deal-campo"><span class="deal-campo-label">⚡ kWp</span><span class="deal-campo-valor">${kwp} kWp</span></div>` : '',
+        energia ? `<div class="deal-campo"><span class="deal-campo-label">☀️ Energía cubierta</span><span class="deal-campo-valor">${energia}</span></div>` : '',
+        inmueble? `<div class="deal-campo"><span class="deal-campo-label">🏠 Inmueble</span><span class="deal-campo-valor">${inmueble}</span></div>` : '',
+        prov    ? `<div class="deal-campo"><span class="deal-campo-label">⚙️ Proveedor actual</span><span class="deal-campo-valor">${prov}</span></div>` : '',
+        valor   ? `<div class="deal-campo"><span class="deal-campo-label">💰 Propuesta final c/IVA</span><span class="deal-campo-valor">${valor}</span></div>` : '',
+      ].filter(Boolean).join('');
+
+      const tieneDetalle = camposDeal.length > 0;
+
+      return `<div class="deal-card">
+        <div class="deal-top">
+          <div class="deal-info">
+            <div class="deal-nombre">${d.TITLE}</div>
+            <div class="deal-seguimiento ${antiguedad}">
+              🕐 Último seguimiento: <strong>${ultimo}</strong>
+            </div>
+          </div>
+          <div class="item-badge verde" style="align-self:flex-start;white-space:normal;text-align:right">${etapa}</div>
+        </div>
+        <div class="deal-acciones">
+          <button class="btn-deal-ver" onclick="abrirDealModal(${d.ID})">👁️ Ver detalle</button>
+          <button class="btn-deal-actividad" onclick="abrirActividad(event,${d.ID},'${d.TITLE.replace(/'/g,"\\'")}')">+ Actividad</button>
+        </div>
+        <div class="form-actividad" id="act-${d.ID}" style="display:none"></div>
+      </div>`;
+    }
+
+    const dealsHtml = deals.length
+      ? deals.slice(0,20).map(d => renderDealItem(d, ETAPAS_DEAL)).join('')
+      : '<div class="empty-msg">Sin negociaciones activas.</div>';
+
+    const ETAPAS_CIERRE = {
+      'C2:NEW':        '09_Sí verbal (Cierre)',
+      'C2:UC_6WRMUD':  '10_Documentos contrato',
+      'C2:PREPARATION':'11_Firma de contrato',
+      'C2:UC_LSBW8K':  'Revisión financiera',
+      'C2:UC_B36RA8':  'Espera anticipo',
+      'C2:WON':        'Anticipo pagado',
+    };
+    const dealsCierreHtml = dealsCierre.length
+      ? dealsCierre.slice(0,20).map(d => renderDealItem(d, ETAPAS_CIERRE)).join('')
+      : '<div class="empty-msg">Sin negociaciones en cierre.</div>';
+
+    const TIPO_ACT_LABEL = { '1': '🤝 Reunión', '2': '📞 Llamada', '6': '📝 Nota', '4': '📋 Tarea' };
+    const actHtml = actividadesHoy.length
+      ? actividadesHoy.map(a => {
+          const hora  = a.DEADLINE ? new Date(a.DEADLINE).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) : '';
+          const tipo  = TIPO_ACT_LABEL[a.TYPE_ID] || '📌 Actividad';
+          return `<div class="tarea-item" id="act-hoy-${a.ID}">
+            <div class="item-dot" style="background:#7c3aed"></div>
+            <div class="tarea-texto">
+              <div class="tarea-nombre">${a.SUBJECT || 'Sin título'}</div>
+              <div class="tarea-status">${tipo}${hora ? ' · ' + hora : ''}${a.DESCRIPTION ? ' · ' + a.DESCRIPTION.substring(0,60) : ''}</div>
+            </div>
+            <button class="btn-completar-dash" id="btn-act-${a.ID}" onclick="pedirConfActividad(event,${a.ID})">✓</button>
+          </div>`;
+        }).join('')
+      : '<div class="empty-msg">Sin actividades para hoy 🎉</div>';
+
+    document.getElementById('dash-contenido').innerHTML = `
+      ${periodoHtml}
+      ${kpisHtml}
+      ${embudoHtml}
+      ${finHtml}
+      ${prioHtml}
+      <div class="dash-tabs" id="dash-tabs">
+        <button class="dtab-btn" data-t="tareas" onclick="switchDashTab('tareas')">⚡ Mis tareas <span>${misTareas.length}</span></button>
+        <button class="dtab-btn" data-t="clientes" onclick="switchDashTab('clientes')">⏳ Mis clientes <span>${tareasCliente.length}</span></button>
+        <button class="dtab-btn" data-t="ventas" onclick="switchDashTab('ventas')">💼 En venta <span>${deals.length}</span></button>
+        <button class="dtab-btn" data-t="cierre" onclick="switchDashTab('cierre')">🔒 En cierre <span>${dealsCierre.length}</span></button>
+        <button class="dtab-btn" data-t="prospectos" onclick="switchDashTab('prospectos')">👤 Prospectos <span>${leads.length}</span></button>
+        <button class="dtab-btn" data-t="actividades" onclick="switchDashTab('actividades')">📋 Hoy <span>${actividadesHoy.length}</span></button>
+      </div>
+      <div class="dtab-panel" id="dtab-tareas">${misTareasHtml}</div>
+      <div class="dtab-panel" id="dtab-clientes"><div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Tareas que solicitaste y están resolviendo otros.</div>${tareasClienteHtml}</div>
+      <div class="dtab-panel" id="dtab-ventas">${dealsHtml}</div>
+      <div class="dtab-panel" id="dtab-cierre">${dealsCierreHtml}</div>
+      <div class="dtab-panel" id="dtab-prospectos">${leadsHtml}</div>
+      <div class="dtab-panel" id="dtab-actividades">${actHtml}</div>`;
+    setTimeout(() => switchDashTab(window._dashTab || 'tareas'), 0);
+  }
+
+  function switchDashTab(name) {
+    window._dashTab = name;
+    document.querySelectorAll('.dtab-panel').forEach(p => p.style.display = 'none');
+    const panel = document.getElementById('dtab-' + name);
+    if (panel) panel.style.display = 'block';
+    document.querySelectorAll('.dtab-btn').forEach(b => b.classList.toggle('activo', b.dataset.t === name));
+  }
+
+  function cambiarPeriodo(p) {
+    periodoActual = p;
+    cargarDashboard();
+  }
+
+  // ── DETALLE DEAL ─────────────────────────────────────────────────────
+  function toggleDetalleDeal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('abierto');
+  }
+
+  // ── DETALLE TAREA (chat + archivos) ──────────────────────────────────
+  const _tareasCargadas = new Set();
+
+  async function toggleDetalleTarea(tareaId) {
+    const panel = document.getElementById(`det-tarea-${tareaId}`);
+    if (!panel) return;
+    const abierto = panel.classList.toggle('abierto');
+    if (!abierto || _tareasCargadas.has(tareaId)) return;
+    _tareasCargadas.add(tareaId);
+    await cargarDetalleTarea(tareaId);
+  }
+
+  async function cargarDetalleTarea(tareaId) {
+    const inner = document.getElementById(`det-tarea-inner-${tareaId}`);
+    try {
+      // Traer tarea completa (archivos) y comentarios en paralelo
+      const [rTarea, rComentarios] = await Promise.all([
+        bx('tasks.task.get.json', { taskId: tareaId, select: ['ID','TITLE','UF_TASK_WEBDAV_FILES'] }),
+        bx('tasks.task.comments.getList.json', { TASK_ID: tareaId, order: { ID: 'ASC' }, select: ['ID','AUTHOR_ID','TEXT','ADD_IN_TIME'] })
+      ]);
+
+      const archivosIds = rTarea?.result?.task?.UF_TASK_WEBDAV_FILES || [];
+      let archivosHtml = '';
+
+      if (archivosIds.length) {
+        const rArchivos = await Promise.all(
+          archivosIds.map(fid => bx('disk.file.get.json', { id: fid }))
+        );
+        archivosHtml = rArchivos
+          .filter(r => r.result)
+          .map(r => {
+            const f = r.result;
+            const dlUrl = f.DOWNLOAD_URL || '#';
+            return `<div class="archivo-item">
+              <span style="font-size:18px">📄</span>
+              <span class="archivo-nombre">${f.NAME}</span>
+              <a href="${dlUrl}" class="btn-descargar" download="${f.NAME}">⬇ Descargar</a>
+            </div>`;
+          }).join('');
+      }
+
+      const comentarios = rComentarios?.result || [];
+      const comentariosHtml = comentarios.length
+        ? comentarios.map(c => {
+            const fecha = c.ADD_IN_TIME ? new Date(c.ADD_IN_TIME * 1000).toLocaleString('es-MX', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+            const texto = (c.TEXT || '').replace(/<[^>]*>/g, '').trim();
+            return `<div class="comentario-item">
+              <div class="comentario-fecha">${fecha}</div>
+              <div class="comentario-texto">${texto}</div>
+            </div>`;
+          }).join('')
+        : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">Sin comentarios aún.</div>';
+
+      inner.innerHTML = `
+        ${archivosIds.length ? `<div class="detalle-seccion-titulo">📎 Archivos</div>${archivosHtml}` : ''}
+        <div class="detalle-seccion-titulo" style="margin-top:${archivosIds.length ? 14 : 0}px">💬 Chat</div>
+        <div id="chat-msgs-${tareaId}">${comentariosHtml}</div>
+        <div class="chat-input-wrap">
+          <input class="chat-input" id="chat-inp-${tareaId}" placeholder="Escribe un mensaje…">
+          <button class="btn-chat-enviar" onclick="enviarComentario(${tareaId})">Enviar</button>
+        </div>`;
+    } catch(e) {
+      inner.innerHTML = `<div style="font-size:12px;color:#ef4444">Error al cargar detalle.</div>`;
+    }
+  }
+
+  async function enviarComentario(tareaId) {
+    const inp = document.getElementById(`chat-inp-${tareaId}`);
+    const texto = inp?.value?.trim();
+    if (!texto) return;
+    inp.value = '';
+    inp.disabled = true;
+    try {
+      await bx('tasks.task.commentadd.json', { TASK_ID: tareaId, fields: { POST_MESSAGE: texto } });
+      // Recargar comentarios
+      const rC = await bx('tasks.task.comments.getList.json', { TASK_ID: tareaId, order: { ID: 'ASC' }, select: ['ID','AUTHOR_ID','TEXT','ADD_IN_TIME'] });
+      const comentarios = rC?.result || [];
+      const html = comentarios.map(c => {
+        const fecha = c.ADD_IN_TIME ? new Date(c.ADD_IN_TIME * 1000).toLocaleString('es-MX', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+        const texto2 = (c.TEXT || '').replace(/<[^>]*>/g, '').trim();
+        return `<div class="comentario-item"><div class="comentario-fecha">${fecha}</div><div class="comentario-texto">${texto2}</div></div>`;
+      }).join('');
+      document.getElementById(`chat-msgs-${tareaId}`).innerHTML = html || '<div style="font-size:12px;color:#9ca3af">Sin comentarios aún.</div>';
+    } catch(e) {
+      alert('No se pudo enviar el comentario.');
+    } finally {
+      inp.disabled = false;
+      inp.focus();
+    }
+  }
+
+  // ── ACTIVIDAD EN DEAL ────────────────────────────────────────────────
+  // TYPE_ID: 2=Llamada, 1=Reunión, 6=Nota
+  const TIPO_ACT = { llamada: { id: 2, label: '📞 Llamada' }, nota: { label: '📝 Nota' } };
+  let tipoActual = {};
+
+  function abrirActividad(e, dealId, titulo) {
+    e.stopPropagation();
+    // Cerrar cualquier otro abierto
+    document.querySelectorAll('.form-actividad').forEach(f => { if (f.id !== 'act-' + dealId) f.style.display = 'none'; });
+    const form = document.getElementById('act-' + dealId);
+    if (form.style.display === 'block') { form.style.display = 'none'; return; }
+
+    tipoActual[dealId] = 'llamada';
+    const hoy = new Date().toISOString().substring(0,10);
+    form.innerHTML = `
+      <div class="tipo-actividad">
+        <button class="btn-tipo activo" id="tipo-llamada-${dealId}" onclick="setTipo(event,${dealId},'llamada')">📞 Llamada</button>
+        <button class="btn-tipo" id="tipo-nota-${dealId}" onclick="setTipo(event,${dealId},'nota')">📝 Nota</button>
+      </div>
+      <div class="act-fecha-wrap" id="act-fecha-wrap-${dealId}">
+        <label style="font-size:12px;color:#6b7280;font-weight:600">Fecha de la llamada</label>
+        <input type="date" class="act-fecha" id="act-fecha-${dealId}" value="${hoy}">
+      </div>
+      <textarea class="act-textarea" id="act-desc-${dealId}" placeholder="¿Qué pasó en esta llamada?…"></textarea>
+      <div class="act-acciones">
+        <button class="btn-act-guardar" id="act-btn-${dealId}" onclick="guardarActividad(event,${dealId})">Guardar actividad</button>
+        <button class="btn-act-cancelar" onclick="cerrarActividad(event,${dealId})">Cancelar</button>
+      </div>`;
+    form.style.display = 'block';
+  }
+
+  function setTipo(e, dealId, tipo) {
+    e.stopPropagation();
+    tipoActual[dealId] = tipo;
+    ['llamada','nota'].forEach(t => {
+      document.getElementById(`tipo-${t}-${dealId}`)?.classList.toggle('activo', t === tipo);
+    });
+    // Mostrar fecha solo en llamada
+    const wrap = document.getElementById(`act-fecha-wrap-${dealId}`);
+    if (wrap) wrap.style.display = tipo === 'llamada' ? 'flex' : 'none';
+    const ta = document.getElementById(`act-desc-${dealId}`);
+    if (ta) ta.placeholder = tipo === 'nota' ? '¿Qué nota quieres dejar?…' : '¿Qué pasó en esta llamada?…';
+  }
+
+  function cerrarActividad(e, dealId) {
+    e.stopPropagation();
+    document.getElementById('act-' + dealId).style.display = 'none';
+  }
+
+  async function guardarActividad(e, dealId) {
+    e.stopPropagation();
+    const desc = document.getElementById('act-desc-' + dealId)?.value.trim();
+    if (!desc) { document.getElementById('act-desc-' + dealId).style.borderColor = '#ef4444'; return; }
+    const tipoKey = tipoActual[dealId] || 'llamada';
+    const tipo = TIPO_ACT[tipoKey];
+    const btn  = document.getElementById('act-btn-' + dealId);
+    btn.disabled = true; btn.textContent = 'Guardando…';
+
+    try {
+      let res;
+      if (tipoKey === 'nota') {
+        res = await bx('crm.timeline.comment.add.json', {
+          fields: { ENTITY_TYPE: 'deal', ENTITY_ID: dealId, COMMENT: desc }
+        });
+      } else {
+        // Llamada: usar la fecha elegida por el usuario
+        const fechaStr = document.getElementById('act-fecha-' + dealId)?.value || new Date().toISOString().substring(0,10);
+        const inicio = new Date(fechaStr + 'T12:00:00');
+        const fin    = new Date(inicio.getTime() + 30 * 60000);
+        const fmt    = d => d.toISOString().replace('T',' ').substring(0,19);
+        res = await bx('crm.activity.add.json', {
+          fields: {
+            OWNER_TYPE_ID: 2,
+            OWNER_ID: String(dealId),
+            TYPE_ID: tipo.id,
+            SUBJECT: tipo.label,
+            DESCRIPTION: desc,
+            DESCRIPTION_TYPE: 1,
+            COMPLETED: 'Y',
+            DIRECTION: 2,
+            RESPONSIBLE_ID: String(usuarioActual.id),
+            START_TIME: fmt(inicio),
+            END_TIME: fmt(fin),
+            COMMUNICATIONS: [{ TYPE: 'PHONE', VALUE: 'N/A', ENTITY_ID: String(dealId), ENTITY_TYPE_ID: '2' }]
+          }
+        });
+      }
+      if (res.error) throw new Error(res.error_description || res.error);
+      if (!res.result) throw new Error('Bitrix no confirmó el registro (result vacío). Revisa los campos.');
+      const form = document.getElementById('act-' + dealId);
+      form.innerHTML = '<div style="font-size:12px;color:#15803d;padding:4px 0">✓ Actividad registrada</div>';
+      setTimeout(() => { form.style.display = 'none'; }, 1500);
+    } catch(err) {
+      btn.disabled = false; btn.textContent = 'Guardar actividad';
+      alert('Error al guardar: ' + err.message);
+    }
+  }
+
+  // ── COMPLETAR ACTIVIDAD ──────────────────────────────────────────────
+  function pedirConfActividad(e, id) {
+    e.stopPropagation();
+    const btn = document.getElementById('btn-act-' + id);
+    if (!btn) return;
+    btn.outerHTML = `<span id="conf-act-${id}" style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+      <span style="font-size:11px;color:#374151">¿Completar?</span>
+      <button class="btn-conf-si-dash" onclick="completarActividad(event,${id})">Sí</button>
+      <button class="btn-conf-no-dash" onclick="cancelarConfActividad(event,${id})">No</button>
+    </span>`;
+  }
+
+  function cancelarConfActividad(e, id) {
+    e.stopPropagation();
+    const span = document.getElementById('conf-act-' + id);
+    if (span) span.outerHTML = `<button class="btn-completar-dash" id="btn-act-${id}" onclick="pedirConfActividad(event,${id})">✓</button>`;
+  }
+
+  async function completarActividad(e, id) {
+    e.stopPropagation();
+    const conf = document.getElementById('conf-act-' + id);
+    if (conf) conf.innerHTML = '<span style="font-size:11px;color:#9ca3af">Guardando…</span>';
+    const res = await bx('crm.activity.update.json', { id, fields: { COMPLETED: 'Y' } });
+    if (res.error) {
+      cancelarConfActividad(e, id);
+      alert('Error: ' + (res.error_description || res.error));
+      return;
+    }
+    const row = document.getElementById('act-hoy-' + id);
+    if (row) { row.style.opacity = '0.4'; row.style.pointerEvents = 'none'; }
+  }
+
+  // ── COMPLETAR TAREA DASHBOARD ────────────────────────────────────────
+  function pedirConfDash(e, id) {
+    e.stopPropagation();
+    const btn = document.getElementById('btn-cd-' + id);
+    if (!btn) return;
+    btn.outerHTML = `<span class="conf-dash" id="conf-cd-${id}">
+      ¿Completar?
+      <button class="btn-conf-si-dash" onclick="completarTareaDash(event,${id})">Sí</button>
+      <button class="btn-conf-no-dash" onclick="cancelarConfDash(event,${id})">No</button>
+    </span>`;
+  }
+
+  function cancelarConfDash(e, id) {
+    e.stopPropagation();
+    const span = document.getElementById('conf-cd-' + id);
+    if (span) span.outerHTML = `<button class="btn-completar-dash" id="btn-cd-${id}" onclick="pedirConfDash(event,${id})">✓</button>`;
+  }
+
+  async function completarTareaDash(e, id) {
+    e.stopPropagation();
+    const span = document.getElementById('conf-cd-' + id);
+    if (span) span.innerHTML = '<span style="font-size:11px;color:#9ca3af">…</span>';
+    try {
+      const res = await bx('tasks.task.complete.json', { taskId: id });
+      if (res.error) throw new Error(res.error_description || res.error);
+      const item = document.getElementById('tarea-dash-' + id);
+      if (item) item.style.opacity = '0.4';
+      if (item) item.querySelector('.tarea-status').textContent = 'completada';
+      if (span) span.remove();
+    } catch(err) {
+      alert('Error: ' + err.message);
+      cancelarConfDash(e, id);
+    }
+  }
+
+  // ── HELPER ───────────────────────────────────────────────────────────
+  async function bx(method, body) {
+    try {
+      const res = await fetch(WEBHOOK + method, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      return await res.json();
+    } catch { return { result: [] }; }
+  }
+
+  // ── AUTO-LOGIN desde localStorage ─────────────────────────────────
+  const saved = localStorage.getItem('solart_user');
+  if (saved) {
+    usuarioActual = JSON.parse(saved);
+    abrirDashboard();
+  }
+
+  // Mostrar sidebar en desktop al abrir dashboard
+  function mostrarSidebar(u) {
+    if (window.innerWidth < 768) return;
+    const sb = document.getElementById('sidebar');
+    if (sb) sb.style.display = 'flex';
+    const av = document.getElementById('sb-avatar');
+    const nm = document.getElementById('sb-nombre');
+    if (av) av.textContent = u.nombre.charAt(0).toUpperCase();
+    if (nm) nm.textContent = u.nombre;
+    const ing = document.getElementById('sb-link-ing');
+    if (ing) {
+      const EQUIPO_ING = ['8','34','36','86','40','344','158','188'];
+      if (!EQUIPO_ING.includes(String(u.id))) { ing.style.display = 'none'; }   // vendedor normal: no ve el link
+      else if (String(u.id) === '158') ing.innerHTML = '<span class="sb-icon">📊</span> Resultados Anuales SOLART';
+      else if (String(u.id) === '188') ing.innerHTML = '<span class="sb-icon">📊</span> Tablero Comercial';
+      else if (String(u.id) === '8')   ing.innerHTML = '<span class="sb-icon">📊</span> Tablero Ingeniería';
+      else if (String(u.id) === '40')  ing.innerHTML = '<span class="sb-icon">🧭</span> Visitas Técnicas';
+      else if (String(u.id) === '344') ing.innerHTML = '<span class="sb-icon">💰</span> Propuestas Financieras';
+    }
+  }
+</script>
+</div><!-- /page-main -->
+</body>
+</html>

@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tareas — Negociaciones SOLART</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f4f6f9; min-height: 100vh;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    padding: 32px 28px; width: 100%; max-width: 480px;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+  .logo-icon { width: 36px; height: 36px; background: #f59e0b; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .logo-text { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+  h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+  .subtitle { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+
+  /* Búsqueda */
+  .search-wrap { position: relative; margin-bottom: 8px; }
+  .search-wrap input { width: 100%; padding: 13px 44px 13px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 15px; outline: none; background: #fafafa; transition: border-color 0.2s; }
+  .search-wrap input:focus { border-color: #f59e0b; background: #fff; }
+  .search-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; color: #9ca3af; pointer-events: none; }
+  .resultados { border: 1.5px solid #e5e7eb; border-radius: 10px; overflow: hidden; margin-bottom: 20px; display: none; }
+  .resultados.visible { display: block; }
+  .resultado-item { padding: 13px 16px; cursor: pointer; border-bottom: 1px solid #f3f4f6; transition: background 0.15s; }
+  .resultado-item:last-child { border-bottom: none; }
+  .resultado-item:hover { background: #fef3c7; }
+  .resultado-nombre { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+  .resultado-etapa { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .sin-resultados { padding: 16px; text-align: center; color: #9ca3af; font-size: 14px; }
+  .buscando { text-align: center; padding: 14px; color: #9ca3af; font-size: 14px; display: none; }
+  .buscando.visible { display: block; }
+
+  /* Deal seleccionado */
+  .neg-card { background: #f8fafc; border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
+  .neg-nombre { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+  .neg-meta { font-size: 12px; color: #6b7280; margin-top: 3px; }
+  .btn-volver { background: none; border: none; color: #6b7280; font-size: 14px; cursor: pointer; margin-bottom: 18px; padding: 0; }
+
+  /* Calendario */
+  .cal-wrap { margin-top: 12px; background: #f8fafc; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 12px; }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .cal-mes { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+  .cal-nav { background: none; border: none; cursor: pointer; font-size: 16px; color: #6b7280; padding: 2px 6px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+  .cal-dia-lbl { font-size: 10px; font-weight: 700; color: #9ca3af; text-align: center; padding: 2px 0; }
+  .cal-dia { font-size: 12px; text-align: center; padding: 5px 2px; border-radius: 6px; cursor: default; color: #374151; }
+  .cal-dia.vacio { background: transparent; }
+  .cal-dia.libre { background: #fff; border: 1px solid #e5e7eb; }
+  .cal-dia.ocupado { background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; font-weight: 700; }
+  .cal-dia.ocupado-doble { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; font-weight: 700; }
+  .cal-dia.hoy { border: 2px solid #f59e0b; font-weight: 700; }
+  .cal-dia.seleccionado { background: #f59e0b; color: #fff; font-weight: 700; border: none; }
+  .cal-leyenda { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+  .cal-leyenda-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #6b7280; }
+  .cal-leyenda-dot { width: 10px; height: 10px; border-radius: 3px; }
+  .cal-cargando { text-align: center; font-size: 12px; color: #9ca3af; padding: 8px 0; }
+  .cal-dia { min-height: 36px; line-height: 1.2; }
+  .cal-detalle { margin-top: 10px; background: #fff; border: 1.5px solid #fbbf24; border-radius: 8px; padding: 10px 12px; }
+  .cal-detalle-titulo { font-size: 12px; font-weight: 700; color: #92400e; margin-bottom: 8px; }
+  .cal-detalle-item { padding: 5px 0; border-bottom: 1px solid #f3f4f6; }
+  .cal-detalle-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .cal-detalle-nombre { font-size: 12px; font-weight: 600; color: #1a1a2e; }
+  .cal-detalle-proyecto { font-size: 11px; color: #6b7280; margin-top: 1px; }
+
+  /* Bloque tareas activas */
+  .tareas-activas { margin-bottom: 18px; }
+  .tareas-activas-titulo { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .tarea-activa-item { display: flex; align-items: flex-start; gap: 8px; padding: 9px 12px; background: #fef9c3; border: 1px solid #fde68a; border-radius: 8px; margin-bottom: 6px; }
+  .tarea-activa-item.done { background: #f0fdf4; border-color: #bbf7d0; }
+  .tarea-dot { width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; margin-top: 4px; }
+  .tarea-activa-item.done .tarea-dot { background: #22c55e; }
+  .tarea-activa-txt { font-size: 12px; font-weight: 600; color: #92400e; flex: 1; }
+  .tarea-activa-item.done .tarea-activa-txt { color: #15803d; }
+  .tarea-activa-status { font-size: 11px; color: #b45309; margin-top: 1px; }
+  .tarea-activa-item.done .tarea-activa-status { color: #16a34a; }
+  .sin-tareas-msg { font-size: 12px; color: #9ca3af; padding: 6px 0; }
+  .tarea-activa-item { display: flex; align-items: flex-start; gap: 8px; }
+  .tarea-activa-body { flex: 1; min-width: 0; }
+  .tarea-btns { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .btn-ver-bitrix { font-size: 11px; font-weight: 700; color: #b45309; text-decoration: none; padding: 3px 8px; border: 1px solid #fbbf24; border-radius: 6px; background: #fff; }
+  .btn-ver-bitrix:hover { background: #fef3c7; }
+  .btn-completar { font-size: 12px; font-weight: 700; color: #15803d; padding: 3px 8px; border: 1px solid #bbf7d0; border-radius: 6px; background: #f0fdf4; cursor: pointer; }
+  .btn-completar:hover { background: #dcfce7; }
+  .btn-completar:disabled { opacity: 0.5; cursor: not-allowed; }
+  .confirmacion-inline { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #374151; font-weight: 600; flex-shrink: 0; }
+  .btn-conf-si { font-size: 11px; font-weight: 700; color: #fff; padding: 3px 8px; border: none; border-radius: 6px; background: #22c55e; cursor: pointer; }
+  .btn-conf-no { font-size: 11px; font-weight: 700; color: #374151; padding: 3px 8px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; cursor: pointer; }
+  .completadas-resumen { font-size: 12px; color: #6b7280; padding: 8px 10px; background: #f3f4f6; border-radius: 8px; margin-top: 6px; }
+
+  /* Tarjetas de tarea */
+  .tareas-titulo { font-size: 12px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .tarea-card {
+    border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 16px;
+    margin-bottom: 12px; cursor: pointer; transition: all 0.15s; background: #fff;
+  }
+  .tarea-card:hover { border-color: #f59e0b; background: #fffbeb; }
+  .tarea-card.activa { border-color: #f59e0b; background: #fffbeb; }
+  .tarea-icono { font-size: 22px; margin-bottom: 4px; }
+  .tarea-nombre { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+  .tarea-desc { font-size: 12px; color: #6b7280; margin-top: 3px; }
+
+  /* Badge tarea existente */
+  .badge-existente { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding: 8px 10px; background: #fef9c3; border: 1px solid #fde68a; border-radius: 8px; }
+  .badge-existente .dot { width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
+  .badge-existente .txt { font-size: 12px; color: #92400e; font-weight: 600; }
+  .badge-existente-completada { background: #f0fdf4; border-color: #bbf7d0; }
+  .badge-existente-completada .dot { background: #22c55e; }
+  .badge-existente-completada .txt { color: #15803d; }
+  .badge-no-tarea { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding: 6px 10px; background: #f3f4f6; border-radius: 8px; }
+  .badge-no-tarea .txt { font-size: 12px; color: #6b7280; }
+
+  /* Opciones cuando hay tarea existente */
+  .opciones-tarea { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-opcion {
+    flex: 1; padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1.5px solid #e5e7eb; background: #fff; color: #374151;
+    transition: all 0.15s; text-align: center;
+  }
+  .btn-opcion:hover { background: #f3f4f6; }
+  .btn-opcion.sel { background: #f59e0b; border-color: #f59e0b; color: #fff; }
+
+  /* Formulario contextual */
+  .form-contextual { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; display: none; }
+  .form-contextual.visible { display: block; }
+  .campo { margin-bottom: 14px; }
+  .campo label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+  .req { color: #ef4444; margin-left: 2px; }
+  .campo input, .campo select, .campo textarea {
+    width: 100%; padding: 11px 14px; border: 1.5px solid #e5e7eb;
+    border-radius: 10px; font-size: 14px; outline: none;
+    transition: border-color 0.2s; font-family: inherit; background: #fff;
+  }
+  .campo input:focus, .campo select:focus, .campo textarea:focus { border-color: #f59e0b; }
+  .campo textarea { resize: vertical; min-height: 70px; }
+  .opciones-btn { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opcion-btn {
+    padding: 8px 14px; border: 1.5px solid #e5e7eb; border-radius: 8px;
+    background: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; color: #374151;
+  }
+  .opcion-btn.activo { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+
+  /* Botones */
+  .btn { width: 100%; padding: 15px; background: #f59e0b; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s, transform 0.1s; margin-top: 4px; }
+  .btn:hover { background: #d97706; }
+  .btn:active { transform: scale(0.98); }
+  .btn-peligro { width: 100%; padding: 12px; background: transparent; color: #ef4444; border: 1.5px solid #fca5a5; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+  .btn-peligro:hover { background: #fef2f2; }
+  .btn-sec { width: 100%; padding: 13px; background: transparent; color: #f59e0b; border: 2px solid #f59e0b; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+  .divider { border: none; border-top: 1px solid #f3f4f6; margin: 18px 0; }
+
+  /* Cargando / Éxito */
+  .estado { display: none; text-align: center; padding: 20px 0; }
+  .estado.visible { display: block; }
+  .spinner { width: 44px; height: 44px; border: 4px solid #f3f3f3; border-top: 4px solid #f59e0b; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .exito-icono { font-size: 52px; margin-bottom: 12px; }
+  .exito-titulo { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+  .exito-sub { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+
+  /* Modal */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
+  .overlay.visible { display: flex; }
+  .modal { background: #fff; border-radius: 16px; padding: 28px 24px; width: 100%; max-width: 360px; }
+  .modal-titulo { font-size: 17px; font-weight: 700; color: #1a1a2e; margin-bottom: 16px; }
+  .modal-acciones { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-modal-cancel { flex: 1; padding: 12px; background: #f3f4f6; color: #374151; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-modal-confirm { flex: 1; padding: 12px; background: #ef4444; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+  /* Lista auto-cargada */
+  .lista-card { border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; background: #fff; }
+  .lista-card-nombre { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+  .lista-card-empresa { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+  .lista-card-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+  .chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #f3f4f6; color: #374151; }
+  .chip.verde { background: #dcfce7; color: #15803d; }
+  .chip.azul  { background: #dbeafe; color: #1d4ed8; }
+  .chip.amber { background: #fef3c7; color: #92400e; }
+  .lista-card-acciones { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn-lista { font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 8px; border: 1.5px solid #e5e7eb; background: #fff; cursor: pointer; }
+  .btn-lista.sel  { background: #f59e0b; border-color: #f59e0b; color: #fff; }
+  .lista-empty { text-align: center; color: #9ca3af; font-size: 14px; padding: 24px 0; }
+  .lista-cargando { text-align: center; color: #9ca3af; font-size: 14px; padding: 16px 0; display: none; }
+  .lista-cargando.visible { display: block; }
+
+  /* ── SIDEBAR DESKTOP ── */
+  @media (min-width: 768px) {
+    body { display: flex; padding: 0; align-items: stretch; }
+    .sidebar { width: 230px; flex-shrink: 0; background: #1a1a2e; display: flex; flex-direction: column; padding: 28px 16px; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; overflow-y: auto; }
+    .sidebar-logo { margin-bottom: 36px; padding: 0 4px; }
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 10px; color: #9ca3af; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.15s; }
+    .sidebar-link:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .sidebar-link.activo { background: #f59e0b; color: #1a1a2e; }
+    .sidebar-link .sb-icon { font-size: 18px; width: 22px; text-align: center; }
+    .sidebar-sep { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 12px 0; }
+    .sidebar-user { display: flex; align-items: center; gap: 8px; padding: 10px 14px; }
+    .sidebar-user-avatar { width: 30px; height: 30px; border-radius: 50%; background: #f59e0b; color: #1a1a2e; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sidebar-user-name { font-size: 13px; color: #d1d5db; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-logout { background: none; border: none; color: #6b7280; font-size: 12px; cursor: pointer; padding: 0; }
+    .sidebar-logout:hover { color: #ef4444; }
+    .page-main { margin-left: 230px; flex: 1; min-height: 100vh; padding: 32px; display: flex; justify-content: center; align-items: flex-start; }
+    .card { max-width: 680px; width: 100%; }
+    .logo { display: none; } /* sidebar reemplaza el logo */
+  }
+  @media (max-width: 767px) { .sidebar { display: none; } .page-main { display: contents; } }
+  @media (max-width: 380px) {
+    .cal-grid { gap: 1px; }
+    .cal-dia { font-size: 10px; padding: 3px 1px; border-radius: 4px; }
+    .cal-dia-lbl { font-size: 9px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Modal perdido -->
+<div class="overlay" id="overlay-perdido">
+  <div class="modal">
+    <div class="modal-titulo">¿Cerrar como Perdido?</div>
+    <div class="campo">
+      <label>Motivo <span class="req">*</span></label>
+      <select id="motivo-perdido">
+        <option value="">Seleccionar…</option>
+        <option value="362">Por competencia</option>
+        <option value="364">Por ahorros</option>
+        <option value="366">Por generación deficiente</option>
+        <option value="368">Por precio</option>
+        <option value="370">Por cambio de organigrama</option>
+        <option value="388">Marketing</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label>Comentario</label>
+      <textarea id="comentario-perdido" placeholder="Contexto adicional…" rows="3"></textarea>
+    </div>
+    <div class="modal-acciones">
+      <button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-modal-confirm" onclick="confirmarPerdido()">Cerrar perdido</button>
+    </div>
+  </div>
+</div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:28px;filter:brightness(0) invert(1)">
+  </div>
+  <nav class="sidebar-nav">
+    <a class="sidebar-link" href="https://gestiondeclientes.bitrix24.site/dashboard/"><span class="sb-icon">📊</span> Mi día</a>
+    <a class="sidebar-link activo" href="https://gestiondeclientes.bitrix24.site/tareas/"><span class="sb-icon">📋</span> Tareas</a>
+    <a class="sidebar-link" href="https://gestiondeclientes.bitrix24.site/cambiaretapa/"><span class="sb-icon">🔄</span> Cambiar etapa</a>
+    <a class="sidebar-link" id="sb-link-ing" href="https://gestiondeclientes.bitrix24.site/ingenieria/"><span class="sb-icon">🔧</span> Propuestas Ing.</a>
+  </nav>
+  <hr class="sidebar-sep">
+  <div class="sidebar-user">
+    <div class="sidebar-user-avatar" id="sb-avatar">?</div>
+    <span class="sidebar-user-name" id="sb-nombre">—</span>
+    <button class="sidebar-logout" onclick="window.location.href='https://gestiondeclientes.bitrix24.site/dashboard/'">Salir</button>
+  </div>
+</aside>
+
+<div class="page-main">
+<div class="card">
+  <!-- Barra superior con regreso al menú (clave en móvil, sin sidebar) -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <a href="https://gestiondeclientes.bitrix24.site/"
+       style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#6b7280;text-decoration:none;background:#f3f4f6;padding:7px 12px;border-radius:10px">← Menú</a>
+    <a href="https://gestiondeclientes.bitrix24.site/" style="display:inline-block;line-height:0">
+      <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:28px;filter:brightness(0)">
+    </a>
+  </div>
+  <div class="logo" style="display:none">
+    <a href="https://gestiondeclientes.bitrix24.site/" style="display:inline-block;line-height:0">
+      <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:32px;filter:brightness(0)">
+    </a>
+  </div>
+
+  <!-- NOTIFICACIONES: propuestas entregadas por ingeniería -->
+  <div id="panel-notif" style="display:none;margin-bottom:16px">
+    <button id="notif-header" onclick="toggleNotif()"
+      style="width:100%;display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left">
+      <span style="font-size:20px">🔔</span>
+      <span style="flex:1;font-size:13px;font-weight:700;color:#15803d" id="notif-titulo">Propuestas entregadas</span>
+      <span id="notif-badge" style="display:none;background:#ef4444;color:#fff;font-size:11px;font-weight:800;border-radius:20px;padding:2px 8px">0</span>
+      <span id="notif-chevron" style="font-size:12px;color:#15803d">▼</span>
+    </button>
+    <div id="notif-lista" style="display:none;margin-top:8px"></div>
+  </div>
+
+  <!-- BÚSQUEDA -->
+  <div id="vista-busqueda">
+    <h1>Mis negociaciones</h1>
+    <p class="subtitle">Toca una para ver o agregar tareas.</p>
+    <div class="search-wrap" style="margin-bottom:12px">
+      <input type="text" id="busqueda" placeholder="Filtrar por nombre…" oninput="filtrarLista(this.value)" autocomplete="off">
+      <span class="search-icon">🔍</span>
+    </div>
+    <div class="lista-cargando" id="lista-cargando">Cargando tus negociaciones…</div>
+    <div id="lista-cards"></div>
+  </div>
+
+  <!-- NEGOCIACIÓN + TAREAS -->
+  <div id="vista-neg" style="display:none">
+    <button class="btn-volver" onclick="volver()">← Buscar otra</button>
+
+    <div class="neg-card">
+      <div class="neg-nombre" id="n-nombre"></div>
+      <div class="neg-meta" id="n-meta"></div>
+    </div>
+
+    <!-- Tareas activas del deal -->
+    <div class="tareas-activas" id="bloque-tareas-activas"></div>
+
+    <div class="tareas-titulo">¿Qué tarea necesitas crear?</div>
+
+    <!-- TAREA 1: Visita técnica -->
+    <div class="tarea-card" id="card-visita" onclick="seleccionarTarea('visita')">
+      <div class="tarea-icono">🔍</div>
+      <div class="tarea-nombre">Agendar visita técnica</div>
+      <div class="tarea-desc">Agenda la fecha y quién recibe al ingeniero.</div>
+      <div class="form-contextual" id="form-visita">
+        <div class="campo">
+          <label>Fecha de la visita <span class="req">*</span></label>
+          <input type="hidden" id="f-fecha-visita">
+          <div id="f-fecha-visita-display" style="font-size:13px;color:#6b7280;margin-bottom:6px;min-height:16px"></div>
+          <div class="cal-wrap" id="cal-visitas" onclick="stopProp(event)">
+            <div class="cal-cargando">Cargando disponibilidad…</div>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Dirección del inmueble <span class="req">*</span></label>
+          <input type="text" id="f-direccion-visita" placeholder="Ej. Av. Constitución 123, Monterrey" onclick="stopProp(event)">
+        </div>
+        <div class="campo">
+          <label>Nombre y teléfono de quien recibe <span class="req">*</span></label>
+          <input type="text" id="f-quien-recibe" placeholder="Ej. Carlos Mendoza 8121234567" onclick="stopProp(event)">
+        </div>
+        <div class="campo">
+          <label>Tamaño del sistema (kWp) <span class="req">*</span></label>
+          <input type="number" id="f-kwp" placeholder="Ej. 50" min="0" step="0.1" onclick="stopProp(event)">
+        </div>
+        <div class="campo">
+          <label>% de energía que cubrimos <span class="req">*</span></label>
+          <input type="text" id="f-energia" placeholder="Ej. 85%" onclick="stopProp(event)">
+        </div>
+        <button class="btn" onclick="ejecutarTarea(event,'visita')">Agendar visita técnica →</button>
+      </div>
+    </div>
+
+    <!-- TAREA 2: Propuesta formal -->
+    <div class="tarea-card" id="card-formal" onclick="seleccionarTarea('formal')">
+      <div class="tarea-icono">📋</div>
+      <div class="tarea-nombre">Solicitar propuesta formal</div>
+      <div class="tarea-desc">Ingeniería arma la propuesta con todos los detalles.</div>
+      <div class="form-contextual" id="form-formal">
+        <div class="campo">
+          <label>Forma de compra <span class="req">*</span></label>
+          <div class="opciones-btn" id="f-forma-compra">
+            <button class="opcion-btn" data-val="100" onclick="toggleOpc(event,this,'f-forma-compra',false)">Compra de Activos</button>
+            <button class="opcion-btn" data-val="102" onclick="toggleOpc(event,this,'f-forma-compra',false)">Financiamiento</button>
+            <button class="opcion-btn" data-val="104" onclick="toggleOpc(event,this,'f-forma-compra',false)">PPA</button>
+            <button class="opcion-btn" data-val="106" onclick="toggleOpc(event,this,'f-forma-compra',false)">Arrendamiento</button>
+            <button class="opcion-btn" data-val="108" onclick="toggleOpc(event,this,'f-forma-compra',false)">Leasing Back</button>
+            <button class="opcion-btn" data-val="328" onclick="toggleOpc(event,this,'f-forma-compra',false)">Aún no sabemos</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>¿Necesita BESS? <span class="req">*</span></label>
+          <div class="opciones-btn" id="f-bess">
+            <button class="opcion-btn" data-val="110" onclick="toggleOpc(event,this,'f-bess',false)">Sí</button>
+            <button class="opcion-btn" data-val="112" onclick="toggleOpc(event,this,'f-bess',false)">No</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>¿Necesita actualización de propuesta? <span class="req">*</span></label>
+          <div class="opciones-btn" id="f-actualizar-formal">
+            <button class="opcion-btn" data-val="264" onclick="toggleOpc(event,this,'f-actualizar-formal',false)">Sí</button>
+            <button class="opcion-btn" data-val="266" onclick="toggleOpc(event,this,'f-actualizar-formal',false)">No</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Comentarios de la visita técnica</label>
+          <textarea id="f-comentarios-formal" placeholder="Contexto para la propuesta…" onclick="stopProp(event)"></textarea>
+        </div>
+        <div class="campo">
+          <label>Aliado financiero</label>
+          <div class="opciones-btn" id="f-aliado">
+            <button class="opcion-btn" data-val="512" onclick="toggleOpc(event,this,'f-aliado',true)">BANREGIO</button>
+            <button class="opcion-btn" data-val="514" onclick="toggleOpc(event,this,'f-aliado',true)">SERFIMEX</button>
+            <button class="opcion-btn" data-val="516" onclick="toggleOpc(event,this,'f-aliado',true)">SOLARA</button>
+            <button class="opcion-btn" data-val="518" onclick="toggleOpc(event,this,'f-aliado',true)">TECSA</button>
+            <button class="opcion-btn" data-val="520" onclick="toggleOpc(event,this,'f-aliado',true)">TUTO</button>
+            <button class="opcion-btn" data-val="522" onclick="toggleOpc(event,this,'f-aliado',true)">ENERGIA REAL</button>
+            <button class="opcion-btn" data-val="1176" onclick="toggleOpc(event,this,'f-aliado',true)">CAPEX</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Ahorro mensual CON SOLART (MXN) <span class="req">*</span></label>
+          <input type="number" id="f-ahorro-formal" placeholder="Ej. 4500" min="0" onclick="stopProp(event)">
+        </div>
+        <div class="campo">
+          <label>Proveedor energético actual <span class="req">*</span></label>
+          <div class="opciones-btn" id="f-proveedor-formal">
+            <button class="opcion-btn" data-val="1466" onclick="toggleOpc(event,this,'f-proveedor-formal',false)">CFE</button>
+            <button class="opcion-btn" data-val="1468" onclick="toggleOpc(event,this,'f-proveedor-formal',false)">Suministro Calificado</button>
+            <button class="opcion-btn" data-val="1470" onclick="toggleOpc(event,this,'f-proveedor-formal',false)">Mixto</button>
+            <button class="opcion-btn" data-val="1472" onclick="toggleOpc(event,this,'f-proveedor-formal',false)">Por definir</button>
+          </div>
+        </div>
+        <button class="btn" onclick="ejecutarTarea(event,'formal')">Solicitar propuesta formal →</button>
+      </div>
+    </div>
+
+    <!-- TAREA 3: Propuesta final SI verbal -->
+    <div class="tarea-card" id="card-final" onclick="seleccionarTarea('final')">
+      <div class="tarea-icono">🤝</div>
+      <div class="tarea-nombre">Propuesta final / Sí verbal</div>
+      <div class="tarea-desc">El cliente dijo que sí verbalmente. Generar propuesta final.</div>
+      <div class="form-contextual" id="form-final">
+        <div class="campo">
+          <label>¿Necesita actualización de propuesta? <span class="req">*</span></label>
+          <div class="opciones-btn" id="f-actualizar-final">
+            <button class="opcion-btn" data-val="264" onclick="toggleOpc(event,this,'f-actualizar-final',false)">Sí</button>
+            <button class="opcion-btn" data-val="266" onclick="toggleOpc(event,this,'f-actualizar-final',false)">No</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Comentarios de visita y contexto</label>
+          <textarea id="f-comentarios-final" placeholder="Contexto para propuesta final…" onclick="stopProp(event)"></textarea>
+        </div>
+        <div class="campo">
+          <label>Ahorro mensual CON SOLART (MXN) <span class="req">*</span></label>
+          <input type="number" id="f-ahorro-final" placeholder="Ej. 4500" min="0" onclick="stopProp(event)">
+        </div>
+        <div class="campo">
+          <label>El inmueble de instalación es <span class="req">*</span></label>
+          <div class="opciones-btn" id="f-inmueble">
+            <button class="opcion-btn" data-val="1196" onclick="toggleOpc(event,this,'f-inmueble',false)">Propio</button>
+            <button class="opcion-btn" data-val="1198" onclick="toggleOpc(event,this,'f-inmueble',false)">Rentado</button>
+            <button class="opcion-btn" data-val="1200" onclick="toggleOpc(event,this,'f-inmueble',false)">Familiar</button>
+            <button class="opcion-btn" data-val="1202" onclick="toggleOpc(event,this,'f-inmueble',false)">Empresarial</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Proveedor energético actual <span class="req">*</span></label>
+          <div class="opciones-btn" id="f-proveedor-final">
+            <button class="opcion-btn" data-val="1466" onclick="toggleOpc(event,this,'f-proveedor-final',false)">CFE</button>
+            <button class="opcion-btn" data-val="1468" onclick="toggleOpc(event,this,'f-proveedor-final',false)">Suministro Calificado</button>
+            <button class="opcion-btn" data-val="1470" onclick="toggleOpc(event,this,'f-proveedor-final',false)">Mixto</button>
+            <button class="opcion-btn" data-val="1472" onclick="toggleOpc(event,this,'f-proveedor-final',false)">Por definir</button>
+          </div>
+        </div>
+        <button class="btn" onclick="ejecutarTarea(event,'final')">Cerrar trato y propuesta final →</button>
+      </div>
+    </div>
+
+    <!-- TAREA 4: Propuesta financiera (solo visible cuando ya se entregó la propuesta) -->
+    <div class="tarea-card" id="card-financiera" onclick="seleccionarTarea('financiera')" style="display:none">
+      <div class="tarea-icono">💰</div>
+      <div class="tarea-nombre">Iniciar propuesta financiera</div>
+      <div class="tarea-desc">Solicita a Erick el plan de financiamiento para tu cliente.</div>
+      <div class="form-contextual" id="form-financiera">
+        <div class="campo">
+          <label>Proceso de crédito <span class="req">*</span></label>
+          <div class="opciones-btn" id="f-proceso-credito">
+            <button class="opcion-btn" data-val="1484" onclick="toggleOpc(event,this,'f-proceso-credito',false)">Entrega de documentos</button>
+            <button class="opcion-btn" data-val="1486" onclick="toggleOpc(event,this,'f-proceso-credito',false)">Armado de expediente</button>
+            <button class="opcion-btn" data-val="1488" onclick="toggleOpc(event,this,'f-proceso-credito',false)">Estudio</button>
+            <button class="opcion-btn" data-val="1490" onclick="toggleOpc(event,this,'f-proceso-credito',false)">Autorizado o Rechazado</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Forma de compra <span class="req">*</span></label>
+          <div class="opciones-btn" id="f-forma-compra-fin">
+            <button class="opcion-btn" data-val="100" onclick="toggleOpc(event,this,'f-forma-compra-fin',false)">Compra de Activos</button>
+            <button class="opcion-btn" data-val="102" onclick="toggleOpc(event,this,'f-forma-compra-fin',false)">Financiamiento</button>
+            <button class="opcion-btn" data-val="104" onclick="toggleOpc(event,this,'f-forma-compra-fin',false)">PPA</button>
+            <button class="opcion-btn" data-val="106" onclick="toggleOpc(event,this,'f-forma-compra-fin',false)">Arrendamiento</button>
+            <button class="opcion-btn" data-val="108" onclick="toggleOpc(event,this,'f-forma-compra-fin',false)">Leasing Back</button>
+            <button class="opcion-btn" data-val="328" onclick="toggleOpc(event,this,'f-forma-compra-fin',false)">Aun no sabemos</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Comentarios para Erick</label>
+          <textarea id="f-comentarios-fin" placeholder="Contexto del cliente, urgencia, montos…" onclick="stopProp(event)"></textarea>
+        </div>
+        <button class="btn" onclick="ejecutarTarea(event,'financiera')">Iniciar propuesta financiera →</button>
+      </div>
+    </div>
+
+    <!-- Estado de la propuesta financiera cuando ya existe la tarea -->
+    <div id="info-financiera" style="display:none;margin-top:10px"></div>
+
+    <hr class="divider">
+    <button class="btn-peligro" onclick="abrirModal()">Cerrar como Perdido</button>
+  </div>
+
+  <!-- CARGANDO -->
+  <div class="estado" id="vista-cargando">
+    <div class="spinner"></div>
+    <div style="font-size:15px;color:#6b7280">Guardando en el CRM…</div>
+  </div>
+
+  <!-- ÉXITO -->
+  <div class="estado" id="vista-exito">
+    <div class="exito-icono">✅</div>
+    <div class="exito-titulo" id="exito-titulo">¡Tarea creada!</div>
+    <div class="exito-sub" id="exito-detalle">La automatización de Bitrix generará la tarea para el equipo.</div>
+    <button class="btn" onclick="reiniciar()">Hacer otra cosa</button>
+    <button class="btn-sec" onclick="window.open('https://crm-solart.bitrix24.mx/crm/deals/','_blank')">Ver en CRM</button>
+  </div>
+</div>
+
+<script>
+  const WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/';
+
+  const TAREA_ETAPA = {
+    visita: 'EXECUTING',
+    formal: 'UC_OF6DF0',
+    final:  'UC_Y3LUYS',
+    financiera: 'UC_YTJ3M5',
+  };
+
+  const STATUS_LABEL = { '2':'pendiente','3':'en curso','4':'revisión','5':'completada','6':'diferida' };
+  const STATUS_DONE  = ['5'];
+
+  let negActual = null;
+  let busquedaTimer = null;
+
+  function stopProp(e) { e.stopPropagation(); }
+
+  // Auto-cargar al entrar; si viene redirigido con ID, abrir directo
+  const _dealIdPreload = localStorage.getItem('solart_deal_id_preload');
+  localStorage.removeItem('solart_deal_id_preload');
+  localStorage.removeItem('solart_neg_preload');
+
+  window.addEventListener('DOMContentLoaded', () => {
+    if (_dealIdPreload) {
+      seleccionar(parseInt(_dealIdPreload));
+    } else {
+      autocargarDeals();
+    }
+  });
+
+  /* ─── LISTA AUTO-CARGADA ─── */
+
+  let _listaDeals = [];
+  let _uid = null;
+  try { const u = JSON.parse(localStorage.getItem('solart_user')); _uid = u?.id || null; } catch {}
+
+  const ETAPAS_NEG = {
+    'PREPARATION':'Gen. propuesta','NEW':'Propuesta preliminar',
+    'PREPAYMENT_INVOICE':'Presentación inicial','EXECUTING':'Visita técnica',
+    'UC_OF6DF0':'Propuesta formal','FINAL_INVOICE':'Evaluación interna',
+    'UC_Y3LUYS':'Propuesta final','UC_YTJ3M5':'Propuesta financiera',
+    'C2:NEW':'Sí verbal','C2:PREPARATION':'Firma contrato'
+  };
+
+  // Cache de estado de propuesta por deal ID
+  const _propuestaEstado = {};
+
+  async function autocargarDeals() {
+    const cargando = document.getElementById('lista-cargando');
+    const lista    = document.getElementById('lista-cards');
+    cargando.classList.add('visible');
+    lista.innerHTML = '';
+    try {
+      const filter = { '!STAGE_ID': ['WON','LOSE','C2:WON','C2:LOSE'] };
+      if (_uid) filter.ASSIGNED_BY_ID = _uid;
+      const res = await fetch(WEBHOOK + 'crm.deal.list.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filter,
+          select: ['ID','TITLE','STAGE_ID','CATEGORY_ID','COMPANY_TITLE','OPPORTUNITY','CURRENCY_ID',
+                   'UF_CRM_1741208352117','UF_CRM_1753209254287'],
+          order: { DATE_MODIFY: 'DESC' }
+        })
+      });
+      const data = await res.json();
+      _listaDeals = data.result || [];
+      renderListaDeals(_listaDeals);
+      // Cargar estado de propuesta en paralelo y actualizar badges
+      _listaDeals.forEach(d => cargarEstadoPropuesta(d.ID));
+    } catch {
+      lista.innerHTML = '<div class="lista-empty">Error al cargar. Recarga la página.</div>';
+    } finally {
+      cargando.classList.remove('visible');
+    }
+  }
+
+  // _propuestaEstado[dealId] = { tareas: [...], completadas: N, enCurso: N }
+  async function cargarEstadoPropuesta(dealId) {
+    try {
+      const res = await fetch(WEBHOOK + 'tasks.task.list.json', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          filter: { 'UF_CRM_TASK': ['D_' + dealId] },
+          select: ['ID','TITLE','STATUS','CREATED_DATE','CLOSED_DATE'],
+          order: { ID: 'DESC' }, start: 0
+        })
+      });
+      const data = await res.json();
+      const tareas = data.result?.tasks || [];
+      const completadas = tareas.filter(t => t.status === '5').length;
+      const enCurso    = tareas.filter(t => t.status !== '5' && t.status !== '6').length;
+      _propuestaEstado[dealId] = { total: tareas.length, completadas, enCurso };
+      const el = document.getElementById(`badge-prop-${dealId}`);
+      if (el) el.outerHTML = badgePropuesta(dealId);
+    } catch {}
+  }
+
+  function badgePropuesta(dealId) {
+    const e = _propuestaEstado[dealId];
+    const base = `id="badge-prop-${dealId}"`;
+    if (!e) return `<span ${base} style="font-size:11px;padding:2px 8px;border-radius:20px;background:#f3f4f6;color:#9ca3af">Cargando…</span>`;
+    if (e.total === 0)
+      return `<span ${base} style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#f3f4f6;color:#9ca3af">— Sin tareas de propuesta</span>`;
+
+    const partes = [];
+    if (e.completadas > 0)
+      partes.push(`<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#dcfce7;color:#15803d">✅ ${e.completadas} propuesta${e.completadas>1?'s':''} generada${e.completadas>1?'s':''}</span>`);
+    if (e.enCurso > 0)
+      partes.push(`<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef9c3;color:#92400e">🔧 ${e.enCurso} en curso</span>`);
+
+    return `<span ${base} style="display:inline-flex;flex-wrap:wrap;gap:4px">${partes.join('')}</span>`;
+  }
+
+  function filtrarLista(q) {
+    const qn = q.trim().toLowerCase();
+    if (!qn) { renderListaDeals(_listaDeals); return; }
+    renderListaDeals(_listaDeals.filter(d =>
+      (d.TITLE + ' ' + (d.COMPANY_TITLE||'')).toLowerCase().includes(qn)
+    ));
+  }
+
+  function renderListaDeals(items) {
+    const lista = document.getElementById('lista-cards');
+    if (!items.length) {
+      lista.innerHTML = '<div class="lista-empty">Sin negociaciones activas.</div>';
+      return;
+    }
+    lista.innerHTML = items.map(d => {
+      const etapa  = ETAPAS_NEG[d.STAGE_ID] || d.STAGE_ID || '';
+      const esCierre = parseInt(d.CATEGORY_ID) === 2;
+      const monto  = d.OPPORTUNITY && d.OPPORTUNITY !== '0'
+        ? '$' + Number(d.OPPORTUNITY).toLocaleString('es-MX') + ' MXN' : '';
+      const kwp    = d.UF_CRM_1741208352117 ? `${d.UF_CRM_1741208352117} kWp` : '';
+      const energy = d.UF_CRM_1753209254287 || '';
+      return `<div class="lista-card">
+        <div class="lista-card-nombre">${d.TITLE}</div>
+        ${d.COMPANY_TITLE ? `<div class="lista-card-empresa">🏢 ${d.COMPANY_TITLE}</div>` : ''}
+        <div class="lista-card-chips">
+          ${esCierre ? '<span class="chip azul">Cierre</span>' : '<span class="chip verde">Venta</span>'}
+          ${etapa  ? `<span class="chip">${etapa}</span>` : ''}
+          ${monto  ? `<span class="chip amber">💰 ${monto}</span>` : ''}
+          ${kwp    ? `<span class="chip">⚡ ${kwp}</span>` : ''}
+          ${energy ? `<span class="chip">☀️ ${energy}</span>` : ''}
+        </div>
+        <div style="margin-bottom:8px">${badgePropuesta(d.ID)}</div>
+        <div class="lista-card-acciones">
+          <button class="btn-lista sel" onclick="seleccionar(${d.ID})">📋 Ver tareas</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Compatibilidad — ya no se usa pero se deja para no romper referencias
+  function mostrarResultados(lista) {
+  }
+
+  /* ─── SELECCIONAR NEGOCIACIÓN ─── */
+
+  async function seleccionar(id) {
+    document.getElementById('lista-cargando').classList.add('visible');
+    document.getElementById('lista-cargando').textContent = 'Cargando…';
+
+    const [dealRes, tareasRes] = await Promise.all([
+      fetch(WEBHOOK + 'crm.deal.get.json', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ id })
+      }),
+      fetch(WEBHOOK + 'tasks.task.list.json', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          filter: { 'UF_CRM_TASK': ['D_' + id] },
+          select: ['ID','TITLE','STATUS','DEADLINE','CREATED_DATE','DESCRIPTION'],
+          order: { CREATED_DATE: 'DESC' }
+        })
+      })
+    ]);
+
+    const dealData  = await dealRes.json();
+    const tareasData = await tareasRes.json();
+
+    document.getElementById('lista-cargando').classList.remove('visible');
+    document.getElementById('lista-cargando').textContent = 'Cargando tus negociaciones…';
+
+    negActual = dealData.result;
+    if (!negActual) return;
+
+    const todas = (tareasData.result?.tasks) || [];
+
+    // Cargar subtareas de cada tarea padre para saber la fase (ingeniería/operaciones)
+    const subtareasMap = {};
+    await Promise.all(todas.map(async t => {
+      try {
+        const sr = await fetch(WEBHOOK + 'tasks.task.list.json', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            filter: { PARENT_ID: t.id },
+            select: ['ID','TITLE','STATUS','RESPONSIBLE_ID','CREATED_DATE','CLOSED_DATE'],
+            order: { ID: 'ASC' }
+          })
+        });
+        const sd = await sr.json();
+        subtareasMap[t.id] = sd.result?.tasks || [];
+      } catch { subtareasMap[t.id] = []; }
+    }));
+
+    document.getElementById('n-nombre').textContent = negActual.TITLE;
+    document.getElementById('n-meta').textContent   = negActual.UF_CRM_1741392978542 || '';
+
+    // Renderizar bloque de tareas activas
+    renderTareasActivas(todas, subtareasMap);
+
+    ['visita','formal','final','financiera'].forEach(tipo => {
+      document.getElementById('form-' + tipo).classList.remove('visible');
+      document.getElementById('card-' + tipo).classList.remove('activa');
+    });
+
+    // Botón de propuesta financiera: solo si ya se entregó la propuesta
+    // (marca ===APROBADA=== o cualquier tarea de propuesta completada — las viejas no traen marca)
+    // y no existe ya una tarea de financiamiento para este deal
+    const entregada = todas.some(t =>
+      /===APROBADA===/i.test(t.description || '') ||
+      (String(t.status) === '5' && (t.title || '').toLowerCase().includes('propuesta'))
+    );
+    const tareaFin = todas.find(t => (t.title || '').toLowerCase().includes('financiamiento'));
+    document.getElementById('card-financiera').style.display = (entregada && !tareaFin) ? '' : 'none';
+    // Si ya existe tarea de financiamiento, mostrar su estado en lugar del botón
+    const infoFin = document.getElementById('info-financiera');
+    if (infoFin) {
+      if (tareaFin) {
+        const done = String(tareaFin.status) === '5';
+        infoFin.style.display = '';
+        infoFin.innerHTML = `
+          <div style="display:flex;align-items:center;gap:10px;background:${done?'#f0fdf4':'#fffbeb'};border:1.5px solid ${done?'#bbf7d0':'#fde68a'};border-radius:12px;padding:12px 14px">
+            <span style="font-size:20px">💰</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:800;color:${done?'#15803d':'#92400e'}">${done ? 'Propuesta financiera entregada' : 'Propuesta financiera en curso con Erick'}</div>
+              <div style="font-size:12px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tareaFin.title}</div>
+            </div>
+          </div>`;
+      } else {
+        infoFin.style.display = 'none';
+      }
+    }
+
+    document.getElementById('vista-busqueda').style.display = 'none';
+    document.getElementById('vista-neg').style.display = 'block';
+  }
+
+  function fasePropuesta(subtareas) {
+    // uid 86 = Gerardo (ingeniería), uid 34 = Arturo (operaciones)
+    const ing = subtareas.find(s => String(s.responsibleId || s.RESPONSIBLE_ID) === '86');
+    const ops = subtareas.find(s => String(s.responsibleId || s.RESPONSIBLE_ID) === '34');
+    if (!ing && !ops) return null;
+    if (ops) {
+      const fechaTransicion = ing?.closedDate || ing?.CLOSED_DATE || ops?.createdDate || ops?.CREATED_DATE || '';
+      return {
+        fase: 'Operaciones',
+        color: '#1d4ed8', bg: '#eff6ff',
+        icono: '⚙️',
+        fechaLabel: fechaTransicion ? `Ingeniería entregó el ${fmtFechaCorta(fechaTransicion)}` : '',
+        completa: String(ops.status) === '5'
+      };
+    }
+    return {
+      fase: 'Ingeniería',
+      color: '#92400e', bg: '#fffbeb',
+      icono: '🔧',
+      fechaLabel: '',
+      completa: String(ing.status) === '5'
+    };
+  }
+
+  function fmtFechaCorta(str) {
+    if (!str) return '';
+    const d = new Date(str);
+    if (isNaN(d)) return str;
+    return d.toLocaleDateString('es-MX', { day:'numeric', month:'short' });
+  }
+
+  function renderTareasActivas(tareas, subtareasMap = {}) {
+    const bloque = document.getElementById('bloque-tareas-activas');
+    if (!tareas.length) {
+      bloque.innerHTML = '<div class="sin-tareas-msg">Sin tareas en esta negociación.</div>';
+      return;
+    }
+
+    const pendientes  = tareas.filter(t => !STATUS_DONE.includes(t.status));
+    const completadas = tareas.filter(t =>  STATUS_DONE.includes(t.status));
+
+    const htmlPendientes = pendientes.length ? pendientes.map(t => {
+      const label = STATUS_LABEL[t.status] || 'en curso';
+      const url   = `https://crm-solart.bitrix24.mx/company/personal/user/0/tasks/task/view/${t.id}/`;
+      const subs  = subtareasMap[t.id] || [];
+      const fase  = fasePropuesta(subs);
+      return `<div class="tarea-activa-item" id="tarea-item-${t.id}" onclick="abrirDetalleCompletada(${t.id})" style="cursor:pointer">
+        <div class="tarea-dot" style="margin-top:3px;flex-shrink:0"></div>
+        <div class="tarea-activa-body">
+          <div class="tarea-activa-txt">${t.title}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">
+            <div class="tarea-activa-status">${label}</div>
+            ${fase ? `<span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;background:${fase.bg};color:${fase.color}">${fase.icono} ${fase.fase}</span>` : ''}
+            ${fase?.fechaLabel ? `<span style="font-size:11px;color:#9ca3af">${fase.fechaLabel}</span>` : ''}
+          </div>
+          <div class="tarea-btns">
+            <button class="btn-completar" id="btn-completar-${t.id}" onclick="event.stopPropagation();pedirConfirmacion(event,${t.id})">✓ Completar</button>
+          </div>
+          <div id="detalle-comp-${t.id}" style="display:none;margin-top:8px"></div>
+        </div>
+      </div>`;
+    }).join('') : '<div class="sin-tareas-msg">Sin tareas pendientes.</div>';
+
+    const htmlCompletadas = completadas.length ? completadas.map(t => {
+      const subs = subtareasMap[t.id] || [];
+      const fase = fasePropuesta(subs);
+      return `<div class="tarea-activa-item done" id="tarea-item-${t.id}" onclick="abrirDetalleCompletada(${t.id})" style="cursor:pointer">
+        <div class="tarea-dot" style="margin-top:3px;flex-shrink:0"></div>
+        <div class="tarea-activa-body">
+          <div class="tarea-activa-txt">${t.title}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">
+            <div class="tarea-activa-status">Completada</div>
+            ${fase?.fechaLabel ? `<span style="font-size:11px;color:#9ca3af">${fase.fechaLabel}</span>` : ''}
+          </div>
+          <div id="detalle-comp-${t.id}" style="display:none;margin-top:8px"></div>
+        </div>
+      </div>`;
+    }).join('') : '<div class="sin-tareas-msg">Sin tareas completadas.</div>';
+
+    bloque.innerHTML = `
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button id="tab-pend-neg" onclick="switchTabNeg('pendientes')"
+          style="flex:1;padding:8px 10px;border-radius:8px;border:2px solid #f59e0b;background:#f59e0b;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
+          Pendientes <span style="background:rgba(0,0,0,.15);border-radius:20px;padding:1px 6px;margin-left:4px">${pendientes.length}</span>
+        </button>
+        <button id="tab-comp-neg" onclick="switchTabNeg('completadas')"
+          style="flex:1;padding:8px 10px;border-radius:8px;border:2px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:700;cursor:pointer">
+          Completadas <span style="background:#e5e7eb;border-radius:20px;padding:1px 6px;margin-left:4px">${completadas.length}</span>
+        </button>
+      </div>
+      <div id="panel-pend-neg">${htmlPendientes}</div>
+      <div id="panel-comp-neg" style="display:none">${htmlCompletadas}</div>`;
+  }
+
+  function switchTabNeg(tab) {
+    const esPend = tab === 'pendientes';
+    document.getElementById('panel-pend-neg').style.display = esPend ? '' : 'none';
+    document.getElementById('panel-comp-neg').style.display = esPend ? 'none' : '';
+    const btnP = document.getElementById('tab-pend-neg');
+    const btnC = document.getElementById('tab-comp-neg');
+    Object.assign(btnP.style, esPend
+      ? {background:'#f59e0b', borderColor:'#f59e0b', color:'#fff'}
+      : {background:'#fff', borderColor:'#e5e7eb', color:'#6b7280'});
+    Object.assign(btnC.style, !esPend
+      ? {background:'#22c55e', borderColor:'#22c55e', color:'#fff'}
+      : {background:'#fff', borderColor:'#e5e7eb', color:'#6b7280'});
+  }
+
+  async function abrirDetalleCompletada(tareaId) {
+    const el = document.getElementById(`detalle-comp-${tareaId}`);
+    if (!el) return;
+    if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    el.innerHTML = '<div style="font-size:12px;color:#6b7280">Buscando propuesta…</div>';
+    try {
+      // La aprobación de Daniel queda marcada en la descripción de la tarea
+      // (bloque [APROBADA] con fecha y lista "nombre||url" por línea)
+      const tr = await fetch(WEBHOOK + 'tasks.task.get.json', {
+        method: 'POST',
+        body: new URLSearchParams({ taskId: tareaId, 'select[]': 'DESCRIPTION' })
+      });
+      const td = await tr.json();
+      const descr = td.result?.task?.description || '';
+      // Marcador de texto plano (los corchetes no sobreviven al BBCode de Bitrix)
+      const m = descr.match(/===APROBADA===\s*([\s\S]*?)\s*===FIN APROBADA===/i);
+      if (!m) {
+        el.innerHTML = '<div style="font-size:12px;color:#9ca3af">Sin propuesta adjunta.</div>';
+        return;
+      }
+      const lineas = m[1].trim().split('\n').filter(Boolean);
+      lineas.shift(); // primera línea = fecha
+      const pdfs = lineas.map(l => {
+        const [nombre, url] = l.split('||');
+        return { nombre: (nombre||'').trim(), url: (url||'').replace(/\[\/?url\]/gi,'').trim() };
+      }).filter(p => p.nombre);
+      if (!pdfs.length) {
+        el.innerHTML = '<div style="font-size:12px;color:#9ca3af">Sin propuesta adjunta.</div>';
+        return;
+      }
+      el.innerHTML = `
+        <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 14px">
+          <div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:8px">✅ PROPUESTA${pdfs.length>1?'S':''} ENTREGADA${pdfs.length>1?'S':''}</div>
+          ${pdfs.map(p => `
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <span style="font-size:22px">📕</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:700;color:#111827;word-break:break-word">${p.nombre}</div>
+              <div style="font-size:11px;color:#6b7280">PDF · Aprobado por Daniel González</div>
+            </div>
+          </div>
+          ${p.url ? `<div style="display:flex;gap:8px;margin-bottom:10px">
+            <a href="${p.url}" target="_blank"
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#16a34a;color:#fff;font-size:13px;font-weight:700;padding:10px;border-radius:8px;text-decoration:none">
+              ⬇️ Descargar
+            </a>
+            <button data-n="${p.nombre.replace(/"/g,'&quot;')}" data-u="${p.url.replace(/"/g,'&quot;')}" onclick="compartirPdf(this.dataset.n, this.dataset.u, this)"
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#25d366;color:#fff;font-size:13px;font-weight:700;padding:10px;border-radius:8px;border:none;cursor:pointer">
+              📤 Compartir
+            </button>
+          </div>` : '<div style="font-size:12px;color:#9ca3af;margin-bottom:10px">Link no disponible.</div>'}`).join('')}
+        </div>`;
+    } catch {
+      el.innerHTML = '<div style="font-size:12px;color:#ef4444">Error al cargar.</div>';
+    }
+  }
+
+  /* ─── CALENDARIO DE VISITAS ─── */
+
+  // Map<YYYY-MM-DD, [{titulo, proyecto}]>
+  let fechasVisita = null;
+  let calMes = new Date(); calMes.setDate(1);
+  let diaDetalle = null; // fecha seleccionada para ver detalle
+
+  async function cargarFechasVisita() {
+    if (fechasVisita !== null) return;
+    fechasVisita = new Map();
+    try {
+      let start = 0;
+      while (true) {
+        const res = await fetch(WEBHOOK + 'crm.deal.list.json', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            filter: { '!UF_CRM_1739419686845': '' },
+            select: ['ID','TITLE','UF_CRM_1739419686845','UF_CRM_1741392978542'],
+            start
+          })
+        });
+        const data = await res.json();
+        const items = data.result || [];
+        items.forEach(d => {
+          const raw = d.UF_CRM_1739419686845;
+          if (!raw) return;
+          const fecha = raw.substring(0, 10);
+          if (!fechasVisita.has(fecha)) fechasVisita.set(fecha, []);
+          fechasVisita.get(fecha).push({
+            titulo:   d.TITLE || 'Sin nombre',
+            proyecto: d.UF_CRM_1741392978542 || ''
+          });
+        });
+        if (data.next === undefined || items.length === 0) break;
+        start = data.next;
+      }
+    } catch(e) { console.error('Error cargando fechas visita', e); }
+  }
+
+  async function abrirCalendario() {
+    document.getElementById('cal-visitas').innerHTML = '<div class="cal-cargando">Cargando disponibilidad…</div>';
+    await cargarFechasVisita();
+    calMes = new Date(); calMes.setDate(1);
+    diaDetalle = null;
+    renderCalendario();
+  }
+
+  function renderCalendario() {
+    const hoy       = new Date();
+    const anio      = calMes.getFullYear();
+    const mes       = calMes.getMonth();
+    const primerDia = new Date(anio, mes, 1).getDay();
+    const diasMes   = new Date(anio, mes + 1, 0).getDate();
+    const MESES     = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const DIAS      = ['D','L','M','X','J','V','S'];
+    const fechaSel  = document.getElementById('f-fecha-visita').value;
+
+    let celdas = '';
+    DIAS.forEach(d => { celdas += `<div class="cal-dia-lbl">${d}</div>`; });
+    for (let i = 0; i < primerDia; i++) celdas += '<div class="cal-dia vacio"></div>';
+
+    for (let dia = 1; dia <= diasMes; dia++) {
+      const fechaStr = `${anio}-${String(mes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+      const visitas  = fechasVisita ? (fechasVisita.get(fechaStr) || []) : [];
+      const count    = visitas.length;
+      const esHoy    = hoy.getFullYear()===anio && hoy.getMonth()===mes && hoy.getDate()===dia;
+      const esSel    = fechaStr === fechaSel;
+      const esDetalle= fechaStr === diaDetalle;
+
+      let cls = 'cal-dia';
+      if (esSel)           cls += ' seleccionado';
+      else if (count >= 2) cls += ' ocupado-doble';
+      else if (count === 1) cls += ' ocupado';
+      else                  cls += ' libre';
+      if (esHoy && !esSel) cls += ' hoy';
+      if (esDetalle && !esSel) cls += ' detalle-activo';
+
+      celdas += `<div class="${cls}" onclick="clicDia('${fechaStr}')">${dia}${count ? `<span style="display:block;font-size:8px;line-height:1">${count}v</span>` : ''}</div>`;
+    }
+
+    // Detalle del día seleccionado (si hay visitas)
+    let detalleHtml = '';
+    if (diaDetalle) {
+      const vs = fechasVisita?.get(diaDetalle) || [];
+      if (vs.length) {
+        const [y,m,d2] = diaDetalle.split('-');
+        const MESES2 = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        const fechaLegible = `${parseInt(d2)} ${MESES2[parseInt(m)-1]} ${y}`;
+        detalleHtml = `<div class="cal-detalle">
+          <div class="cal-detalle-titulo">📅 ${fechaLegible} — ${vs.length} visita${vs.length>1?'s':''}</div>
+          ${vs.map(v=>`<div class="cal-detalle-item">
+            <div class="cal-detalle-nombre">${v.titulo}</div>
+            ${v.proyecto ? `<div class="cal-detalle-proyecto">${v.proyecto}</div>` : ''}
+          </div>`).join('')}
+        </div>`;
+      }
+    }
+
+    document.getElementById('cal-visitas').innerHTML = `
+      <div class="cal-header">
+        <button class="cal-nav" onclick="cambiarMes(-1)">‹</button>
+        <span class="cal-mes">${MESES[mes]} ${anio}</span>
+        <button class="cal-nav" onclick="cambiarMes(1)">›</button>
+      </div>
+      <div class="cal-grid">${celdas}</div>
+      ${detalleHtml}
+      <div class="cal-leyenda">
+        <div class="cal-leyenda-item"><div class="cal-leyenda-dot" style="background:#fff;border:1px solid #e5e7eb"></div>Libre</div>
+        <div class="cal-leyenda-item"><div class="cal-leyenda-dot" style="background:#fef3c7;border:1px solid #fbbf24"></div>1 visita</div>
+        <div class="cal-leyenda-item"><div class="cal-leyenda-dot" style="background:#fee2e2;border:1px solid #fca5a5"></div>2+ visitas</div>
+      </div>`;
+  }
+
+  function clicDia(fecha) {
+    const visitas = fechasVisita?.get(fecha) || [];
+    if (visitas.length && diaDetalle !== fecha) {
+      // Primer clic en día ocupado: mostrar detalle
+      diaDetalle = fecha;
+      renderCalendario();
+    } else {
+      // Segundo clic, o día libre: seleccionar como fecha de visita
+      diaDetalle = null;
+      document.getElementById('f-fecha-visita').value = fecha;
+      const [y,m,d] = fecha.split('-');
+      const MESES2 = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      document.getElementById('f-fecha-visita-display').textContent = `Seleccionado: ${parseInt(d)} de ${MESES2[parseInt(m)-1]} de ${y}`;
+      renderCalendario();
+    }
+  }
+
+  function cambiarMes(delta) {
+    calMes.setMonth(calMes.getMonth() + delta);
+    diaDetalle = null;
+    renderCalendario();
+  }
+
+  /* ─── SELECCIONAR TAREA ─── */
+
+  function seleccionarTarea(tipo) {
+    const card = document.getElementById('card-' + tipo);
+    const form = document.getElementById('form-' + tipo);
+    const yaActiva = card.classList.contains('activa');
+
+    // Cerrar todas
+    ['visita','formal','final','financiera'].forEach(t => {
+      document.getElementById('card-' + t).classList.remove('activa');
+      document.getElementById('form-' + t).classList.remove('visible');
+    });
+
+    if (!yaActiva) {
+      card.classList.add('activa');
+      form.classList.add('visible');
+      if (tipo === 'visita') abrirCalendario();
+    }
+  }
+
+  /* ─── HELPERS FORM ─── */
+
+  function toggleOpc(e, btn, grupoId, multiple) {
+    e.stopPropagation();
+    const grupo = document.getElementById(grupoId);
+    if (!multiple) grupo.querySelectorAll('.opcion-btn').forEach(b => b.classList.remove('activo'));
+    btn.classList.toggle('activo');
+  }
+
+  function getOpc(grupoId) {
+    const sel = [...document.querySelectorAll(`#${grupoId} .opcion-btn.activo`)];
+    if (!sel.length) return null;
+    return sel.length === 1 ? sel[0].dataset.val : sel.map(b => b.dataset.val);
+  }
+
+  function getVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+  function markReq(id) { const el = document.getElementById(id); if (el) el.style.borderColor = '#ef4444'; }
+
+  /* ─── EJECUTAR TAREA ─── */
+
+  async function ejecutarTarea(e, tipo) {
+    e.stopPropagation();
+    if (!negActual) return;
+
+    const fields = { STAGE_ID: TAREA_ETAPA[tipo] };
+    let ok = true;
+
+    if (tipo === 'visita') {
+      const fecha     = getVal('f-fecha-visita');
+      const direccion = getVal('f-direccion-visita');
+      const quien     = getVal('f-quien-recibe');
+      const kwp       = getVal('f-kwp');
+      const energia   = getVal('f-energia');
+      if (!fecha)     { alert('Selecciona la fecha en el calendario.'); return; }
+      if (!direccion) { markReq('f-direccion-visita'); ok = false; }
+      if (!quien)     { markReq('f-quien-recibe'); ok = false; }
+      if (!kwp)       { markReq('f-kwp'); ok = false; }
+      if (!energia)   { markReq('f-energia'); ok = false; }
+      if (!ok) return;
+      fields['UF_CRM_1739419686845'] = fecha;
+      fields['UF_CRM_1739419805605'] = quien;
+      fields['UF_CRM_1741208352117'] = kwp;
+      fields['UF_CRM_1753209254287'] = energia;
+    }
+
+    if (tipo === 'formal') {
+      const forma    = getOpc('f-forma-compra');
+      const bess     = getOpc('f-bess');
+      const actualiz = getOpc('f-actualizar-formal');
+      const ahorro   = getVal('f-ahorro-formal');
+      const prov     = getOpc('f-proveedor-formal');
+      if (!forma)    { alert('Selecciona la forma de compra.'); return; }
+      if (!bess)     { alert('Indica si necesita BESS.'); return; }
+      if (!actualiz) { alert('Indica si necesita actualización.'); return; }
+      if (!ahorro)   { markReq('f-ahorro-formal'); return; }
+      if (!prov)     { alert('Selecciona el proveedor energético.'); return; }
+      fields['UF_CRM_1738733784685'] = forma;
+      fields['UF_CRM_1738734420663'] = bess;
+      fields['UF_CRM_1739416803761'] = actualiz;
+      const aliado = getOpc('f-aliado');
+      if (aliado) fields['UF_CRM_1748398810598'] = Array.isArray(aliado) ? aliado : [aliado];
+      const com = getVal('f-comentarios-formal');
+      if (com) fields['UF_CRM_1739418944862'] = com;
+      fields['UF_CRM_1758675881434'] = ahorro + '|MXN';
+      fields['UF_CRM_1777320644093'] = prov;
+    }
+
+    if (tipo === 'financiera') {
+      const proceso = getOpc('f-proceso-credito');
+      const forma   = getOpc('f-forma-compra-fin');
+      if (!proceso) { alert('Selecciona el proceso de crédito.'); return; }
+      if (!forma)   { alert('Selecciona la forma de compra.'); return; }
+      fields['UF_CRM_1780532444242'] = proceso;
+      fields['UF_CRM_1738733784685'] = forma;
+    }
+
+    if (tipo === 'final') {
+      const actualiz = getOpc('f-actualizar-final');
+      const ahorro   = getVal('f-ahorro-final');
+      const inmueble = getOpc('f-inmueble');
+      const prov     = getOpc('f-proveedor-final');
+      if (!actualiz) { alert('Indica si necesita actualización.'); return; }
+      if (!ahorro)   { markReq('f-ahorro-final'); return; }
+      if (!inmueble) { alert('Selecciona el tipo de inmueble.'); return; }
+      if (!prov)     { alert('Selecciona el proveedor energético.'); return; }
+      fields['UF_CRM_1739416803761'] = actualiz;
+      const com = getVal('f-comentarios-final');
+      if (com) fields['UF_CRM_1739418944862'] = com;
+      fields['UF_CRM_1758675881434'] = ahorro + '|MXN';
+      fields['UF_CRM_1765995370491'] = inmueble;
+      fields['UF_CRM_1777320644093'] = prov;
+    }
+
+    mostrarEstado('vista-cargando');
+
+    try {
+      const res = await fetch(WEBHOOK + 'crm.deal.update.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: negActual.ID, fields })
+      });
+      const data = await res.json();
+      if (!data.result) throw new Error(data.error_description || 'Error');
+
+      // Guardar dirección en la compañía si es visita técnica
+      if (tipo === 'visita' && negActual.COMPANY_ID) {
+        const direccion = getVal('f-direccion-visita');
+        if (direccion) {
+          await fetch(WEBHOOK + 'crm.company.update.json', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: negActual.COMPANY_ID, fields: { ADDRESS: direccion } })
+          });
+        }
+      }
+
+      // Propuesta financiera: crear la tarea para Erick directamente
+      // (no hay robot en Bitrix para esta etapa)
+      if (tipo === 'financiera') {
+        const OPTS_PROCESO = { '1484':'Entrega de documentos','1486':'Armado de expediente','1488':'Estudio','1490':'Autorizado o Rechazado' };
+        const OPTS_FORMA = { '100':'Compra de Activos','102':'Financiamiento','104':'PPA','106':'Arrendamiento','108':'Leasing Back','328':'Aun no sabemos' };
+        const proceso = OPTS_PROCESO[fields['UF_CRM_1780532444242']] || '';
+        const forma = OPTS_FORMA[fields['UF_CRM_1738733784685']] || '';
+        const comentarios = getVal('f-comentarios-fin');
+        let vendedorId = negActual.ASSIGNED_BY_ID;
+        try { const u = JSON.parse(localStorage.getItem('solart_user')); if (u?.id) vendedorId = u.id; } catch {}
+        const deadline = new Date(Date.now() + 5*24*60*60*1000).toISOString().slice(0,19);
+        const descTarea = [
+          `Solicitud de plan financiero para: ${negActual.TITLE}`,
+          `Proceso de crédito: ${proceso}`,
+          `Forma de compra: ${forma}`,
+          comentarios ? `Comentarios del vendedor: ${comentarios}` : ''
+        ].filter(Boolean).join('\n');
+        const tRes = await fetch(WEBHOOK + 'tasks.task.add.json', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: {
+            TITLE: `Financiamiento_${negActual.TITLE}`,
+            DESCRIPTION: descTarea,
+            RESPONSIBLE_ID: 344,
+            CREATED_BY: vendedorId,
+            GROUP_ID: 30,
+            DEADLINE: deadline,
+            UF_CRM_TASK: ['D_' + negActual.ID]
+          } })
+        });
+        const tData = await tRes.json();
+        if (!tData.result) throw new Error(tData.error_description || 'No se pudo crear la tarea de financiamiento');
+      }
+
+      const labels = {
+        visita: '¡Visita técnica agendada!',
+        formal: '¡Propuesta formal solicitada!',
+        final:  '¡Propuesta final / Sí verbal!',
+        financiera: '¡Propuesta financiera iniciada!'
+      };
+      document.getElementById('exito-titulo').textContent = labels[tipo];
+      document.getElementById('exito-detalle').textContent = tipo === 'financiera'
+        ? 'La tarea le llegó a Erick Hernandez. Te avisaremos aquí cuando entregue el plan financiero.'
+        : 'Bitrix generará la tarea para el equipo automáticamente.';
+      mostrarEstado('vista-exito');
+    } catch (err) {
+      alert('Error: ' + err.message);
+      mostrarEstado(null);
+      document.getElementById('vista-neg').style.display = 'block';
+    }
+  }
+
+  /* ─── COMPLETAR TAREA ─── */
+
+  function pedirConfirmacion(e, tareaId) {
+    e.stopPropagation();
+    const btn = document.getElementById('btn-completar-' + tareaId);
+    btn.outerHTML = `
+      <span class="confirmacion-inline">
+        ¿Completar?
+        <button class="btn-conf-si" onclick="completarTarea(event,${tareaId})">Sí</button>
+        <button class="btn-conf-no" onclick="cancelarConfirmacion(event,${tareaId})">No</button>
+      </span>`;
+  }
+
+  function cancelarConfirmacion(e, tareaId) {
+    e.stopPropagation();
+    const span = e.target.closest('.confirmacion-inline');
+    span.outerHTML = `<button class="btn-completar" id="btn-completar-${tareaId}" onclick="pedirConfirmacion(event,${tareaId})">✓ Completar</button>`;
+  }
+
+  async function completarTarea(e, tareaId) {
+    e.stopPropagation();
+    const span = e.target.closest('.confirmacion-inline');
+    if (span) span.innerHTML = '<span style="font-size:11px;color:#6b7280">…</span>';
+    try {
+      const res = await fetch(WEBHOOK + 'tasks.task.complete.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: tareaId })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error_description || data.error);
+      // Marcar visualmente como completada y mover al resumen
+      const item = document.getElementById('tarea-item-' + tareaId);
+      if (item) {
+        item.classList.add('done');
+        item.querySelector('.tarea-dot').style.background = '#22c55e';
+        item.querySelector('.tarea-activa-txt').style.color = '#15803d';
+        item.querySelector('.tarea-activa-status').textContent = 'completada';
+        item.querySelector('div[style*="display:flex"]').remove();
+      }
+    } catch(err) {
+      btn.disabled = false;
+      btn.textContent = '✓';
+      alert('Error al completar: ' + err.message);
+    }
+  }
+
+  /* ─── CERRADO PERDIDO ─── */
+
+  function abrirModal()  { document.getElementById('overlay-perdido').classList.add('visible'); }
+  function cerrarModal() { document.getElementById('overlay-perdido').classList.remove('visible'); }
+
+  async function confirmarPerdido() {
+    const motivo     = document.getElementById('motivo-perdido').value;
+    const comentario = document.getElementById('comentario-perdido').value.trim();
+    if (!motivo) { alert('Selecciona un motivo.'); return; }
+    cerrarModal();
+    mostrarEstado('vista-cargando');
+    try {
+      const fields = { STAGE_ID: 'LOSE', UF_CRM_682647CB21559: motivo };
+      if (comentario) fields['UF_CRM_1747089452849'] = comentario;
+      const res = await fetch(WEBHOOK + 'crm.deal.update.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: negActual.ID, fields })
+      });
+      const data = await res.json();
+      if (!data.result) throw new Error(data.error_description || 'Error');
+      document.getElementById('exito-titulo').textContent = 'Negociación cerrada';
+      document.getElementById('exito-detalle').textContent = negActual.TITLE + ' → Cerrado perdido';
+      mostrarEstado('vista-exito');
+    } catch (err) {
+      alert('Error: ' + err.message);
+      mostrarEstado(null);
+      document.getElementById('vista-neg').style.display = 'block';
+    }
+  }
+
+  /* ─── NAVEGACIÓN ─── */
+
+  function mostrarEstado(id) {
+    ['vista-cargando','vista-exito'].forEach(v => document.getElementById(v).classList.remove('visible'));
+    document.getElementById('vista-neg').style.display = 'none';
+    document.getElementById('vista-busqueda').style.display = 'none';
+    if (id) document.getElementById(id).classList.add('visible');
+  }
+
+  function volver() {
+    negActual = null;
+    document.getElementById('busqueda').value = '';
+    document.getElementById('vista-neg').style.display = 'none';
+    document.getElementById('vista-busqueda').style.display = 'block';
+    if (!_listaDeals.length) autocargarDeals();
+  }
+
+  function reiniciar() {
+    negActual = null;
+    document.getElementById('busqueda').value = '';
+    document.getElementById('vista-exito').classList.remove('visible');
+    document.getElementById('vista-busqueda').style.display = 'block';
+    if (!_listaDeals.length) autocargarDeals();
+  }
+
+  // Poblar sidebar con usuario en sesión
+  try {
+    const u = JSON.parse(localStorage.getItem('solart_user'));
+    if (u) {
+      const av = document.getElementById('sb-avatar');
+      const nm = document.getElementById('sb-nombre');
+      if (av) av.textContent = u.nombre.charAt(0).toUpperCase();
+      if (nm) nm.textContent = u.nombre;
+      // El link a /ingenieria/ cambia de nombre según el rol de quien entra
+      const ing = document.getElementById('sb-link-ing');
+      if (ing) {
+        const EQUIPO_ING = ['8','34','36','86','40','344','158','188'];
+        if (!EQUIPO_ING.includes(String(u.id))) { ing.style.display = 'none'; }   // vendedor normal: no ve el link
+        else if (String(u.id) === '158') ing.innerHTML = '<span class="sb-icon">📊</span> Resultados Anuales SOLART';
+        else if (String(u.id) === '188') ing.innerHTML = '<span class="sb-icon">📊</span> Tablero Comercial';
+        else if (String(u.id) === '8')   ing.innerHTML = '<span class="sb-icon">📊</span> Tablero Ingeniería';
+        else if (String(u.id) === '40')  ing.innerHTML = '<span class="sb-icon">🧭</span> Visitas Técnicas';
+        else if (String(u.id) === '344') ing.innerHTML = '<span class="sb-icon">💰</span> Propuestas Financieras';
+      }
+    }
+  } catch {}
+
+  /* ─── NOTIFICACIONES DE PROPUESTAS ENTREGADAS ─── */
+  let notifItems = [];
+
+  function toggleNotif() {
+    const lista = document.getElementById('notif-lista');
+    const abierto = lista.style.display !== 'none';
+    lista.style.display = abierto ? 'none' : 'block';
+    document.getElementById('notif-chevron').textContent = abierto ? '▼' : '▲';
+    if (!abierto) {
+      // Al abrir, marcar todo como visto
+      const vistos = notifItems.map(n => String(n.taskId));
+      localStorage.setItem('solart_notif_vistas', JSON.stringify(vistos));
+      const badge = document.getElementById('notif-badge');
+      if (badge) badge.style.display = 'none';
+      document.getElementById('notif-titulo').textContent = `Propuestas entregadas (${notifItems.length})`;
+    }
+  }
+
+  // Compartir el PDF: en cel abre la hoja nativa de compartir (WhatsApp, etc.)
+  // con el archivo adjunto; si no se puede, comparte el link; último recurso: wa.me
+  async function compartirPdf(nombre, url, btn) {
+    const original = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
+    try {
+      // 1) Intentar compartir el ARCHIVO (así llega como PDF adjunto en WhatsApp)
+      if (navigator.canShare) {
+        try {
+          const resp = await fetch(url);
+          const blob = await resp.blob();
+          const file = new File([blob], nombre, { type: 'application/pdf' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: nombre });
+            return;
+          }
+        } catch {}
+      }
+      // 2) Compartir el link con la hoja nativa
+      if (navigator.share) {
+        await navigator.share({ title: nombre, text: `Propuesta: ${nombre}`, url });
+        return;
+      }
+      // 3) Fallback escritorio: abrir WhatsApp Web con el link
+      window.open('https://wa.me/?text=' + encodeURIComponent(`Propuesta: ${nombre}\n${url}`), '_blank');
+    } catch(e) {
+      // AbortError = el usuario cerró la hoja de compartir; no es error
+      if (e?.name !== 'AbortError') console.warn('[compartir]', e);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = original; }
+    }
+  }
+
+  async function cargarNotifPropuestas() {
+    let u = null;
+    try { u = JSON.parse(localStorage.getItem('solart_user')); } catch {}
+    if (!u?.id) return;
+    try {
+      const r = await fetch(WEBHOOK + 'tasks.task.list.json', {
+        method: 'POST',
+        body: new URLSearchParams({
+          'filter[!PARENT_ID]': 'true', 'filter[CREATED_BY]': u.id, 'filter[!STATUS]': '6',
+          'select[0]': 'ID', 'select[1]': 'TITLE', 'select[2]': 'DESCRIPTION',
+          'order[ID]': 'desc'
+        })
+      });
+      const d = await r.json();
+      const tareas = d.result?.tasks || [];
+      notifItems = [];
+      for (const t of tareas) {
+        const descr = t.description || '';
+        const m = descr.match(/===APROBADA===\s*([\s\S]*?)\s*===FIN APROBADA===/i);
+        if (!m) continue;
+        const lineas = m[1].trim().split('\n').filter(Boolean);
+        const fecha = lineas.shift() || '';
+        const pdfs = lineas.map(l => {
+          const [nombre, url] = l.split('||');
+          return { nombre: (nombre||'').trim(), url: (url||'').replace(/\[\/?url\]/gi,'').trim() };
+        }).filter(p => p.nombre);
+        if (pdfs.length) notifItems.push({ taskId: t.id, titulo: t.title, fecha, pdfs });
+      }
+      if (!notifItems.length) return;
+
+      // Contar no vistas
+      let vistos = [];
+      try { vistos = JSON.parse(localStorage.getItem('solart_notif_vistas')) || []; } catch {}
+      const nuevas = notifItems.filter(n => !vistos.includes(String(n.taskId))).length;
+
+      document.getElementById('panel-notif').style.display = 'block';
+      document.getElementById('notif-titulo').textContent =
+        nuevas > 0 ? `Propuestas entregadas — ${nuevas} nueva${nuevas>1?'s':''}` : `Propuestas entregadas (${notifItems.length})`;
+      const badge = document.getElementById('notif-badge');
+      if (nuevas > 0) { badge.textContent = nuevas; badge.style.display = 'inline-block'; }
+
+      document.getElementById('notif-lista').innerHTML = notifItems.map(n => `
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:2px">${n.titulo}</div>
+          <div style="font-size:11px;color:#6b7280;margin-bottom:8px">✅ Aprobada por Daniel González${n.fecha ? ' · ' + n.fecha : ''}</div>
+          ${n.pdfs.map(p => `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-size:16px">📕</span>
+            <span style="flex:1;font-size:12px;color:#374151;word-break:break-word">${p.nombre}</span>
+            ${p.url ? `<a href="${p.url}" target="_blank"
+              style="background:#16a34a;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;text-decoration:none;flex-shrink:0">⬇️ Descargar</a>
+            <button data-n="${p.nombre.replace(/"/g,'&quot;')}" data-u="${p.url.replace(/"/g,'&quot;')}" onclick="compartirPdf(this.dataset.n, this.dataset.u, this)"
+              style="background:#25d366;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;border:none;cursor:pointer;flex-shrink:0">📤 Compartir</button>` : ''}
+          </div>`).join('')}
+        </div>`).join('');
+    } catch(e) { console.warn('[notif]', e); }
+  }
+  cargarNotifPropuestas();
+</script>
+</div><!-- /page-main -->
+</body>
+</html>
