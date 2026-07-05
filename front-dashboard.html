@@ -1381,9 +1381,8 @@
     abrirDashboard();
   }
 
-  // Mostrar sidebar en desktop al abrir dashboard
+  // Mostrar sidebar; el media query (con !important) lo oculta en móvil. No dependemos de innerWidth por el iframe.
   function mostrarSidebar(u) {
-    if (window.innerWidth < 768) return;
     const sb = document.getElementById('sidebar');
     if (sb) sb.style.display = 'flex';
     const av = document.getElementById('sb-avatar');

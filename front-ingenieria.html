@@ -452,11 +452,11 @@ async function abrirApp() {
   const u = usuarioActual;
   document.getElementById('app-avatar').textContent = u.nombre.charAt(0).toUpperCase();
   document.getElementById('app-username').textContent = u.nombre;
-  if (window.innerWidth >= 768) {
-    const sb = document.getElementById('sidebar'); if (sb) sb.style.display = '';
-    const av = document.getElementById('sb-avatar'); if (av) av.textContent = u.nombre.charAt(0).toUpperCase();
-    const nm = document.getElementById('sb-nombre'); if (nm) nm.textContent = u.nombre;
-  }
+  // Mostrar sidebar: limpiar el inline y dejar que el CSS decida (oculta en móvil por media query).
+  // No dependemos de window.innerWidth porque dentro del iframe no es confiable.
+  const sb = document.getElementById('sidebar'); if (sb) sb.style.display = '';
+  const av = document.getElementById('sb-avatar'); if (av) av.textContent = u.nombre.charAt(0).toUpperCase();
+  const nm = document.getElementById('sb-nombre'); if (nm) nm.textContent = u.nombre;
   await Promise.all([cargarEtapas(), cargarTodosUsuarios()]);
   if (u.rol === 'ejecutor') await resolverGrupoEjecutor(u.id);
   // Mostrar nav móvil para todos (excepto vendedor que solo ve entregadas)
