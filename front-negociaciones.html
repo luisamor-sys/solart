@@ -736,15 +736,11 @@
       document.getElementById('card-' + tipo).classList.remove('activa');
     });
 
-    // Botón de propuesta financiera: solo si ya se entregó la propuesta
-    // (marca ===APROBADA=== o cualquier tarea de propuesta completada — las viejas no traen marca)
-    // y no existe ya una tarea de financiamiento para este deal
-    const entregada = todas.some(t =>
-      /===APROBADA===/i.test(t.description || '') ||
-      (String(t.status) === '5' && (t.title || '').toLowerCase().includes('propuesta'))
-    );
+    // Botón de propuesta financiera: disponible siempre que NO exista ya una
+    // tarea de financiamiento (muchas negociaciones viejas no tienen tareas
+    // ligadas, así que no se puede exigir "propuesta entregada" como candado)
     const tareaFin = todas.find(t => (t.title || '').toLowerCase().includes('financiamiento'));
-    document.getElementById('card-financiera').style.display = (entregada && !tareaFin) ? '' : 'none';
+    document.getElementById('card-financiera').style.display = !tareaFin ? '' : 'none';
     // Si ya existe tarea de financiamiento, mostrar su estado en lugar del botón
     const infoFin = document.getElementById('info-financiera');
     if (infoFin) {
