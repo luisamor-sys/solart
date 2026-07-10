@@ -641,10 +641,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     if (av) av.textContent = u.nombre.charAt(0).toUpperCase();
     if (nm) nm.textContent = u.nombre;
 
-    // Mostrar tarjeta de ingeniería solo para el equipo técnico
+    // Tarjeta y link de ingeniería: solo para el equipo técnico/directivo
     const EQUIPO_ING = ['8','34','36','86','40','344','158','188'];
+    const esEquipo = EQUIPO_ING.includes(String(u.id));
     const cardIng = document.getElementById('card-ingenieria');
-    if (cardIng) cardIng.style.display = EQUIPO_ING.includes(String(u.id)) ? 'block' : 'none';
+    if (cardIng) cardIng.style.display = esEquipo ? 'block' : 'none';
+    const sbIngLink = document.getElementById('sb-link-ing');
+    if (sbIngLink) sbIngLink.style.display = esEquipo ? '' : 'none';   // vendedores no lo ven
     // Victor (CEO) y Arturo López (Comercial): renombrar los accesos a su panel
     if (String(u.id) === '158' || String(u.id) === '188') {
       const esCEO = String(u.id) === '158';
