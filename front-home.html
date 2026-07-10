@@ -732,6 +732,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       PHONE: [{ VALUE: f('np-telefono'), VALUE_TYPE: 'WORK' }],
       COMPANY_TITLE: f('np-empresa'), STATUS_ID: 'NEW', SOURCE_ID: 'SELF'
     };
+    if (usuarioActual?.id) campos.ASSIGNED_BY_ID = usuarioActual.id; // responsable = quien lo registra
     if (f('np-email')) campos.EMAIL = [{ VALUE: f('np-email'), VALUE_TYPE: 'WORK' }];
 
     try {
