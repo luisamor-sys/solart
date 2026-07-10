@@ -357,16 +357,16 @@
     <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:28px;filter:brightness(0) invert(1)">
   </div>
   <nav class="sidebar-nav">
-    <a class="sidebar-link" target="_top" href="https://gestiondeclientes.bitrix24.site/dashboard/"><span class="sb-icon">📊</span> Mi día</a>
-    <a class="sidebar-link" target="_top" href="https://gestiondeclientes.bitrix24.site/tareas/"><span class="sb-icon">📋</span> Tareas</a>
-    <a class="sidebar-link activo" target="_top" href="https://gestiondeclientes.bitrix24.site/cambiaretapa/"><span class="sb-icon">🔄</span> Cambiar etapa</a>
-    <a class="sidebar-link" target="_top" href="https://gestiondeclientes.bitrix24.site/ingenieria/"><span class="sb-icon">🔧</span> Propuestas Ing.</a>
+    <a class="sidebar-link" target="_top" href="https://luisamor-sys.github.io/solart/front-dashboard.html"><span class="sb-icon">📊</span> Mi día</a>
+    <a class="sidebar-link" target="_top" href="https://luisamor-sys.github.io/solart/front-negociaciones.html"><span class="sb-icon">📋</span> Tareas</a>
+    <a class="sidebar-link activo" target="_top" href="https://luisamor-sys.github.io/solart/front-cambiar-etapa.html"><span class="sb-icon">🔄</span> Cambiar etapa</a>
+    <a class="sidebar-link" target="_top" href="https://luisamor-sys.github.io/solart/front-ingenieria.html"><span class="sb-icon">🔧</span> Propuestas Ing.</a>
   </nav>
   <hr class="sidebar-sep">
   <div class="sidebar-user">
     <div class="sidebar-user-avatar" id="sb-avatar">?</div>
     <span class="sidebar-user-name" id="sb-nombre">—</span>
-    <button class="sidebar-logout" onclick="window.location.href='https://gestiondeclientes.bitrix24.site/dashboard/'">Salir</button>
+    <button class="sidebar-logout" onclick="window.location.href='https://luisamor-sys.github.io/solart/front-dashboard.html'">Salir</button>
   </div>
 </aside>
 
@@ -374,8 +374,8 @@
 <div class="card">
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-    <a target="_top" href="https://gestiondeclientes.bitrix24.site/" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#6b7280;text-decoration:none;background:#f3f4f6;padding:7px 12px;border-radius:10px">← Menú</a>
-    <a target="_top" href="https://gestiondeclientes.bitrix24.site/" style="display:inline-block;line-height:0">
+    <a target="_top" href="https://luisamor-sys.github.io/solart/front-home.html" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#6b7280;text-decoration:none;background:#f3f4f6;padding:7px 12px;border-radius:10px">← Menú</a>
+    <a target="_top" href="https://luisamor-sys.github.io/solart/front-home.html" style="display:inline-block;line-height:0">
       <img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART" style="height:28px;filter:brightness(0)">
     </a>
   </div>
@@ -974,7 +974,7 @@
   function irATareasDealId(id, titulo) {
     localStorage.setItem('solart_deal_id_preload', id);
     localStorage.setItem('solart_neg_preload', titulo);
-    window.top.location.href = 'https://gestiondeclientes.bitrix24.site/tareas/';
+    window.top.location.href = 'https://luisamor-sys.github.io/solart/front-negociaciones.html';
   }
 
   // Orden de etapas del pipeline de Prospectos
@@ -1187,7 +1187,7 @@
     if (!dealActual) return;
     localStorage.setItem('solart_neg_preload', dealActual.TITLE);
     localStorage.setItem('solart_deal_id_preload', dealActual.ID);
-    window.top.location.href = 'https://gestiondeclientes.bitrix24.site/tareas/';
+    window.top.location.href = 'https://luisamor-sys.github.io/solart/front-negociaciones.html';
   }
 
   function volverDeal() {
@@ -1317,7 +1317,7 @@
       ? (prospectoActual.TITLE || (prospectoActual.NAME + ' ' + prospectoActual.LAST_NAME)).trim()
       : '';
     localStorage.setItem('solart_neg_preload', nombre);
-    window.top.location.href = 'https://gestiondeclientes.bitrix24.site/tareas/';
+    window.top.location.href = 'https://luisamor-sys.github.io/solart/front-negociaciones.html';
   }
 
   let sunwiseSeleccion = null; // null | false | true
