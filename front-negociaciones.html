@@ -311,9 +311,15 @@
   <div id="vista-neg" style="display:none">
     <button class="btn-volver" onclick="volver()">← Buscar otra</button>
 
-    <div class="neg-card">
-      <div class="neg-nombre" id="n-nombre"></div>
-      <div class="neg-meta" id="n-meta"></div>
+    <div class="neg-card" onclick="toggleDetalleNeg()" style="cursor:pointer">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div class="neg-nombre" id="n-nombre"></div>
+          <div class="neg-meta" id="n-meta"></div>
+        </div>
+        <span id="neg-chev" style="font-size:12px;color:#9ca3af;flex-shrink:0">▼ Detalle</span>
+      </div>
+      <div id="neg-detalle" style="display:none;margin-top:12px;border-top:1px solid #e5e7eb;padding-top:12px" onclick="event.stopPropagation()"></div>
     </div>
 
     <!-- Tareas activas del deal -->
@@ -537,6 +543,68 @@
 
   function stopProp(e) { e.stopPropagation(); }
 
+  // ── DETALLE DE LA NEGOCIACIÓN (campos editables al tocar la tarjeta) ──
+  const ENUM_INMUEBLE  = { '1196':'Propio','1198':'Rentado','1200':'Familiar','1202':'Empresarial' };
+  const ENUM_PROVEEDOR = { '1466':'CFE','1468':'Suministro Calificado','1470':'Mixto','1472':'Por definir' };
+  const ENUM_FORMA     = { '100':'Compra de Activos','102':'Financiamiento','104':'PPA','106':'Arrendamiento','108':'Leasing Back','328':'Aun no sabemos' };
+  const ENUM_PROCESO   = { '1484':'Entrega de documentos','1486':'Armado de expediente','1488':'Estudio','1490':'Autorizado o Rechazado' };
+  const CAMPOS_NEG = [
+    { k:'OPPORTUNITY',           lbl:'💰 Monto (MXN)',                tipo:'num' },
+    { k:'UF_CRM_1741208352117',  lbl:'⚡ Tamaño del sistema (kWp)',   tipo:'num' },
+    { k:'UF_CRM_1753209254287',  lbl:'🔋 % de energía que cubrimos',  tipo:'text' },
+    { k:'UF_CRM_1765995370491',  lbl:'🏠 Inmueble',                   tipo:'enum', mapa:ENUM_INMUEBLE },
+    { k:'UF_CRM_1777320644093',  lbl:'⚙️ Proveedor energético',       tipo:'enum', mapa:ENUM_PROVEEDOR },
+    { k:'UF_CRM_1738733784685',  lbl:'🛒 Forma de compra',            tipo:'enum', mapa:ENUM_FORMA },
+    { k:'UF_CRM_1780532444242',  lbl:'🏦 Proceso de crédito',         tipo:'enum', mapa:ENUM_PROCESO },
+  ];
+
+  function toggleDetalleNeg() {
+    const det = document.getElementById('neg-detalle');
+    const chev = document.getElementById('neg-chev');
+    if (!det || !negActual) return;
+    const abierto = det.style.display !== 'none';
+    if (abierto) { det.style.display = 'none'; chev.textContent = '▼ Detalle'; return; }
+    chev.textContent = '▲ Cerrar';
+    const campos = CAMPOS_NEG.map(c => {
+      const val = negActual[c.k] ?? '';
+      if (c.tipo === 'enum') {
+        const ops = ['<option value="">—</option>'].concat(
+          Object.entries(c.mapa).map(([id,nom]) => `<option value="${id}" ${String(val)===String(id)?'selected':''}>${nom}</option>`)
+        ).join('');
+        return `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#6b7280">${c.lbl}</label><select data-cneg="${c.k}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;margin-top:3px">${ops}</select></div>`;
+      }
+      return `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#6b7280">${c.lbl}</label><input data-cneg="${c.k}" type="${c.tipo==='num'?'number':'text'}" value="${String(val).replace(/"/g,'&quot;')}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;margin-top:3px;box-sizing:border-box"></div>`;
+    }).join('');
+    det.innerHTML = `
+      ${campos}
+      <button onclick="guardarDetalleNeg(this)" style="width:100%;background:#1a1a2e;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Guardar cambios</button>
+      <div id="neg-det-msg" style="font-size:12px;margin-top:6px;text-align:center"></div>`;
+    det.style.display = 'block';
+  }
+
+  async function guardarDetalleNeg(btn) {
+    if (!negActual) return;
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const fields = {};
+    document.querySelectorAll('#neg-detalle [data-cneg]').forEach(el => { fields[el.dataset.cneg] = el.value; });
+    try {
+      const r = await fetch(WEBHOOK + 'crm.deal.update.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: negActual.ID, fields })
+      });
+      const d = await r.json();
+      if (!d.result) throw new Error(d.error_description || 'Error');
+      Object.assign(negActual, fields); // reflejar en memoria
+      const msg = document.getElementById('neg-det-msg');
+      if (msg) { msg.style.color = '#16a34a'; msg.textContent = '✅ Guardado en el CRM'; }
+      btn.textContent = '💾 Guardar cambios'; btn.disabled = false;
+    } catch(e) {
+      const msg = document.getElementById('neg-det-msg');
+      if (msg) { msg.style.color = '#dc2626'; msg.textContent = 'Error al guardar: ' + e.message; }
+      btn.textContent = '💾 Guardar cambios'; btn.disabled = false;
+    }
+  }
+
   // Auto-cargar al entrar; si viene redirigido con ID, abrir directo
   const _dealIdPreload = localStorage.getItem('solart_deal_id_preload');
   localStorage.removeItem('solart_deal_id_preload');
@@ -726,6 +794,11 @@
     }));
 
     document.getElementById('n-nombre').textContent = negActual.TITLE;
+    // Cerrar el panel de detalle al cambiar de negociación (evita campos de la anterior)
+    const _det = document.getElementById('neg-detalle');
+    if (_det) { _det.style.display = 'none'; _det.innerHTML = ''; }
+    const _chev = document.getElementById('neg-chev');
+    if (_chev) _chev.textContent = '▼ Detalle';
     document.getElementById('n-meta').textContent   = negActual.UF_CRM_1741392978542 || '';
 
     // Renderizar bloque de tareas activas
