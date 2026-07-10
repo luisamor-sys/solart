@@ -334,6 +334,12 @@
       SOURCE_ID: 'SELF'
     };
 
+    // Responsable = usuario loggeado (sin esto queda a nombre del webhook, Luis Amor)
+    try {
+      const u = JSON.parse(localStorage.getItem('solart_user'));
+      if (u?.id) campos.ASSIGNED_BY_ID = u.id;
+    } catch {}
+
     if (email) {
       campos.EMAIL = [{ VALUE: email, VALUE_TYPE: 'WORK' }];
     }
