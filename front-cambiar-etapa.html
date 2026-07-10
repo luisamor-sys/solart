@@ -725,6 +725,29 @@
   let _uid = null;
   try { const u = JSON.parse(localStorage.getItem('solart_user')); _uid = u?.id || null; } catch {}
 
+  // Las automatizaciones de Bitrix crean tareas al mover etapas, pero como el
+  // movimiento va por el webhook, quedan creadas por Luis Amor (12). Este helper
+  // busca las tareas recién creadas por 12 y les cambia el creador al usuario loggeado.
+  async function reasignarTareasNuevas(inicioMs) {
+    if (!_uid || String(_uid) === '12') return;
+    await new Promise(r => setTimeout(r, 4500)); // dar tiempo al robot de Bitrix
+    try {
+      const r = await fetch(WEBHOOK + 'tasks.task.list.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filter: { CREATED_BY: 12 }, select: ['ID','CREATED_DATE','TITLE'], order: { ID: 'DESC' } })
+      });
+      const d = await r.json();
+      const nuevas = (d.result?.tasks || []).slice(0, 10)
+        .filter(t => new Date(t.createdDate).getTime() >= inicioMs - 15000);
+      for (const t of nuevas) {
+        await fetch(WEBHOOK + 'tasks.task.update.json', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId: t.id, fields: { CREATED_BY: _uid } })
+        });
+      }
+    } catch {}
+  }
+
   function setModo(modo) {
     modoActual = modo;
     document.getElementById('modo-btn-prospectos').className =
@@ -1117,6 +1140,7 @@
       });
       const data = await res.json();
       if (!data.result) throw new Error(data.error_description || 'Error');
+      reasignarTareasNuevas(Date.now()); // las tareas del robot quedan a nombre del loggeado
       document.getElementById('exito-titulo').textContent = '¡Etapa actualizada!';
       document.getElementById('exito-detalle').textContent = dealActual.TITLE + ' → ' + sig.nombre;
       mostrarEstado('vista-exito');
@@ -1147,6 +1171,7 @@
       });
       const data = await res.json();
       if (!data.result) throw new Error(data.error_description || 'Error');
+      reasignarTareasNuevas(Date.now());
       document.getElementById('exito-titulo').textContent = '¡Movida a Proceso de Cierre!';
       document.getElementById('exito-detalle').textContent = dealActual.TITLE + ' → 09_Sí verbal (Cierre)';
       mostrarEstado('vista-exito');
@@ -1493,6 +1518,7 @@
         body: JSON.stringify({ fields: { entityTypeId: 2, entityId: dealId, linkedEntityTypeId: 1, linkedEntityId: prospectoActual.ID } })
       }).catch(() => {});
 
+      reasignarTareasNuevas(Date.now());
       document.getElementById('exito-titulo').textContent = '¡Visita técnica agendada!';
       document.getElementById('exito-detalle').textContent =
         nombre + ' → negociación creada y visita técnica programada para ' + fecha;
@@ -1674,6 +1700,7 @@
 
       document.getElementById('exito-detalle').textContent =
         nombre + ' — recibo adjunto, monto $' + Number(monto).toLocaleString('es-MX') + ' MXN';
+      reasignarTareasNuevas(Date.now());
       document.getElementById('exito-titulo').textContent = '¡Recibo validado!';
       mostrarEstado('vista-exito');
 
@@ -1711,6 +1738,7 @@
       });
       const data = await res.json();
       if (data.result) {
+        reasignarTareasNuevas(Date.now()); // las tareas del robot quedan a nombre del loggeado
         const nombre = prospectoActual.TITLE || (prospectoActual.NAME + ' ' + prospectoActual.LAST_NAME);
         document.getElementById('exito-detalle').textContent =
           nombre + ' → ' + sig.nombre;
