@@ -616,7 +616,7 @@
         fetch(WEBHOOK + 'crm.timeline.comment.list.json', { method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ filter: { ENTITY_TYPE: 'deal', ENTITY_ID: negActual.ID }, select: ['ID','COMMENT','CREATED'], order: { CREATED: 'DESC' } }) }).then(r=>r.json())
       ]);
-      // Limpiar HTML de correos: quitar <style>/<script> completos, luego etiquetas, y recortar
+      // Limpiar HTML de correos: quitar bloques de estilos y scripts, luego etiquetas, y recortar
       const limpiar = h => String(h || '')
         .replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<script[\s\S]*?<\/script>/gi, '')
         .replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s{2,}/g, ' ').trim();
