@@ -616,9 +616,26 @@
         fetch(WEBHOOK + 'crm.timeline.comment.list.json', { method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ filter: { ENTITY_TYPE: 'deal', ENTITY_ID: negActual.ID }, select: ['ID','COMMENT','CREATED'], order: { CREATED: 'DESC' } }) }).then(r=>r.json())
       ]);
+      // Limpiar HTML de correos: quitar <style>/<script> completos, luego etiquetas, y recortar
+      const limpiar = h => String(h || '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s{2,}/g, ' ').trim();
       const items = [];
-      (rAct.result || []).forEach(a => items.push({ f: a.CREATED, icono: String(a.TYPE_ID)==='1'?'🤝':'📞', tit: (a.SUBJECT||'Actividad').replace(/<[^>]*>/g,''), txt: (a.DESCRIPTION||'').replace(/<[^>]*>/g,'').trim() }));
-      (rCom.result || []).forEach(c => items.push({ f: c.CREATED, icono: '📝', tit: 'Nota', txt: (c.COMMENT||'').replace(/<[^>]*>/g,'').trim() }));
+      (rAct.result || []).forEach(a => {
+        const tid = String(a.TYPE_ID);
+        const esEmail = tid === '4';
+        const icono = tid === '1' ? '🤝' : esEmail ? '✉️' : '📞';
+        const tit = limpiar(a.SUBJECT) || 'Actividad';
+        // Correos: solo el asunto (su cuerpo es HTML de plantilla, ilegible)
+        let txt = esEmail ? '' : limpiar(a.DESCRIPTION);
+        if (txt.length > 280) txt = txt.slice(0, 280) + '…';
+        items.push({ f: a.CREATED, icono, tit, txt });
+      });
+      (rCom.result || []).forEach(c => {
+        let txt = limpiar(c.COMMENT);
+        if (txt.length > 280) txt = txt.slice(0, 280) + '…';
+        items.push({ f: c.CREATED, icono: '📝', tit: 'Nota', txt });
+      });
       items.sort((a,b) => new Date(b.f) - new Date(a.f));
       cont.innerHTML = items.length ? `
         <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px">Historial comercial (${items.length})</div>
