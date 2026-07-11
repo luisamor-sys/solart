@@ -593,8 +593,108 @@
     det.innerHTML = `
       ${campos}
       <button onclick="guardarDetalleNeg(this)" style="width:100%;background:#1a1a2e;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Guardar cambios</button>
-      <div id="neg-det-msg" style="font-size:12px;margin-top:6px;text-align:center"></div>`;
+      <div id="neg-det-msg" style="font-size:12px;margin-top:6px;text-align:center"></div>
+      <div style="border-top:1px solid #e5e7eb;margin:14px 0 10px"></div>
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button onclick="cargarHistorialNeg()" style="flex:1;padding:9px;border-radius:8px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:700;cursor:pointer">📜 Ver historial comercial</button>
+        <button onclick="toggleActNeg()" style="flex:1;padding:9px;border-radius:8px;border:1.5px solid #ddd6fe;background:#f5f3ff;color:#7c3aed;font-size:12px;font-weight:700;cursor:pointer">📞 + Actividad</button>
+      </div>
+      <div id="neg-act-form" style="display:none;margin-bottom:10px"></div>
+      <div id="neg-historial"></div>`;
     det.style.display = 'block';
+  }
+
+  // Historial comercial del deal: actividades (llamadas/reuniones) + comentarios
+  async function cargarHistorialNeg() {
+    if (!negActual) return;
+    const cont = document.getElementById('neg-historial');
+    cont.innerHTML = '<div style="font-size:12px;color:#9ca3af">Cargando historial…</div>';
+    try {
+      const [rAct, rCom] = await Promise.all([
+        fetch(WEBHOOK + 'crm.activity.list.json', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ filter: { OWNER_TYPE_ID: 2, OWNER_ID: negActual.ID }, select: ['ID','SUBJECT','DESCRIPTION','CREATED','TYPE_ID','COMPLETED'], order: { CREATED: 'DESC' } }) }).then(r=>r.json()),
+        fetch(WEBHOOK + 'crm.timeline.comment.list.json', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ filter: { ENTITY_TYPE: 'deal', ENTITY_ID: negActual.ID }, select: ['ID','COMMENT','CREATED'], order: { CREATED: 'DESC' } }) }).then(r=>r.json())
+      ]);
+      const items = [];
+      (rAct.result || []).forEach(a => items.push({ f: a.CREATED, icono: String(a.TYPE_ID)==='1'?'🤝':'📞', tit: (a.SUBJECT||'Actividad').replace(/<[^>]*>/g,''), txt: (a.DESCRIPTION||'').replace(/<[^>]*>/g,'').trim() }));
+      (rCom.result || []).forEach(c => items.push({ f: c.CREATED, icono: '📝', tit: 'Nota', txt: (c.COMMENT||'').replace(/<[^>]*>/g,'').trim() }));
+      items.sort((a,b) => new Date(b.f) - new Date(a.f));
+      cont.innerHTML = items.length ? `
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px">Historial comercial (${items.length})</div>
+        ${items.slice(0, 20).map(i => `
+        <div style="background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px">
+          <div style="font-size:10px;color:#9ca3af">${i.icono} ${i.tit} · ${new Date(i.f).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}</div>
+          ${i.txt ? `<div style="font-size:12px;color:#374151;white-space:pre-line;margin-top:2px">${i.txt}</div>` : ''}
+        </div>`).join('')}`
+        : '<div style="font-size:12px;color:#9ca3af">Sin actividades registradas aún — usa "+ Actividad" para dejar constancia de cada contacto.</div>';
+    } catch(e) { cont.innerHTML = '<div style="font-size:12px;color:#ef4444">Error al cargar el historial.</div>'; }
+  }
+
+  let _actNegTipo = 'llamada';
+  function toggleActNeg() {
+    const f = document.getElementById('neg-act-form');
+    if (f.style.display === 'block') { f.style.display = 'none'; return; }
+    _actNegTipo = 'llamada';
+    const hoy = new Date().toISOString().substring(0,10);
+    f.innerHTML = `
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button id="nat-llamada" onclick="setActNegTipo('llamada')" style="flex:1;padding:7px;border-radius:8px;border:2px solid #7c3aed;background:#7c3aed;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📞 Llamada</button>
+        <button id="nat-reunion" onclick="setActNegTipo('reunion')" style="flex:1;padding:7px;border-radius:8px;border:2px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:700;cursor:pointer">🤝 Reunión</button>
+        <button id="nat-nota" onclick="setActNegTipo('nota')" style="flex:1;padding:7px;border-radius:8px;border:2px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:700;cursor:pointer">📝 Nota</button>
+      </div>
+      <input type="date" id="nat-fecha" value="${hoy}" style="width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;margin-bottom:8px;box-sizing:border-box">
+      <textarea id="nat-desc" rows="2" placeholder="¿Qué pasó? (ej. no contesta, pidió llamar en 2 semanas…)" style="width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;font-family:inherit;resize:none;box-sizing:border-box;margin-bottom:8px"></textarea>
+      <button id="nat-btn" onclick="guardarActNeg()" style="width:100%;padding:9px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:13px;font-weight:700;cursor:pointer">Guardar en historial</button>
+      <div id="nat-msg" style="font-size:12px;margin-top:6px;text-align:center"></div>`;
+    f.style.display = 'block';
+  }
+  function setActNegTipo(tipo) {
+    _actNegTipo = tipo;
+    ['llamada','reunion','nota'].forEach(t => {
+      const b = document.getElementById('nat-' + t);
+      if (b) { const on = t === tipo; b.style.background = on ? '#7c3aed' : '#fff'; b.style.borderColor = on ? '#7c3aed' : '#e5e7eb'; b.style.color = on ? '#fff' : '#6b7280'; }
+    });
+    const fecha = document.getElementById('nat-fecha');
+    if (fecha) fecha.style.display = tipo === 'nota' ? 'none' : 'block';
+  }
+  async function guardarActNeg() {
+    const desc = document.getElementById('nat-desc')?.value.trim();
+    if (!desc || !negActual) { if (document.getElementById('nat-desc')) document.getElementById('nat-desc').style.borderColor = '#ef4444'; return; }
+    const btn = document.getElementById('nat-btn');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      let res;
+      if (_actNegTipo === 'nota') {
+        res = await fetch(WEBHOOK + 'crm.timeline.comment.add.json', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ fields: { ENTITY_TYPE: 'deal', ENTITY_ID: negActual.ID, COMMENT: desc } }) }).then(r=>r.json());
+      } else {
+        const fechaStr = document.getElementById('nat-fecha')?.value || new Date().toISOString().substring(0,10);
+        const inicio = new Date(fechaStr + 'T12:00:00');
+        const fin = new Date(inicio.getTime() + 30*60000);
+        const fmt = d => d.toISOString().replace('T',' ').substring(0,19);
+        res = await fetch(WEBHOOK + 'crm.activity.add.json', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ fields: {
+            OWNER_TYPE_ID: 2, OWNER_ID: String(negActual.ID),
+            TYPE_ID: _actNegTipo === 'reunion' ? 1 : 2,
+            SUBJECT: _actNegTipo === 'reunion' ? '🤝 Reunión' : '📞 Llamada',
+            DESCRIPTION: desc, DESCRIPTION_TYPE: 1, COMPLETED: 'Y', DIRECTION: 2,
+            RESPONSIBLE_ID: String(_uid || 12),
+            START_TIME: fmt(inicio), END_TIME: fmt(fin),
+            COMMUNICATIONS: [{ TYPE: 'PHONE', VALUE: 'N/A', ENTITY_ID: String(negActual.ID), ENTITY_TYPE_ID: '2' }]
+          } }) }).then(r=>r.json());
+      }
+      if (res.error || !res.result) throw new Error(res.error_description || 'No se registró');
+      const msg = document.getElementById('nat-msg');
+      if (msg) { msg.style.color = '#16a34a'; msg.textContent = '✅ Guardado'; }
+      btn.disabled = false; btn.textContent = 'Guardar en historial';
+      document.getElementById('nat-desc').value = '';
+      cargarHistorialNeg();
+    } catch(e) {
+      const msg = document.getElementById('nat-msg');
+      if (msg) { msg.style.color = '#dc2626'; msg.textContent = 'Error: ' + e.message; }
+      btn.disabled = false; btn.textContent = 'Guardar en historial';
+    }
   }
 
   async function guardarDetalleNeg(btn) {

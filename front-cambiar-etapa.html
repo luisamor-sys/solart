@@ -854,15 +854,17 @@
       </div>
       <div class="lista-card-acciones">
         <button class="btn-lista etapa" onclick="seleccionarProspecto(${p.ID})">🔄 Cambiar etapa</button>
-        <button class="btn-lista chat"  onclick="toggleChat('lead','${p.ID}')">💬 Chat</button>
+        <button class="btn-lista chat"  onclick="toggleChat('lead','${p.ID}')">💬 Comentarios</button>
+        <button class="btn-lista" style="background:#f5f3ff;color:#7c3aed;border-color:#ddd6fe" onclick="toggleActEnt('lead','${p.ID}')">📞 + Actividad</button>
       </div>
       <div class="chat-panel" id="chat-${p.ID}">
         <div id="chat-msgs-${p.ID}"><div style="font-size:12px;color:#9ca3af">Cargando…</div></div>
         <div class="chat-input-row">
-          <input class="chat-inp" id="chat-inp-${p.ID}" placeholder="Escribe un mensaje…">
+          <input class="chat-inp" id="chat-inp-${p.ID}" placeholder="Escribe un comentario…">
           <button class="chat-send" onclick="enviarChatEntidad('lead','${p.ID}')">Enviar</button>
         </div>
       </div>
+      <div class="chat-panel" id="actp-${p.ID}"></div>
     </div>`;
   }
 
@@ -887,16 +889,18 @@
       </div>
       <div class="lista-card-acciones">
         <button class="btn-lista etapa" onclick="seleccionarDeal(${d.ID})">🔄 Cambiar etapa</button>
-        <button class="btn-lista chat"  onclick="toggleChat('deal','${d.ID}')">💬 Chat</button>
+        <button class="btn-lista chat"  onclick="toggleChat('deal','${d.ID}')">💬 Comentarios</button>
+        <button class="btn-lista" style="background:#f5f3ff;color:#7c3aed;border-color:#ddd6fe" onclick="toggleActEnt('deal','${d.ID}')">📞 + Actividad</button>
         <button class="btn-lista tareas" onclick="irATareasDealId(${d.ID},'${d.TITLE.replace(/'/g,"\\'")}')">📋 Tareas</button>
       </div>
       <div class="chat-panel" id="chat-${d.ID}">
         <div id="chat-msgs-${d.ID}"><div style="font-size:12px;color:#9ca3af">Cargando…</div></div>
         <div class="chat-input-row">
-          <input class="chat-inp" id="chat-inp-${d.ID}" placeholder="Escribe un mensaje…">
+          <input class="chat-inp" id="chat-inp-${d.ID}" placeholder="Escribe un comentario…">
           <button class="chat-send" onclick="enviarChatEntidad('deal','${d.ID}')">Enviar</button>
         </div>
       </div>
+      <div class="chat-panel" id="actp-${d.ID}"></div>
     </div>`;
   }
 
