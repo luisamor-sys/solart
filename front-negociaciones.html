@@ -543,6 +543,21 @@
 
   function stopProp(e) { e.stopPropagation(); }
 
+  // Título amigable: "Empresa (Proyecto)" en vez de la nomenclatura técnica
+  // Nomenclatura original: Cliente_Empresa_Responsable_Proyecto_TipoSistema
+  function tituloAmigable(titulo, proyecto) {
+    const partes = String(titulo || '').split('_').map(x => x.trim()).filter(Boolean);
+    const empresa = partes[1] || partes[0] || titulo || '';
+    const proy = (proyecto || '').trim();
+    return proy ? `${empresa} (${proy})` : empresa;
+  }
+  function subtituloAmigable(titulo) {
+    const partes = String(titulo || '').split('_').map(x => x.trim()).filter(Boolean);
+    const cliente = partes[0] || '';
+    const tipo = partes.length > 2 ? partes[partes.length - 1] : '';
+    return [cliente && '👤 ' + cliente, tipo && '⚡ ' + tipo.charAt(0) + tipo.slice(1).toLowerCase()].filter(Boolean).join(' · ');
+  }
+
   // ── DETALLE DE LA NEGOCIACIÓN (campos editables al tocar la tarjeta) ──
   const ENUM_INMUEBLE  = { '1196':'Propio','1198':'Rentado','1200':'Familiar','1202':'Empresarial' };
   const ENUM_PROVEEDOR = { '1466':'CFE','1468':'Suministro Calificado','1470':'Mixto','1472':'Por definir' };
@@ -648,7 +663,7 @@
         body: JSON.stringify({
           filter,
           select: ['ID','TITLE','STAGE_ID','CATEGORY_ID','COMPANY_TITLE','OPPORTUNITY','CURRENCY_ID',
-                   'UF_CRM_1741208352117','UF_CRM_1753209254287'],
+                   'UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1741392978542'],
           order: { DATE_MODIFY: 'DESC' }
         })
       });
@@ -723,8 +738,8 @@
       const kwp    = d.UF_CRM_1741208352117 ? `${d.UF_CRM_1741208352117} kWp` : '';
       const energy = d.UF_CRM_1753209254287 || '';
       return `<div class="lista-card">
-        <div class="lista-card-nombre">${d.TITLE}</div>
-        ${d.COMPANY_TITLE ? `<div class="lista-card-empresa">🏢 ${d.COMPANY_TITLE}</div>` : ''}
+        <div class="lista-card-nombre">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}</div>
+        <div class="lista-card-empresa">${subtituloAmigable(d.TITLE)}</div>
         <div class="lista-card-chips">
           ${esCierre ? '<span class="chip azul">Cierre</span>' : '<span class="chip verde">Venta</span>'}
           ${etapa  ? `<span class="chip">${etapa}</span>` : ''}
@@ -793,13 +808,13 @@
       } catch { subtareasMap[t.id] = []; }
     }));
 
-    document.getElementById('n-nombre').textContent = negActual.TITLE;
+    document.getElementById('n-nombre').textContent = tituloAmigable(negActual.TITLE, negActual.UF_CRM_1741392978542);
     // Cerrar el panel de detalle al cambiar de negociación (evita campos de la anterior)
     const _det = document.getElementById('neg-detalle');
     if (_det) { _det.style.display = 'none'; _det.innerHTML = ''; }
     const _chev = document.getElementById('neg-chev');
     if (_chev) _chev.textContent = '▼ Detalle';
-    document.getElementById('n-meta').textContent   = negActual.UF_CRM_1741392978542 || '';
+    document.getElementById('n-meta').textContent   = subtituloAmigable(negActual.TITLE);
 
     // Renderizar bloque de tareas activas
     renderTareasActivas(todas, subtareasMap);
