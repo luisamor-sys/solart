@@ -556,11 +556,120 @@
         <div id="deal-campos">${campos}</div>
         <button onclick="guardarCamposDeal(${dealId})" style="width:100%;background:#1a1a2e;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:16px">💾 Guardar cambios</button>
         <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">📋 Tareas de esta negociación</div>
-        ${tareasHtml}`;
+        ${tareasHtml}
+        <div style="border-top:1px solid #f3f4f6;margin:14px 0 10px"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">📜 Historial comercial</div>
+          <button onclick="toggleActModal(${dealId})" style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">📞 + Actividad</button>
+        </div>
+        <div id="modal-act-form" style="display:none;margin-bottom:10px"></div>
+        <div id="modal-historial"><div style="font-size:12px;color:#9ca3af">Cargando historial…</div></div>`;
+      cargarHistorialModal(dealId);
     } catch(e) {
       document.getElementById('modal-body').innerHTML = '<div style="color:#ef4444;font-size:13px">Error al cargar la negociación.</div>';
     }
   }
+  // Historial comercial del deal en el modal (actividades + comentarios)
+  const _limpiarHtml = h => String(h || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '').replace(new RegExp('<scr'+'ipt[\\s\\S]*?</scr'+'ipt>','gi'), '')
+    .replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s{2,}/g, ' ').trim();
+
+  async function cargarHistorialModal(dealId) {
+    const cont = document.getElementById('modal-historial');
+    if (!cont) return;
+    try {
+      const [rAct, rCom] = await Promise.all([
+        bx('crm.activity.list.json', { filter: { OWNER_TYPE_ID: 2, OWNER_ID: dealId }, select: ['ID','SUBJECT','DESCRIPTION','CREATED','TYPE_ID'], order: { CREATED: 'DESC' } }),
+        bx('crm.timeline.comment.list.json', { filter: { ENTITY_TYPE: 'deal', ENTITY_ID: dealId }, select: ['ID','COMMENT','CREATED'], order: { CREATED: 'DESC' } })
+      ]);
+      const items = [];
+      (rAct.result || []).forEach(a => {
+        const tid = String(a.TYPE_ID);
+        const esEmail = tid === '4';
+        let txt = esEmail ? '' : _limpiarHtml(a.DESCRIPTION);
+        if (txt.length > 280) txt = txt.slice(0, 280) + '…';
+        items.push({ f: a.CREATED, icono: tid==='1'?'🤝':esEmail?'✉️':'📞', tit: _limpiarHtml(a.SUBJECT) || 'Actividad', txt });
+      });
+      (rCom.result || []).forEach(c => {
+        let txt = _limpiarHtml(c.COMMENT);
+        if (txt.length > 280) txt = txt.slice(0, 280) + '…';
+        items.push({ f: c.CREATED, icono: '📝', tit: 'Nota', txt });
+      });
+      items.sort((a,b) => new Date(b.f) - new Date(a.f));
+      cont.innerHTML = items.length ? items.slice(0, 20).map(i => `
+        <div style="background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px">
+          <div style="font-size:10px;color:#9ca3af">${i.icono} ${i.tit} · ${new Date(i.f).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}</div>
+          ${i.txt ? `<div style="font-size:12px;color:#374151;white-space:pre-line;margin-top:2px">${i.txt}</div>` : ''}
+        </div>`).join('')
+        : '<div style="font-size:12px;color:#9ca3af">Sin actividades registradas — usa "+ Actividad" para dejar constancia de cada contacto.</div>';
+    } catch { cont.innerHTML = '<div style="font-size:12px;color:#ef4444">Error al cargar el historial.</div>'; }
+  }
+
+  let _actModalTipo = 'llamada';
+  function toggleActModal(dealId) {
+    const f = document.getElementById('modal-act-form');
+    if (!f) return;
+    if (f.style.display === 'block') { f.style.display = 'none'; return; }
+    _actModalTipo = 'llamada';
+    const hoy = new Date().toISOString().substring(0,10);
+    f.innerHTML = `
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button id="mat-llamada" onclick="setActModalTipo('llamada')" style="flex:1;padding:7px;border-radius:8px;border:2px solid #7c3aed;background:#7c3aed;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📞 Llamada</button>
+        <button id="mat-reunion" onclick="setActModalTipo('reunion')" style="flex:1;padding:7px;border-radius:8px;border:2px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:700;cursor:pointer">🤝 Reunión</button>
+        <button id="mat-nota" onclick="setActModalTipo('nota')" style="flex:1;padding:7px;border-radius:8px;border:2px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:700;cursor:pointer">📝 Nota</button>
+      </div>
+      <input type="date" id="mat-fecha" value="${hoy}" style="width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;margin-bottom:8px;box-sizing:border-box">
+      <textarea id="mat-desc" rows="2" placeholder="¿Qué pasó? (ej. no contesta, pidió llamar en 2 semanas…)" style="width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;font-family:inherit;resize:none;box-sizing:border-box;margin-bottom:8px"></textarea>
+      <button id="mat-btn" onclick="guardarActModal(${dealId})" style="width:100%;padding:9px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:13px;font-weight:700;cursor:pointer">Guardar en historial</button>
+      <div id="mat-msg" style="font-size:12px;margin-top:6px;text-align:center"></div>`;
+    f.style.display = 'block';
+  }
+  function setActModalTipo(tipo) {
+    _actModalTipo = tipo;
+    ['llamada','reunion','nota'].forEach(t => {
+      const b = document.getElementById('mat-' + t);
+      if (b) { const on = t === tipo; b.style.background = on ? '#7c3aed' : '#fff'; b.style.borderColor = on ? '#7c3aed' : '#e5e7eb'; b.style.color = on ? '#fff' : '#6b7280'; }
+    });
+    const fecha = document.getElementById('mat-fecha');
+    if (fecha) fecha.style.display = tipo === 'nota' ? 'none' : 'block';
+  }
+  async function guardarActModal(dealId) {
+    const desc = document.getElementById('mat-desc')?.value.trim();
+    if (!desc) { document.getElementById('mat-desc').style.borderColor = '#ef4444'; return; }
+    const btn = document.getElementById('mat-btn');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      let res;
+      if (_actModalTipo === 'nota') {
+        res = await bx('crm.timeline.comment.add.json', { fields: { ENTITY_TYPE: 'deal', ENTITY_ID: dealId, COMMENT: desc } });
+      } else {
+        const fechaStr = document.getElementById('mat-fecha')?.value || new Date().toISOString().substring(0,10);
+        const inicio = new Date(fechaStr + 'T12:00:00');
+        const fin = new Date(inicio.getTime() + 30*60000);
+        const fmt = d => d.toISOString().replace('T',' ').substring(0,19);
+        res = await bx('crm.activity.add.json', { fields: {
+          OWNER_TYPE_ID: 2, OWNER_ID: String(dealId),
+          TYPE_ID: _actModalTipo === 'reunion' ? 1 : 2,
+          SUBJECT: _actModalTipo === 'reunion' ? '🤝 Reunión' : '📞 Llamada',
+          DESCRIPTION: desc, DESCRIPTION_TYPE: 1, COMPLETED: 'Y', DIRECTION: 2,
+          RESPONSIBLE_ID: String(usuarioActual.id),
+          START_TIME: fmt(inicio), END_TIME: fmt(fin),
+          COMMUNICATIONS: [{ TYPE: 'PHONE', VALUE: 'N/A', ENTITY_ID: String(dealId), ENTITY_TYPE_ID: '2' }]
+        } });
+      }
+      if (res.error || !res.result) throw new Error(res.error_description || 'No se registró');
+      document.getElementById('mat-desc').value = '';
+      const msg = document.getElementById('mat-msg');
+      if (msg) { msg.style.color = '#16a34a'; msg.textContent = '✅ Guardado'; }
+      btn.disabled = false; btn.textContent = 'Guardar en historial';
+      cargarHistorialModal(dealId);
+    } catch(e) {
+      const msg = document.getElementById('mat-msg');
+      if (msg) { msg.style.color = '#dc2626'; msg.textContent = 'Error: ' + e.message; }
+      btn.disabled = false; btn.textContent = 'Guardar en historial';
+    }
+  }
+
   async function guardarEtapaDeal(dealId) {
     const sel = document.getElementById('deal-stage-sel');
     const stage = sel?.value; if (!stage) return;
@@ -935,7 +1044,7 @@
           <span class="seccion-count">${prioridades.length}</span>
         </div>
         ${prioridades.length ? prioridades.slice(0,9).map((p,i) => `
-        <div ${p.dealId ? `onclick="irANegociacion(${p.dealId})"` : ''} style="display:flex;align-items:center;gap:10px;background:${p.bg};border:1px solid ${p.color}22;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
+        <div ${p.dealId ? `onclick="abrirDealModal(${p.dealId})"` : ''} style="display:flex;align-items:center;gap:10px;background:${p.bg};border:1px solid ${p.color}22;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
           <div style="font-size:18px">${p.icono}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:11px;font-weight:800;color:${p.color};text-transform:uppercase;letter-spacing:.03em">${i+1}. ${p.accion}</div>
