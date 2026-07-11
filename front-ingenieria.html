@@ -1095,6 +1095,14 @@ function rxMarcaG(tag) {
 }
 function limpiarUrlBB(u) { return (u||'').replace(/\[\/?url\]/gi,'').trim(); }
 
+// Título amigable: "Empresa (Proyecto)" — nomenclatura: Cliente_Empresa_Responsable_Proyecto_Tipo
+function tituloAmigable(titulo, proyecto) {
+  const partes = String(titulo || '').split('_').map(x => x.trim()).filter(Boolean);
+  const empresa = partes[1] || partes[0] || titulo || '';
+  const proy = (proyecto || '').trim();
+  return proy ? `${empresa} (${proy})` : empresa;
+}
+
 // ── EMERGENTE DE DETALLE (panel CEO) ────────────────────────────────────
 // Tooltip HTML propio: tabla numerada de negociaciones, agrupada por año.
 let _tipSeq = 0;
@@ -2329,7 +2337,7 @@ async function cargarCEO() {
           const r = await bx('crm.deal.list', {
             filter: { CATEGORY_ID: cat },
             select: ['ID','TITLE','OPPORTUNITY','ASSIGNED_BY_ID','STAGE_ID','CLOSEDATE','DATE_CREATE','MOVED_TIME','DATE_MODIFY','LAST_ACTIVITY_TIME',
-                     'UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491'],
+                     'UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1741392978542'],
             start
           });
           (r.result || []).forEach(x => { x._cat = cat; deals.push(x); });
@@ -2544,7 +2552,7 @@ function pintarCEO() {
   // Detalle por negociación para el emergente: nombre, monto, kWp, % energía, inmueble y año
   const INMUEBLE_NOMBRE = { '1196':'Propio', '1198':'Rentado', '1200':'Familiar', '1202':'Empresarial' };
   const detDeal = x => ({
-    t: x.TITLE || 'Negociación ' + x.ID,
+    t: tituloAmigable(x.TITLE, x.UF_CRM_1741392978542) || 'Negociación ' + x.ID,
     m: parseFloat(x.OPPORTUNITY) || 0,
     kwp: x.UF_CRM_1741208352117 || '',
     en: x.UF_CRM_1753209254287 ? (String(x.UF_CRM_1753209254287).includes('%') ? x.UF_CRM_1753209254287 : x.UF_CRM_1753209254287 + '%') : '',
@@ -2697,7 +2705,7 @@ function pintarCEO() {
       <div ${tipRef([detDeal(p.x)])} style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #f3f4f6;cursor:zoom-in">
         <div style="font-size:11px;font-weight:800;color:${p.color};white-space:nowrap">${i+1}. ${p.accion}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.x.TITLE}</div>
+          <div style="font-size:12px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tituloAmigable(p.x.TITLE, p.x.UF_CRM_1741392978542)}</div>
           <div style="font-size:11px;color:#6b7280">${USER_NAMES[String(p.x.ASSIGNED_BY_ID)] || ''}</div>
         </div>
         <div style="font-size:12px;font-weight:800;color:#14532d;flex-shrink:0">${fmtMXN(parseFloat(p.x.OPPORTUNITY)||0)}</div>
@@ -2709,7 +2717,7 @@ function pintarCEO() {
     <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:10px">🚨 Estancadas — sin actividad, tareas ni cambios en +30 días</div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:20px">
       ${estLista.length ? estLista.map(v => `
-      <div ${tipRef(v.arr.map(x => `${x.TITLE} — ${fmtMXN(parseFloat(x.OPPORTUNITY)||0)} — ${Math.floor((ahora - ultimoMov(x)) / 86400000)} días sin movimiento`))} style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:zoom-in">
+      <div ${tipRef(v.arr.map(x => `${tituloAmigable(x.TITLE, x.UF_CRM_1741392978542)} — ${fmtMXN(parseFloat(x.OPPORTUNITY)||0)} — ${Math.floor((ahora - ultimoMov(x)) / 86400000)} días sin movimiento`))} style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:zoom-in">
         <div style="width:110px;font-size:12px;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.nombre}</div>
         <div style="flex:1;background:#f3f4f6;border-radius:20px;height:18px;overflow:hidden">
           <div style="width:${Math.max(v.arr.length / (estLista[0]?.arr.length || 1) * 100, 5)}%;height:100%;background:linear-gradient(90deg,#f87171,#dc2626);border-radius:20px"></div>
@@ -3050,7 +3058,7 @@ async function cargarDirector() {
         while (true) {
           const r = await bx('crm.deal.list', {
             filter: { CATEGORY_ID: cat },
-            select: ['ID','TITLE','STAGE_ID','OPPORTUNITY','ASSIGNED_BY_ID','DATE_MODIFY'],
+            select: ['ID','TITLE','STAGE_ID','OPPORTUNITY','ASSIGNED_BY_ID','DATE_MODIFY','UF_CRM_1741392978542'],
             start
           });
           ds = ds.concat(r.result || []);
@@ -3107,7 +3115,7 @@ function pintarDirector() {
   const filaGanada = x => `
     <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #f3f4f6">
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.TITLE}</div>
+        <div style="font-size:12px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tituloAmigable(x.TITLE, x.UF_CRM_1741392978542)}</div>
         <div style="font-size:11px;color:#6b7280">${USER_NAMES[String(x.ASSIGNED_BY_ID)] || ''}</div>
       </div>
       <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:#eff6ff;color:#1d4ed8;white-space:nowrap">${ETAPAS_POST[x.STAGE_ID] || x.STAGE_ID}</span>

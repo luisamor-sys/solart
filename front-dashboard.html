@@ -320,6 +320,20 @@
 <script>
   const WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/';
 
+  // Título amigable: "Empresa (Proyecto)" — nomenclatura: Cliente_Empresa_Responsable_Proyecto_Tipo
+  function tituloAmigable(titulo, proyecto) {
+    const partes = String(titulo || '').split('_').map(x => x.trim()).filter(Boolean);
+    const empresa = partes[1] || partes[0] || titulo || '';
+    const proy = (proyecto || '').trim();
+    return proy ? `${empresa} (${proy})` : empresa;
+  }
+  function subtituloAmigable(titulo) {
+    const partes = String(titulo || '').split('_').map(x => x.trim()).filter(Boolean);
+    const cliente = partes[0] || '';
+    const tipo = partes.length > 2 ? partes[partes.length - 1] : '';
+    return [cliente && '👤 ' + cliente, tipo && '⚡ ' + tipo.charAt(0) + tipo.slice(1).toLowerCase()].filter(Boolean).join(' · ');
+  }
+
   // Abrir una negociación en NUESTRO front (/tareas/), no en Bitrix
   function irANegociacion(dealId) {
     localStorage.setItem('solart_deal_id_preload', String(dealId));
@@ -506,7 +520,7 @@
       window._dealModal = dl;
       const cat = String(dl.CATEGORY_ID || '0');
       const mapa = cat === '2' ? ETAPAS_CIERRE_G : ETAPAS_DEAL;
-      document.getElementById('modal-tit').textContent = dl.TITLE || 'Negociación';
+      document.getElementById('modal-tit').textContent = tituloAmigable(dl.TITLE, dl.UF_CRM_1741392978542) || 'Negociación';
       // Selector de etapa
       const opciones = Object.entries(mapa).map(([id,nom]) => `<option value="${id}" ${dl.STAGE_ID===id?'selected':''}>${nom}</option>`).join('');
       // Campos editables
@@ -681,7 +695,7 @@
       // Negociaciones PROCESO DE VENTA
       bx('crm.deal.list.json', {
         filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 0 },
-        select: ['ID','TITLE','STAGE_ID','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_ID','OPPORTUNITY','CURRENCY_ID','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1777320644093','UF_CRM_1758675881434'],
+        select: ['ID','TITLE','STAGE_ID','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_ID','OPPORTUNITY','CURRENCY_ID','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1777320644093','UF_CRM_1758675881434','UF_CRM_1741392978542'],
         order: { DATE_MODIFY: 'DESC' }
       }),
       // Deals ganados en período (para KPI)
@@ -692,7 +706,7 @@
       // Negociaciones PROCESO DE CIERRE
       bx('crm.deal.list.json', {
         filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 2 },
-        select: ['ID','TITLE','STAGE_ID','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_ID','OPPORTUNITY','CURRENCY_ID','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1777320644093','UF_CRM_1758675881434'],
+        select: ['ID','TITLE','STAGE_ID','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_ID','OPPORTUNITY','CURRENCY_ID','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1777320644093','UF_CRM_1758675881434','UF_CRM_1741392978542'],
         order: { DATE_MODIFY: 'DESC' }
       }),
       // Mis tareas: yo soy responsable, pendientes
@@ -895,11 +909,11 @@
     const prioridades = [];
     // 1. En cierre: lo más cerca del dinero
     dealsCierre.slice().sort((a,b) => (parseFloat(b.OPPORTUNITY)||0) - (parseFloat(a.OPPORTUNITY)||0)).slice(0,3).forEach(d => {
-      prioridades.push({ icono:'🔥', color:'#dc2626', bg:'#fef2f2', accion:'Ciérrala', titulo:d.TITLE, extra:fMXN(parseFloat(d.OPPORTUNITY)||0), dealId:d.ID });
+      prioridades.push({ icono:'🔥', color:'#dc2626', bg:'#fef2f2', accion:'Ciérrala', titulo:tituloAmigable(d.TITLE, d.UF_CRM_1741392978542), extra:fMXN(parseFloat(d.OPPORTUNITY)||0), dealId:d.ID });
     });
     // 2. Casi cerradas o en evaluación: empujar el sí
     deals.filter(d => ['UC_Y3LUYS','FINAL_INVOICE'].includes(d.STAGE_ID)).slice(0,3).forEach(d => {
-      prioridades.push({ icono:'🎯', color:'#7c3aed', bg:'#faf5ff', accion:'Empuja el sí', titulo:d.TITLE, extra:fMXN(parseFloat(d.OPPORTUNITY)||0), dealId:d.ID });
+      prioridades.push({ icono:'🎯', color:'#7c3aed', bg:'#faf5ff', accion:'Empuja el sí', titulo:tituloAmigable(d.TITLE, d.UF_CRM_1741392978542), extra:fMXN(parseFloat(d.OPPORTUNITY)||0), dealId:d.ID });
     });
     // 3. Estancadas: sin movimiento en 30+ días (ficha editada O actividad en timeline)
     const ultimoMovD = d => Math.max(
@@ -908,7 +922,7 @@
     );
     deals.filter(d => (Date.now() - ultimoMovD(d)) > 30*DIA_MS && !dealsConAct.has(String(d.ID))).slice(0,3).forEach(d => {
       const dias = Math.floor((Date.now() - ultimoMovD(d)) / DIA_MS);
-      prioridades.push({ icono:'🕐', color:'#d97706', bg:'#fffbeb', accion:'Retómala', titulo:d.TITLE, extra:`${dias} días sin movimiento`, dealId:d.ID });
+      prioridades.push({ icono:'🕐', color:'#d97706', bg:'#fffbeb', accion:'Retómala', titulo:tituloAmigable(d.TITLE, d.UF_CRM_1741392978542), extra:`${dias} días sin movimiento`, dealId:d.ID });
     });
     // 4. Tareas vencidas
     misTareas.filter(t => t.deadline && new Date(t.deadline) < new Date()).slice(0,3).forEach(t => {
@@ -1017,7 +1031,8 @@
       return `<div class="deal-card">
         <div class="deal-top">
           <div class="deal-info">
-            <div class="deal-nombre">${d.TITLE}</div>
+            <div class="deal-nombre">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}</div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:1px">${subtituloAmigable(d.TITLE)}</div>
             <div class="deal-seguimiento ${antiguedad}">
               🕐 Último seguimiento: <strong>${ultimo}</strong>
             </div>
