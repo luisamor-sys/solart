@@ -986,8 +986,9 @@ async function ejecutarAutorizacionDrawer(id) {
   const stageDestino = sid('En progreso Ingeniería');
   if (!stageDestino) { alert('Etapa no configurada.'); return; }
   try {
-    await bxTask('tasks.task.update', { taskId: id, fields: { STAGE_ID: stageDestino } });
-    document.getElementById('drawer-body').innerHTML = '<div class="empty-msg"><div class="empty-icono">✅</div><div class="empty-txt">Autorizado — movido a Ingeniería</div></div>';
+    await bxTask('tasks.task.update', { taskId: id, fields: { STAGE_ID: stageDestino, DEADLINE: deadlineCincoDias() } });
+    ajustarDeadlineSubtareas(id); // la subtarea de Gerardo también queda a +5 días
+    document.getElementById('drawer-body').innerHTML = '<div class="empty-msg"><div class="empty-icono">✅</div><div class="empty-txt">Autorizado — movido a Ingeniería (vence en 5 días)</div></div>';
     setTimeout(cerrarDrawer, 1600);
     cargarSupervisor(document.getElementById('tab-pend')?.classList.contains('activo') ? 'pendientes' : 'proceso');
   } catch { alert('Error al autorizar.'); }
@@ -1452,14 +1453,40 @@ function cancelarConf(id) {
   document.getElementById(`btn-aut-${id}`).style.display = '';
   document.getElementById(`btn-aut-ops-${id}`).style.display = '';
 }
+// Fecha límite al autorizar: 5 días después de la aprobación de Javier
+function deadlineCincoDias() {
+  const d = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+  d.setHours(18, 0, 0, 0); // vence a las 6pm del quinto día
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`;
+}
+// La subtarea de Gerardo la crea el robot al mover la etapa; aquí le ponemos
+// su fecha límite (+5 días) en cuanto aparece.
+async function ajustarDeadlineSubtareas(parentId) {
+  await new Promise(r => setTimeout(r, 5000)); // dar tiempo al robot
+  try {
+    const r = await bxTask('tasks.task.list', {
+      filter: { PARENT_ID: parentId, '!STATUS': [5,6] },
+      select: ['ID','CREATED_DATE'],
+      order: { ID: 'DESC' }
+    });
+    const ahora = Date.now();
+    const nuevas = (r.result?.tasks || []).filter(t => ahora - new Date(t.createdDate).getTime() < 60000);
+    for (const t of nuevas) {
+      await bxTask('tasks.task.update', { taskId: t.id, fields: { DEADLINE: deadlineCincoDias() } });
+    }
+  } catch {}
+}
+
 async function ejecutarAutorizacion(id) {
   const stageDestino = sid('En progreso Ingeniería');
   if (!stageDestino) { alert('No se encontró la etapa. Recarga.'); return; }
   const btn = document.getElementById(`si-${id}`);
   if (btn) { btn.disabled = true; btn.textContent = 'Moviendo…'; }
   try {
-    await bxTask('tasks.task.update', { taskId: id, fields: { STAGE_ID: stageDestino } });
-    exitoCard(`card-${id}`, '✅ Autorizado — movido a Ingeniería', '#f0fdf4', '#bbf7d0');
+    await bxTask('tasks.task.update', { taskId: id, fields: { STAGE_ID: stageDestino, DEADLINE: deadlineCincoDias() } });
+    ajustarDeadlineSubtareas(id); // la subtarea de Gerardo también queda a +5 días
+    exitoCard(`card-${id}`, '✅ Autorizado — movido a Ingeniería (vence en 5 días)', '#f0fdf4', '#bbf7d0');
   } catch { alert('Error al mover. Intenta de nuevo.'); cancelarConf(id); }
 }
 function iniciarAutorizacionOps(id) {
