@@ -268,6 +268,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div id="drawer-body" style="padding:16px 20px"></div>
 </div>
 
+<!-- MODAL HISTORIAL COMERCIAL -->
+<div id="hist-ov" onclick="if(event.target===this)cerrarHistorial()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:300;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto">
+  <div style="background:#fff;border-radius:18px;width:100%;max-width:560px;box-shadow:0 24px 60px rgba(0,0,0,.3);margin:auto">
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:18px 20px 12px;border-bottom:1px solid #f3f4f6">
+      <div id="hist-tit" style="flex:1;font-size:15px;font-weight:800;color:#111827;line-height:1.35">—</div>
+      <button onclick="cerrarHistorial()" style="background:#f3f4f6;border:none;border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer;color:#6b7280;flex-shrink:0">✕</button>
+    </div>
+    <div id="hist-body" style="padding:16px 20px 22px"></div>
+  </div>
+</div>
+
 </div><!-- /page-wrap -->
 
 <script>
@@ -1094,6 +1105,59 @@ function rxMarcaG(tag) {
   return new RegExp(`\\n*===${tag}===[\\s\\S]*?===FIN ${tag}===`, 'gi');
 }
 function limpiarUrlBB(u) { return (u||'').replace(/\[\/?url\]/gi,'').trim(); }
+
+// ── HISTORIAL COMERCIAL (modal para directores) ─────────────────────────
+const _limpiarHtmlIng = h => String(h || '')
+  .replace(/<style[\s\S]*?<\/style>/gi, '').replace(new RegExp('<scr'+'ipt[\\s\\S]*?</scr'+'ipt>','gi'), '')
+  .replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s{2,}/g, ' ').trim();
+
+function cerrarHistorial() { document.getElementById('hist-ov').style.display = 'none'; }
+
+async function abrirHistorialDeal(dealId) {
+  const ov = document.getElementById('hist-ov');
+  const tit = document.getElementById('hist-tit');
+  const body = document.getElementById('hist-body');
+  ov.style.display = 'flex';
+  // Datos del deal desde el cache del panel
+  const dl = (_ceoData?.dealsAll || []).find(x => String(x.ID) === String(dealId)) || {};
+  tit.textContent = tituloAmigable(dl.TITLE, dl.UF_CRM_1741392978542) || 'Negociación';
+  const chips = [
+    dl.OPPORTUNITY ? `💰 ${fmtMXN(parseFloat(dl.OPPORTUNITY)||0)}` : '',
+    dl.UF_CRM_1741208352117 ? `⚡ ${dl.UF_CRM_1741208352117} kWp` : '',
+    USER_NAMES[String(dl.ASSIGNED_BY_ID)] ? `👤 ${USER_NAMES[String(dl.ASSIGNED_BY_ID)]}` : ''
+  ].filter(Boolean).map(c => `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#f3f4f6;color:#374151">${c}</span>`).join(' ');
+  body.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips}</div><div style="font-size:12px;color:#9ca3af">Cargando historial…</div>`;
+  try {
+    const [rAct, rCom] = await Promise.all([
+      bx('crm.activity.list', { filter: { OWNER_TYPE_ID: 2, OWNER_ID: dealId }, select: ['ID','SUBJECT','DESCRIPTION','CREATED','TYPE_ID'], order: { CREATED: 'DESC' } }),
+      bx('crm.timeline.comment.list', { filter: { ENTITY_TYPE: 'deal', ENTITY_ID: dealId }, select: ['ID','COMMENT','CREATED'], order: { CREATED: 'DESC' } })
+    ]);
+    const items = [];
+    (rAct.result || []).forEach(a => {
+      const tid = String(a.TYPE_ID);
+      const esEmail = tid === '4';
+      let txt = esEmail ? '' : _limpiarHtmlIng(a.DESCRIPTION);
+      if (txt.length > 280) txt = txt.slice(0, 280) + '…';
+      items.push({ f: a.CREATED, icono: tid==='1'?'🤝':esEmail?'✉️':'📞', tit: _limpiarHtmlIng(a.SUBJECT) || 'Actividad', txt });
+    });
+    (rCom.result || []).forEach(c => {
+      let txt = _limpiarHtmlIng(c.COMMENT);
+      if (txt.length > 280) txt = txt.slice(0, 280) + '…';
+      items.push({ f: c.CREATED, icono: '📝', tit: 'Nota', txt });
+    });
+    items.sort((a,b) => new Date(b.f) - new Date(a.f));
+    body.innerHTML = `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips}</div>
+      <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">📜 Historial comercial (${items.length})</div>
+      ${items.length ? items.slice(0, 25).map(i => `
+      <div style="background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px">
+        <div style="font-size:10px;color:#9ca3af">${i.icono} ${i.tit} · ${new Date(i.f).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}</div>
+        ${i.txt ? `<div style="font-size:12px;color:#374151;white-space:pre-line;margin-top:2px">${i.txt}</div>` : ''}
+      </div>`).join('') : '<div style="font-size:12px;color:#9ca3af">Sin actividades registradas — el vendedor aún no deja constancia de sus contactos.</div>'}`;
+  } catch(e) {
+    body.innerHTML += '<div style="font-size:12px;color:#ef4444">Error al cargar el historial.</div>';
+  }
+}
 
 // Título amigable: "Empresa (Proyecto)" — nomenclatura: Cliente_Empresa_Responsable_Proyecto_Tipo
 function tituloAmigable(titulo, proyecto) {
@@ -2660,7 +2724,7 @@ function pintarCEO() {
 
   // ── Capa operativa (solo Director Comercial) ──
   let opHtml = '';
-  if (usuarioActual?.rol === 'comercial') {
+  if (['comercial','ceo'].includes(usuarioActual?.rol)) {
     const DIA30 = 30 * 24*60*60*1000;
     // Estancadas: abiertas sin movimiento en 30+ días, agrupadas por vendedor
     // Movimiento = lo más reciente entre editar la ficha y registrar actividad (llamada/nota/reunión)
@@ -2702,7 +2766,7 @@ function pintarCEO() {
     </div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:20px">
       ${priosCom.length ? priosCom.map((p,i) => `
-      <div ${tipRef([detDeal(p.x)])} style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #f3f4f6;cursor:zoom-in">
+      <div onclick="abrirHistorialDeal(${p.x.ID})" title="Toca para ver el historial comercial" style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #f3f4f6;cursor:pointer">
         <div style="font-size:11px;font-weight:800;color:${p.color};white-space:nowrap">${i+1}. ${p.accion}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tituloAmigable(p.x.TITLE, p.x.UF_CRM_1741392978542)}</div>
