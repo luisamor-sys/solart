@@ -2244,13 +2244,25 @@ async function ejecutarCompletar(id) {
       await bxTask('tasks.task.update', { taskId: id, fields: camposUpd });
       exitoCard(`card-ej-${id}`, '⏳ Enviada a revisión con Daniel', '#fef9c3', '#fde68a');
     } else {
-      // Gerardo completa
+      // Gerardo completa su subtarea de Ingeniería → el flujo avanza a Operaciones (Arturo)
       if (comentario || linksArchivos) {
-        const msg = [comentario, linksArchivos].filter(Boolean).join('\n\n');
+        const msg = [comentario, linksArchivos, `➡️ Insumo de Ingeniería listo — pasa a Operaciones con Arturo.`].filter(Boolean).join('\n\n');
         await bx('task.commentitem.add', { TASKID: id, FIELDS: { POST_MESSAGE: msg } });
       }
       await bxTask('tasks.task.complete', { taskId: id });
-      exitoCard(`card-ej-${id}`, '✅ Tarea completada', '#f0fdf4', '#bbf7d0');
+      // Si la tarea tiene "control del creador", complete la deja en supervisión (con Daniel).
+      // La forzamos a cerrada de verdad para que el flujo no se detenga ahí.
+      try { await bxTask('tasks.task.update', { taskId: id, fields: { STATUS: 5 } }); } catch {}
+      // Mover la tarea PRINCIPAL a "En progreso Operaciones" para que el robot le cree la suya a Arturo
+      try {
+        const tg = await bxTask('tasks.task.get', { taskId: id, select: ['PARENT_ID'] });
+        const parentId = tg.result?.task?.parentId || tg.result?.task?.PARENT_ID;
+        if (parentId) {
+          const stageOps = sid('En progreso Operaciones');
+          if (stageOps) await bxTask('tasks.task.update', { taskId: parentId, fields: { STAGE_ID: stageOps } });
+        }
+      } catch(e) { console.warn('[mover a ops]', e); }
+      exitoCard(`card-ej-${id}`, '✅ Completada — el flujo pasó a Operaciones (Arturo)', '#f0fdf4', '#bbf7d0');
     }
     // Limpiar cache
     if (window._archivosCache) delete window._archivosCache[id];
