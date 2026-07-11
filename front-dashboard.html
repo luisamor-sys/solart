@@ -371,11 +371,11 @@
   };
 
   const ETAPAS_LEAD = {
-    'UC_WWL2HT':'00_Validación estratégica','UC_6ZKIB2':'01_Datos por confirmar',
-    'UC_KF4DSF':'02_Primer contacto pendiente','UC_SOR5IW':'03_Datos confirmados',
-    'NEW':'04_Contacto comercial inicial','IN_PROCESS':'05_Credenciales presentadas',
-    'UC_CSHZAY':'06_Espera recibo CFE','UC_QN380W':'07_Recibo recibido',
-    'CONVERTED':'08_Recibo validado','JUNK':'99_No útil'
+    'UC_WWL2HT':'Por validar','UC_6ZKIB2':'Confirmando datos',
+    'UC_KF4DSF':'Primer contacto pendiente','UC_SOR5IW':'Datos confirmados',
+    'NEW':'En contacto con el cliente','IN_PROCESS':'Credenciales presentadas',
+    'UC_CSHZAY':'Esperando recibo CFE','UC_QN380W':'Recibo recibido',
+    'CONVERTED':'Recibo validado ✅','JUNK':'No útil'
   };
   const ETAPAS_DEAL = {
     'PREPARATION':'Gen. propuesta','NEW':'Propuesta preliminar',
@@ -1037,9 +1037,9 @@
       : '<div class="empty-msg">Sin negociaciones activas.</div>';
 
     const ETAPAS_CIERRE = {
-      'C2:NEW':        '09_Sí verbal (Cierre)',
-      'C2:UC_6WRMUD':  '10_Documentos contrato',
-      'C2:PREPARATION':'11_Firma de contrato',
+      'C2:NEW':        'Sí verbal — inicia cierre',
+      'C2:UC_6WRMUD':  'Documentos de contrato',
+      'C2:PREPARATION':'Firma de contrato',
       'C2:UC_LSBW8K':  'Revisión financiera',
       'C2:UC_B36RA8':  'Espera anticipo',
       'C2:WON':        'Anticipo pagado',

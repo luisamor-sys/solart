@@ -684,23 +684,23 @@
 
   // ── ETAPAS DEALS ─────────────────────────────────────────────────────
   const ETAPAS_DEAL_VENTA = [
-    { id: 'PREPARATION',        nombre: '01_Generación propuesta' },
-    { id: 'NEW',                nombre: '02_Propuesta preliminar' },
-    { id: 'PREPAYMENT_INVOICE', nombre: '03_Presentación inicial' },
-    { id: 'EXECUTING',          nombre: '04_Visita técnica' },
-    { id: 'UC_OF6DF0',          nombre: '05_Propuesta formal' },
-    { id: 'FINAL_INVOICE',      nombre: '06_Evaluación interna' },
-    { id: 'UC_Y3LUYS',          nombre: '07_Propuesta final' },
-    { id: 'UC_YTJ3M5',          nombre: '08_Propuesta financiera' },
-    { id: 'UC_ODYVCM',          nombre: '09_Recibo SOLART' },
-    { id: 'UC_LARNFI',          nombre: '10_Email acelerador' },
-    { id: 'UC_60SZCS',          nombre: '11_Abrió email' },
-    { id: 'UC_Y71AO6',          nombre: '12_Recuperada' },
+    { id: 'PREPARATION',        nombre: 'Armando propuesta' },
+    { id: 'NEW',                nombre: 'Propuesta lista' },
+    { id: 'PREPAYMENT_INVOICE', nombre: 'Presentada al cliente' },
+    { id: 'EXECUTING',          nombre: 'Visita técnica' },
+    { id: 'UC_OF6DF0',          nombre: 'Propuesta formal' },
+    { id: 'FINAL_INVOICE',      nombre: 'Cliente evaluando' },
+    { id: 'UC_Y3LUYS',          nombre: 'Propuesta final' },
+    { id: 'UC_YTJ3M5',          nombre: 'Buscando financiamiento' },
+    { id: 'UC_ODYVCM',          nombre: 'Recibo SOLART' },
+    { id: 'UC_LARNFI',          nombre: 'Email acelerador' },
+    { id: 'UC_60SZCS',          nombre: 'Abrió el email' },
+    { id: 'UC_Y71AO6',          nombre: 'Recuperada' },
   ];
   const ETAPAS_DEAL_CIERRE = [
-    { id: 'C2:NEW',         nombre: '09_Sí verbal (Cierre)' },
-    { id: 'C2:UC_6WRMUD',  nombre: '10_Documentos contrato' },
-    { id: 'C2:PREPARATION', nombre: '11_Firma de contrato' },
+    { id: 'C2:NEW',         nombre: 'Sí verbal — inicia cierre' },
+    { id: 'C2:UC_6WRMUD',  nombre: 'Documentos de contrato' },
+    { id: 'C2:PREPARATION', nombre: 'Firma de contrato' },
     { id: 'C2:UC_LSBW8K',  nombre: 'Revisión financiera' },
     { id: 'C2:UC_B36RA8',  nombre: 'Espera anticipo' },
   ];
@@ -818,20 +818,20 @@
   }
 
   const ETAPA_LABEL_MAP = Object.fromEntries(
-    [{ id:'UC_WWL2HT',nombre:'00_Validación estratégica'},{ id:'UC_6ZKIB2',nombre:'01_Datos por confirmar'},
-     { id:'UC_KF4DSF',nombre:'02_Primer contacto'},{ id:'UC_SOR5IW',nombre:'03_Datos confirmados'},
-     { id:'NEW',nombre:'04_Contacto comercial'},{ id:'IN_PROCESS',nombre:'05_Credenciales'},
-     { id:'UC_CSHZAY',nombre:'06_Espera recibo CFE'},{ id:'UC_QN380W',nombre:'07_Recibo recibido'},
-     { id:'CONVERTED',nombre:'08_Convertido'},
-     { id:'PREPARATION',nombre:'01_Gen. propuesta'},{ id:'NEW',nombre:'02_Prop. preliminar'},
-     { id:'PREPAYMENT_INVOICE',nombre:'03_Presentación'},{ id:'EXECUTING',nombre:'04_Visita técnica'},
-     { id:'UC_OF6DF0',nombre:'05_Prop. formal'},{ id:'FINAL_INVOICE',nombre:'06_Evaluación'},
-     { id:'UC_Y3LUYS',nombre:'07_Prop. final'},{ id:'UC_YTJ3M5',nombre:'08_Prop. financiera'},
-     { id:'UC_ODYVCM',nombre:'09_Recibo SOLART'},{ id:'UC_LARNFI',nombre:'10_Email acelerador'},
-     { id:'UC_60SZCS',nombre:'11_Abrió email'},{ id:'UC_Y71AO6',nombre:'12_Recuperada'},
-     { id:'C2:NEW',nombre:'09_Sí verbal (Cierre)'},{ id:'C2:UC_6WRMUD',nombre:'10_Documentos contrato'},
-     { id:'C2:PREPARATION',nombre:'11_Firma contrato'},{ id:'C2:UC_LSBW8K',nombre:'Rev. financiera'},
-     { id:'C2:UC_B36RA8',nombre:'Espera anticipo'}
+    [{ id:'UC_WWL2HT',nombre:'Por validar'},{ id:'UC_6ZKIB2',nombre:'Confirmando datos'},
+     { id:'UC_KF4DSF',nombre:'Primer contacto pendiente'},{ id:'UC_SOR5IW',nombre:'Datos confirmados'},
+     { id:'NEW',nombre:'En contacto con el cliente'},{ id:'IN_PROCESS',nombre:'Credenciales presentadas'},
+     { id:'UC_CSHZAY',nombre:'Esperando recibo CFE'},{ id:'UC_QN380W',nombre:'Recibo recibido'},
+     { id:'CONVERTED',nombre:'Recibo validado ✅'},
+     { id:'PREPARATION',nombre:'Armando propuesta'},{ id:'NEW',nombre:'Propuesta lista'},
+     { id:'PREPAYMENT_INVOICE',nombre:'Presentada al cliente'},{ id:'EXECUTING',nombre:'Visita técnica'},
+     { id:'UC_OF6DF0',nombre:'Propuesta formal'},{ id:'FINAL_INVOICE',nombre:'Cliente evaluando'},
+     { id:'UC_Y3LUYS',nombre:'Propuesta final'},{ id:'UC_YTJ3M5',nombre:'Buscando financiamiento'},
+     { id:'UC_ODYVCM',nombre:'Recibo SOLART'},{ id:'UC_LARNFI',nombre:'Email acelerador'},
+     { id:'UC_60SZCS',nombre:'Abrió el email'},{ id:'UC_Y71AO6',nombre:'Recuperada'},
+     { id:'C2:NEW',nombre:'Sí verbal — inicia cierre'},{ id:'C2:UC_6WRMUD',nombre:'Documentos de contrato'},
+     { id:'C2:PREPARATION',nombre:'Firma de contrato'},{ id:'C2:UC_LSBW8K',nombre:'Revisión financiera'},
+     { id:'C2:UC_B36RA8',nombre:'Esperando anticipo'}
     ].map(e => [e.id, e.nombre])
   );
 
@@ -979,17 +979,17 @@
 
   // Orden de etapas del pipeline de Prospectos
   const ETAPAS = [
-    { id: 'UC_WWL2HT', nombre: '00_Validacion estrategica' },
-    { id: 'UC_6ZKIB2', nombre: '01_Datos por confirmar' },
-    { id: 'UC_KF4DSF', nombre: '02_Primer contacto pendiente' },
-    { id: 'UC_SOR5IW', nombre: '03_Datos confirmados' },
-    { id: 'NEW',       nombre: '04_Contacto comercial inicial' },
-    { id: 'IN_PROCESS',nombre: '05_Credenciales presentadas' },
-    { id: 'UC_CSHZAY', nombre: '06_Espera recibo CFE' },
-    { id: 'UC_QN380W', nombre: '07_Recibo recibido Adri' },
-    { id: 'CONVERTED', nombre: '08_Recibo validado' },
+    { id: 'UC_WWL2HT', nombre: 'Por validar' },
+    { id: 'UC_6ZKIB2', nombre: 'Confirmando datos' },
+    { id: 'UC_KF4DSF', nombre: 'Primer contacto pendiente' },
+    { id: 'UC_SOR5IW', nombre: 'Datos confirmados' },
+    { id: 'NEW',       nombre: 'En contacto con el cliente' },
+    { id: 'IN_PROCESS',nombre: 'Credenciales presentadas' },
+    { id: 'UC_CSHZAY', nombre: 'Esperando recibo CFE' },
+    { id: 'UC_QN380W', nombre: 'Recibo recibido' },
+    { id: 'CONVERTED', nombre: 'Recibo validado ✅' },
   ];
-  const ETAPA_NOUTIL = { id: 'JUNK', nombre: '99_Prospecto no util' };
+  const ETAPA_NOUTIL = { id: 'JUNK', nombre: 'Prospecto no útil' };
 
   let prospectoActual = null;
   let busquedaTimer = null;
