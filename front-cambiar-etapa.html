@@ -612,6 +612,17 @@
 
     <button class="btn" id="d-btn-avanzar" onclick="avanzarEtapaDeal()" style="display:none">Mover a siguiente etapa →</button>
 
+    <!-- Mover a cualquier etapa del pipeline -->
+    <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:14px;padding:14px 16px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:6px">O elige la etapa a la que quieres moverla</div>
+      <select id="d-etapa-select" style="width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 12px;font-size:14px;background:#fff;font-weight:600;color:#111827"></select>
+      <button class="btn" onclick="moverEtapaSel()" style="margin:10px 0 0;background:#0369a1">🔄 Mover a la etapa seleccionada</button>
+    </div>
+
+    <!-- Datos editables de la negociación -->
+    <button class="btn" onclick="toggleDetalleDeal()" id="d-btn-editar" style="background:#0e7490;margin-bottom:10px">📝 Ver / editar datos de la negociación</button>
+    <div id="d-detalle" style="display:none;background:#fff;border:1.5px solid #e5e7eb;border-radius:14px;padding:16px;margin-bottom:12px"></div>
+
     <!-- Aviso cuando la siguiente etapa requiere generar una tarea -->
     <div id="d-aviso-tarea" style="display:none;background:#ede9fe;border:1.5px solid #c4b5fd;border-radius:14px;padding:16px 18px;margin-bottom:12px">
       <div style="font-size:13px;font-weight:700;color:#5b21b6;margin-bottom:6px" id="d-aviso-tarea-titulo"></div>
@@ -1122,6 +1133,17 @@
     }
     document.getElementById('d-btn-tarea').style.display = 'block';
 
+    // Poblar el desplegable con todas las etapas del pipeline del deal
+    const listaEtapas = catId === 2 ? ETAPAS_DEAL_CIERRE : ETAPAS_DEAL_VENTA;
+    const preSel = sig ? sig.id : dealActual.STAGE_ID;
+    document.getElementById('d-etapa-select').innerHTML = listaEtapas.map(e =>
+      `<option value="${e.id}" ${e.id === preSel ? 'selected' : ''}>${e.nombre}${e.id === dealActual.STAGE_ID ? ' (actual)' : ''}</option>`
+    ).join('');
+
+    // Reiniciar el panel de datos editables
+    document.getElementById('d-detalle').style.display = 'none';
+    document.getElementById('d-btn-editar').textContent = '📝 Ver / editar datos de la negociación';
+
     // Botón "Mover a Cierre" solo en Proceso de Venta (CATEGORY_ID=0)
     if (catId === 0) {
       document.getElementById('d-wrap-cierre').style.display = 'block';
@@ -1152,6 +1174,91 @@
       alert('Error: ' + e.message);
       mostrarEstado(null);
       document.getElementById('vista-deal').style.display = 'block';
+    }
+  }
+
+  // Mover el deal a la etapa elegida en el desplegable
+  async function moverEtapaSel() {
+    if (!dealActual) return;
+    const sel = document.getElementById('d-etapa-select').value;
+    if (!sel || sel === dealActual.STAGE_ID) { alert('Elige una etapa distinta a la actual.'); return; }
+    const ETAPAS_CON_TAREA_SEL = {
+      'EXECUTING':  'Visita Técnica se agenda generando la tarea con ingeniería (botón 📋). Al crearla, la negociación se mueve sola.',
+      'UC_OF6DF0':  'Propuesta Formal se solicita generando la tarea a ingeniería (botón 📋). Al crearla, la negociación se mueve sola.',
+      'UC_Y3LUYS':  'Propuesta Final se solicita generando la tarea a ingeniería (botón 📋). Al crearla, la negociación se mueve sola.',
+    };
+    if (ETAPAS_CON_TAREA_SEL[sel]) { alert('📋 ' + ETAPAS_CON_TAREA_SEL[sel]); return; }
+    const nombreSel = (parseInt(dealActual.CATEGORY_ID) === 2 ? ETAPAS_DEAL_CIERRE : ETAPAS_DEAL_VENTA).find(e => e.id === sel)?.nombre || sel;
+    mostrarEstado('vista-cargando');
+    try {
+      const res = await fetch(WEBHOOK + 'crm.deal.update.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: dealActual.ID, fields: { STAGE_ID: sel } })
+      });
+      const data = await res.json();
+      if (!data.result) throw new Error(data.error_description || 'Error');
+      reasignarTareasNuevas(Date.now());
+      document.getElementById('exito-titulo').textContent = '¡Etapa actualizada!';
+      document.getElementById('exito-detalle').textContent = dealActual.TITLE + ' → ' + nombreSel;
+      mostrarEstado('vista-exito');
+    } catch(e) {
+      alert('Error: ' + e.message);
+      mostrarEstado(null);
+      document.getElementById('vista-deal').style.display = 'block';
+    }
+  }
+
+  // ── DATOS EDITABLES DEL DEAL (mismos campos que en Tareas) ──────────────
+  const ENUM_INMUEBLE  = { '1196':'Propio','1198':'Rentado','1200':'Familiar','1202':'Empresarial' };
+  const ENUM_PROVEEDOR = { '1466':'CFE','1468':'Suministro Calificado','1470':'Mixto','1472':'Por definir' };
+  const ENUM_FORMA     = { '100':'Compra de Activos','102':'Financiamiento','104':'PPA','106':'Arrendamiento','108':'Leasing Back','328':'Aun no sabemos' };
+  const ENUM_PROCESO   = { '1484':'Entrega de documentos','1486':'Armado de expediente','1488':'Estudio','1490':'Autorizado o Rechazado' };
+  const CAMPOS_DEAL = [
+    { k:'OPPORTUNITY',           lbl:'💰 Monto (MXN)',                tipo:'num' },
+    { k:'UF_CRM_1741208352117',  lbl:'⚡ Tamaño del sistema (kWp)',   tipo:'num' },
+    { k:'UF_CRM_1753209254287',  lbl:'🔋 % de energía que cubrimos',  tipo:'text' },
+    { k:'UF_CRM_1765995370491',  lbl:'🏠 Inmueble',                   tipo:'enum', mapa:ENUM_INMUEBLE },
+    { k:'UF_CRM_1777320644093',  lbl:'⚙️ Proveedor energético',       tipo:'enum', mapa:ENUM_PROVEEDOR },
+    { k:'UF_CRM_1738733784685',  lbl:'🛒 Forma de compra',            tipo:'enum', mapa:ENUM_FORMA },
+    { k:'UF_CRM_1780532444242',  lbl:'🏦 Proceso de crédito',         tipo:'enum', mapa:ENUM_PROCESO },
+  ];
+
+  function toggleDetalleDeal() {
+    const det = document.getElementById('d-detalle');
+    const btn = document.getElementById('d-btn-editar');
+    if (!det || !dealActual) return;
+    if (det.style.display !== 'none') { det.style.display = 'none'; btn.textContent = '📝 Ver / editar datos de la negociación'; return; }
+    btn.textContent = '▲ Cerrar datos';
+    det.innerHTML = CAMPOS_DEAL.map(c => {
+      const val = dealActual[c.k] ?? '';
+      if (c.tipo === 'enum') {
+        const ops = ['<option value="">—</option>'].concat(
+          Object.entries(c.mapa).map(([id,nom]) => `<option value="${id}" ${String(val)===String(id)?'selected':''}>${nom}</option>`)
+        ).join('');
+        return `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#6b7280">${c.lbl}</label><select data-cdeal="${c.k}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;margin-top:3px">${ops}</select></div>`;
+      }
+      return `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#6b7280">${c.lbl}</label><input data-cdeal="${c.k}" type="${c.tipo==='num'?'number':'text'}" value="${String(val).replace(/"/g,'&quot;')}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;margin-top:3px;box-sizing:border-box"></div>`;
+    }).join('') + `
+      <button onclick="guardarDetalleDeal(this)" style="width:100%;background:#1a1a2e;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Guardar cambios</button>
+      <div id="d-det-msg" style="font-size:12px;margin-top:6px;text-align:center"></div>`;
+    det.style.display = 'block';
+  }
+
+  async function guardarDetalleDeal(btn) {
+    if (!dealActual) return;
+    const fields = {};
+    document.querySelectorAll('[data-cdeal]').forEach(el => { fields[el.dataset.cdeal] = el.value; });
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const msg = document.getElementById('d-det-msg');
+    try {
+      const data = await bx('crm.deal.update.json', { id: dealActual.ID, fields });
+      if (!data.result) throw new Error(data.error_description || 'Error');
+      Object.assign(dealActual, fields);
+      msg.style.color = '#16a34a'; msg.textContent = '✅ Cambios guardados en Bitrix';
+    } catch(e) {
+      msg.style.color = '#dc2626'; msg.textContent = 'Error: ' + e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = '💾 Guardar cambios';
     }
   }
 
