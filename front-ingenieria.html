@@ -1113,6 +1113,37 @@ const _limpiarHtmlIng = h => String(h || '')
 
 function cerrarHistorial() { document.getElementById('hist-ov').style.display = 'none'; }
 
+// Modal de detalle por vendedor: acordeón año → mes → negociaciones
+function abrirDetVend(i, col) {
+  const v = window._tvDet?.[i]; if (!v) return;
+  const c = v.cols[col]; if (!c || !c.items.length) return;
+  const fmt = n => n ? ' · ' + fmtMXN(n) : '';
+  const porAnio = {};
+  c.items.forEach(it => { (porAnio[it.y] = porAnio[it.y] || []).push(it); });
+  const anios = Object.keys(porAnio).map(Number).sort((a,b) => b-a);
+  const html = anios.map((y, idx) => {
+    const arr = porAnio[y];
+    const montoY = arr.reduce((s,x) => s+x.m, 0);
+    const porMes = {};
+    arr.forEach(it => { (porMes[it.mo] = porMes[it.mo] || []).push(it); });
+    const meses = Object.keys(porMes).map(Number).sort((a,b) => b-a);
+    return `<details ${idx===0?'open':''} style="margin-bottom:8px;border:1px solid #e5e7eb;border-radius:10px;padding:8px 12px;background:#fafafa">
+      <summary style="cursor:pointer;font-weight:800;font-size:14px;color:#111827">${y} — ${arr.length}${fmt(montoY)}</summary>
+      ${meses.map(mo => {
+        const a2 = porMes[mo], m2 = a2.reduce((s,x) => s+x.m, 0);
+        return `<div style="margin-top:8px">
+          <div style="font-size:12px;font-weight:800;color:#7c3aed">${MESES_CORTOS[mo]} — ${a2.length}${fmt(m2)}</div>
+          ${a2.map(it => `<div style="font-size:12px;color:#374151;padding:2px 0 2px 12px">• ${it.t}${fmt(it.m)}</div>`).join('')}
+        </div>`;
+      }).join('')}
+    </details>`;
+  }).join('');
+  const totalM = c.items.reduce((s,x) => s+x.m, 0);
+  document.getElementById('hist-tit').textContent = `${v.nombre} — ${c.label} · ${c.items.length} en total${totalM ? ' · ' + fmtMXN(totalM) : ''}`;
+  document.getElementById('hist-body').innerHTML = `<div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Toca un año para abrir o cerrar su detalle por mes.</div>${html}`;
+  document.getElementById('hist-ov').style.display = 'flex';
+}
+
 async function abrirHistorialDeal(dealId) {
   const ov = document.getElementById('hist-ov');
   const tit = document.getElementById('hist-tit');
@@ -2595,8 +2626,10 @@ function pintarCEO() {
   });
   // Prospectos por mes por vendedor (detalle al pasar el mouse)
   const leadsMesVend = {};
+  const leadsVendRaw = {};
   prospectosSinRecibo.forEach(l => {
     const id = String(l.ASSIGNED_BY_ID);
+    (leadsVendRaw[id] = leadsVendRaw[id] || []).push(l);
     const d = new Date(l.DATE_CREATE);
     const k = d.getFullYear() * 12 + d.getMonth();   // clave año-mes, no se mezclan años
     (leadsMesVend[id] = leadsMesVend[id] || {})[k] = (leadsMesVend[id][k] || 0) + 1;
@@ -2627,6 +2660,18 @@ function pintarCEO() {
     inm: INMUEBLE_NOMBRE[String(x.UF_CRM_1765995370491)] || '',
     y: fechaDeal(x).getFullYear()
   });
+  // Detalle por vendedor para el modal (clic en la tabla) — agrupado año → mes
+  const _itemDeal = x => { const f = fechaDeal(x); return { y: f.getFullYear(), mo: f.getMonth(), t: tituloAmigable(x.TITLE, x.UF_CRM_1741392978542) || 'Negociación ' + x.ID, m: parseFloat(x.OPPORTUNITY) || 0 }; };
+  window._tvDet = tablaVend.map(v => ({
+    nombre: v.nombre,
+    cols: {
+      leads:  { label: 'Prospectos',  items: (leadsVendRaw[v.id] || []).map(l => { const f = new Date(l.DATE_CREATE); return { y: f.getFullYear(), mo: f.getMonth(), t: l.TITLE || ('Prospecto ' + l.ID), m: 0 }; }) },
+      recibo: { label: 'Con recibo',  items: v.conRecibo.map(_itemDeal) },
+      neg:    { label: 'Negociación', items: v.neg.map(_itemDeal) },
+      cie:    { label: 'Cierre',      items: v.cie.map(_itemDeal) },
+      gan:    { label: 'Ganadas',     items: [...v.gan, ...v.ganC].map(_itemDeal) }
+    }
+  }));
   const porMes = arr => {
     const m = Array(12).fill(0);
     const det = Array.from({ length: 12 }, () => []);
@@ -2972,11 +3017,11 @@ function pintarCEO() {
           ${tablaVend.length ? tablaVend.map((v,i) => `
           <tr style="border-top:1px solid #f3f4f6;${i%2?'background:#fafafa':''}">
             <td style="padding:7px 8px;font-weight:600;color:#374151;white-space:nowrap">${v.nombre}</td>
-            <td ${v.detMeses.length ? tipRef(v.detMeses) : ''} style="text-align:center;padding:7px 8px;color:#7c2d12;font-weight:700;${v.detMeses.length?'cursor:zoom-in':''}">${v.leads || '—'}</td>
-            <td ${v.conRecibo.length ? tipRef(v.conRecibo.map(detDeal)) : ''} style="text-align:center;padding:7px 8px;color:#713f12;font-weight:700;${v.conRecibo.length?'cursor:zoom-in':''}">${v.conRecibo.length || '—'}</td>
-            <td ${v.neg.length ? tipRef(v.neg.map(detDeal)) : ''} style="text-align:center;padding:7px 8px;color:#4c1d95;font-weight:700;${v.neg.length?'cursor:zoom-in':''}">${v.neg.length || '—'}</td>
-            <td ${v.cie.length ? tipRef(v.cie.map(detDeal)) : ''} style="text-align:center;padding:7px 8px;color:#1e3a8a;font-weight:700;${v.cie.length?'cursor:zoom-in':''}">${v.cie.length || '—'}</td>
-            <td ${(v.gan.length||v.ganC.length) ? tipRef([...v.gan, ...v.ganC].map(detDeal)) : ''} style="text-align:center;padding:7px 8px;color:#14532d;font-weight:800;white-space:nowrap;${(v.gan.length||v.ganC.length)?'cursor:zoom-in':''}">${v.gan.length ? v.gan.length + ' 🎉' : '—'}${v.ganC.length ? ` <span style="font-size:10px;color:#9ca3af;font-weight:600">+${v.ganC.length} chica${v.ganC.length>1?'s':''}</span>` : ''}</td>
+            <td ${v.leads ? `onclick="abrirDetVend(${i},'leads')"` : ''} style="text-align:center;padding:7px 8px;color:#7c2d12;font-weight:700;${v.leads?'cursor:pointer;text-decoration:underline dotted':''}">${v.leads || '—'}</td>
+            <td ${v.conRecibo.length ? `onclick="abrirDetVend(${i},'recibo')"` : ''} style="text-align:center;padding:7px 8px;color:#713f12;font-weight:700;${v.conRecibo.length?'cursor:pointer;text-decoration:underline dotted':''}">${v.conRecibo.length || '—'}</td>
+            <td ${v.neg.length ? `onclick="abrirDetVend(${i},'neg')"` : ''} style="text-align:center;padding:7px 8px;color:#4c1d95;font-weight:700;${v.neg.length?'cursor:pointer;text-decoration:underline dotted':''}">${v.neg.length || '—'}</td>
+            <td ${v.cie.length ? `onclick="abrirDetVend(${i},'cie')"` : ''} style="text-align:center;padding:7px 8px;color:#1e3a8a;font-weight:700;${v.cie.length?'cursor:pointer;text-decoration:underline dotted':''}">${v.cie.length || '—'}</td>
+            <td ${(v.gan.length||v.ganC.length) ? `onclick="abrirDetVend(${i},'gan')"` : ''} style="text-align:center;padding:7px 8px;color:#14532d;font-weight:800;white-space:nowrap;${(v.gan.length||v.ganC.length)?'cursor:pointer;text-decoration:underline dotted':''}">${v.gan.length ? v.gan.length + ' 🎉' : '—'}${v.ganC.length ? ` <span style="font-size:10px;color:#9ca3af;font-weight:600">+${v.ganC.length} chica${v.ganC.length>1?'s':''}</span>` : ''}</td>
           </tr>`).join('') : '<tr><td colspan="6" style="padding:10px;color:#9ca3af;text-align:center">Sin datos este año.</td></tr>'}
         </tbody>
       </table>
