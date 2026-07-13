@@ -1133,7 +1133,7 @@ function abrirDetVend(i, col) {
         const a2 = porMes[mo], m2 = a2.reduce((s,x) => s+x.m, 0);
         return `<div style="margin-top:8px">
           <div style="font-size:12px;font-weight:800;color:#7c3aed">${MESES_CORTOS[mo]} — ${a2.length}${fmt(m2)}</div>
-          ${a2.map(it => `<div style="font-size:12px;color:#374151;padding:2px 0 2px 12px">• ${it.t}${fmt(it.m)}</div>`).join('')}
+          ${a2.map(it => `<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#374151;padding:2px 0 2px 12px"><span style="flex:1">• ${it.t}${fmt(it.m)}</span>${it.id ? `<button onclick="${it.lead ? 'abrirHistorialLead' : 'abrirHistorialDeal'}(${it.id})" style="border:1px solid #ddd6fe;background:#f5f3ff;color:#6d28d9;border-radius:8px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">📜 Detalle</button>` : ''}</div>`).join('')}
         </div>`;
       }).join('')}
     </details>`;
@@ -1142,6 +1142,51 @@ function abrirDetVend(i, col) {
   document.getElementById('hist-tit').textContent = `${v.nombre} — ${c.label} · ${c.items.length} en total${totalM ? ' · ' + fmtMXN(totalM) : ''}`;
   document.getElementById('hist-body').innerHTML = `<div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Toca un año para abrir o cerrar su detalle por mes.</div>${html}`;
   document.getElementById('hist-ov').style.display = 'flex';
+}
+
+// Historial comercial de un prospecto (lead) — mismo modal que las negociaciones
+async function abrirHistorialLead(leadId) {
+  const ov = document.getElementById('hist-ov');
+  const tit = document.getElementById('hist-tit');
+  const body = document.getElementById('hist-body');
+  ov.style.display = 'flex';
+  const ld = (_ceoData?.leadsArr || []).find(x => String(x.ID) === String(leadId)) || {};
+  tit.textContent = ld.COMPANY_TITLE || [ld.NAME, ld.LAST_NAME].filter(Boolean).join(' ') || ld.TITLE || 'Prospecto';
+  const chips = [
+    USER_NAMES[String(ld.ASSIGNED_BY_ID)] ? `👤 ${USER_NAMES[String(ld.ASSIGNED_BY_ID)]}` : '',
+    ld.DATE_CREATE ? `📅 Creado ${new Date(ld.DATE_CREATE).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}` : ''
+  ].filter(Boolean).map(c => `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#f3f4f6;color:#374151">${c}</span>`).join(' ');
+  body.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips}</div><div style="font-size:12px;color:#9ca3af">Cargando historial…</div>`;
+  try {
+    const [rAct, rCom] = await Promise.all([
+      bx('crm.activity.list', { filter: { OWNER_TYPE_ID: 1, OWNER_ID: leadId }, select: ['ID','SUBJECT','DESCRIPTION','CREATED','TYPE_ID'], order: { CREATED: 'DESC' } }),
+      bx('crm.timeline.comment.list', { filter: { ENTITY_TYPE: 'lead', ENTITY_ID: leadId }, select: ['ID','COMMENT','CREATED'], order: { CREATED: 'DESC' } })
+    ]);
+    const items = [];
+    (rAct.result || []).forEach(a => {
+      const tid = String(a.TYPE_ID);
+      const esEmail = tid === '4';
+      let txt = esEmail ? '' : _limpiarHtmlIng(a.DESCRIPTION);
+      if (txt.length > 280) txt = txt.slice(0, 280) + '…';
+      items.push({ f: a.CREATED, icono: tid==='1'?'🤝':esEmail?'✉️':'📞', tit: _limpiarHtmlIng(a.SUBJECT) || 'Actividad', txt });
+    });
+    (rCom.result || []).forEach(c => {
+      let txt = _limpiarHtmlIng(c.COMMENT);
+      if (txt.length > 280) txt = txt.slice(0, 280) + '…';
+      items.push({ f: c.CREATED, icono: '📝', tit: 'Nota', txt });
+    });
+    items.sort((a,b) => new Date(b.f) - new Date(a.f));
+    body.innerHTML = `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips}</div>
+      <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">📜 Historial comercial (${items.length})</div>
+      ${items.length ? items.slice(0, 25).map(i => `
+      <div style="background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px">
+        <div style="font-size:10px;color:#9ca3af">${i.icono} ${i.tit} · ${new Date(i.f).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}</div>
+        ${i.txt ? `<div style="font-size:12px;color:#374151;white-space:pre-line;margin-top:2px">${i.txt}</div>` : ''}
+      </div>`).join('') : '<div style="font-size:12px;color:#9ca3af">Sin actividades registradas — el vendedor aún no deja constancia de sus contactos.</div>'}`;
+  } catch(e) {
+    body.innerHTML += '<div style="font-size:12px;color:#ef4444">Error al cargar el historial.</div>';
+  }
 }
 
 async function abrirHistorialDeal(dealId) {
@@ -1228,6 +1273,7 @@ function abrirTipModal(tipId) {
           <td style="padding:4px 6px;font-size:12px;font-weight:600;color:#374151">${it.t}</td>
           <td style="padding:4px 6px;font-size:12px;text-align:right;font-weight:700;color:#14532d;white-space:nowrap">${it.m ? fmtMXN(it.m) : '—'}</td>
           <td style="padding:4px 6px;font-size:11px;text-align:right;color:#6b7280;white-space:nowrap">${it.kwp ? '⚡' + it.kwp : ''}</td>
+          <td style="padding:4px 2px;text-align:right">${it.id ? `<button onclick="abrirHistorialDeal(${it.id})" style="border:1px solid #ddd6fe;background:#f5f3ff;color:#6d28d9;border-radius:8px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">📜 Detalle</button>` : ''}</td>
         </tr>`).join('')}
       </table>`;
     const porAnio = {};
@@ -2692,6 +2738,7 @@ function pintarCEO() {
   // Detalle por negociación para el emergente: nombre, monto, kWp, % energía, inmueble y año
   const INMUEBLE_NOMBRE = { '1196':'Propio', '1198':'Rentado', '1200':'Familiar', '1202':'Empresarial' };
   const detDeal = x => ({
+    id: x.ID,
     t: tituloAmigable(x.TITLE, x.UF_CRM_1741392978542) || 'Negociación ' + x.ID,
     m: parseFloat(x.OPPORTUNITY) || 0,
     kwp: x.UF_CRM_1741208352117 || '',
@@ -2701,11 +2748,11 @@ function pintarCEO() {
     mo: fechaDeal(x).getMonth()
   });
   // Detalle por vendedor para el modal (clic en la tabla) — agrupado año → mes
-  const _itemDeal = x => { const f = fechaDeal(x); return { y: f.getFullYear(), mo: f.getMonth(), t: tituloAmigable(x.TITLE, x.UF_CRM_1741392978542) || 'Negociación ' + x.ID, m: parseFloat(x.OPPORTUNITY) || 0 }; };
+  const _itemDeal = x => { const f = fechaDeal(x); return { id: x.ID, y: f.getFullYear(), mo: f.getMonth(), t: tituloAmigable(x.TITLE, x.UF_CRM_1741392978542) || 'Negociación ' + x.ID, m: parseFloat(x.OPPORTUNITY) || 0 }; };
   window._tvDet = tablaVend.map(v => ({
     nombre: v.nombre,
     cols: {
-      leads:  { label: 'Prospectos',  items: (leadsVendRaw[v.id] || []).map(l => { const f = new Date(l.DATE_CREATE); const nom = l.COMPANY_TITLE || [l.NAME, l.LAST_NAME].filter(Boolean).join(' ') || l.TITLE || ('Prospecto ' + l.ID); return { y: f.getFullYear(), mo: f.getMonth(), t: nom, m: 0 }; }) },
+      leads:  { label: 'Prospectos',  items: (leadsVendRaw[v.id] || []).map(l => { const f = new Date(l.DATE_CREATE); const nom = l.COMPANY_TITLE || [l.NAME, l.LAST_NAME].filter(Boolean).join(' ') || l.TITLE || ('Prospecto ' + l.ID); return { id: l.ID, lead: true, y: f.getFullYear(), mo: f.getMonth(), t: nom, m: 0 }; }) },
       recibo: { label: 'Con recibo',  items: v.conRecibo.map(_itemDeal) },
       neg:    { label: 'Negociación', items: v.neg.map(_itemDeal) },
       cie:    { label: 'Cierre',      items: v.cie.map(_itemDeal) },
