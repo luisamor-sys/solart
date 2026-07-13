@@ -685,7 +685,14 @@
       if (k === 'UF_CRM_1758675881434' && v) v = v + '|MXN';
       fields[k] = v;
     });
-    try { await bx('crm.deal.update.json', { id: dealId, fields }); cerrarModal(); cargarDashboard(); }
+    try {
+      await bx('crm.deal.update.json', { id: dealId, fields });
+      // Constancia de quién hizo el cambio (el API siempre registra al webhook)
+      try {
+        if (usuarioActual?.nombre) bx('crm.timeline.comment.add.json', { fields: { ENTITY_TYPE: 'deal', ENTITY_ID: dealId, COMMENT: '✏️ Datos de la negociación actualizados por ' + usuarioActual.nombre + ' desde el portal.' } });
+      } catch {}
+      cerrarModal(); cargarDashboard();
+    }
     catch { alert('No se pudieron guardar los cambios.'); }
   }
   async function aprobarTareaModal(tareaId, dealId) {

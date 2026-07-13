@@ -1254,6 +1254,11 @@
       const data = await bx('crm.deal.update.json', { id: dealActual.ID, fields });
       if (!data.result) throw new Error(data.error_description || 'Error');
       Object.assign(dealActual, fields);
+      // Constancia de quién hizo el cambio (el API siempre registra al webhook)
+      try {
+        const u = JSON.parse(localStorage.getItem('solart_user'));
+        if (u?.nombre) bx('crm.timeline.comment.add.json', { fields: { ENTITY_TYPE: 'deal', ENTITY_ID: dealActual.ID, COMMENT: '✏️ Datos de la negociación actualizados por ' + u.nombre + ' desde el portal.' } });
+      } catch {}
       msg.style.color = '#16a34a'; msg.textContent = '✅ Cambios guardados en Bitrix';
     } catch(e) {
       msg.style.color = '#dc2626'; msg.textContent = 'Error: ' + e.message;
@@ -1584,6 +1589,7 @@
       if (montoNeg) { dealFields.OPPORTUNITY = montoNeg; dealFields.IS_MANUAL_OPPORTUNITY = 'Y'; }
       if (contactId) dealFields.CONTACT_IDS = [contactId];
       if (companyId) dealFields.COMPANY_ID = companyId;
+      if (_uid) { dealFields.ASSIGNED_BY_ID = _uid; dealFields.CREATED_BY_ID = _uid; }
 
       const rDeal = await fetch(WEBHOOK + 'crm.deal.add.json', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1766,6 +1772,7 @@
       }
       if (contactId) dealFields.CONTACT_IDS = [contactId];
       if (companyId) dealFields.COMPANY_ID = companyId;
+      if (_uid) { dealFields.ASSIGNED_BY_ID = _uid; dealFields.CREATED_BY_ID = _uid; }
 
       const resDeal = await fetch(WEBHOOK + 'crm.deal.add.json', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },

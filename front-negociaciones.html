@@ -727,6 +727,11 @@
       const d = await r.json();
       if (!d.result) throw new Error(d.error_description || 'Error');
       Object.assign(negActual, fields); // reflejar en memoria
+      // Constancia de quién hizo el cambio (el API siempre registra al webhook)
+      try {
+        const u = JSON.parse(localStorage.getItem('solart_user'));
+        if (u?.nombre) fetch(WEBHOOK + 'crm.timeline.comment.add.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { ENTITY_TYPE: 'deal', ENTITY_ID: negActual.ID, COMMENT: '✏️ Datos de la negociación actualizados por ' + u.nombre + ' desde el portal.' } }) });
+      } catch {}
       const msg = document.getElementById('neg-det-msg');
       if (msg) { msg.style.color = '#16a34a'; msg.textContent = '✅ Guardado en el CRM'; }
       btn.textContent = '💾 Guardar cambios'; btn.disabled = false;
