@@ -2658,7 +2658,19 @@ function pintarCEO() {
   const funnel = FUNNEL_NIVELES.map(f => {
     if (f.leads) return { ...f, n: prospectosSinRecibo.length + cohorteAll.length, monto: suma(cohorteAll), det: [] };
     const en = f.d === 1 ? cohorteAll : cohVivas.filter(x => depthDeal(x) >= f.d);
-    return { ...f, n: en.length, monto: suma(en), det: en.map(detDeal) };
+    // Tiempo en etapa: las que están HOY exactamente en este nivel y desde cuándo (MOVED_TIME)
+    let actuales = 0, promDias = null, maxDias = 0;
+    if (f.d < 6) { // las ganadas ya no envejecen
+      const hoyMs = Date.now();
+      const enNivel = cohVivas.filter(x => depthDeal(x) === f.d && (x.MOVED_TIME || x.DATE_CREATE));
+      actuales = enNivel.length;
+      if (enNivel.length) {
+        const dias = enNivel.map(x => Math.max(0, Math.floor((hoyMs - new Date(x.MOVED_TIME || x.DATE_CREATE).getTime()) / 86400000)));
+        promDias = Math.round(dias.reduce((a,b) => a+b, 0) / dias.length);
+        maxDias = Math.max(...dias);
+      }
+    }
+    return { ...f, n: en.length, monto: suma(en), det: en.map(detDeal), actuales, promDias, maxDias };
   });
   const maxFun = Math.max(...funnel.map(f=>f.n), 1);
 
@@ -3016,7 +3028,11 @@ function pintarCEO() {
             <span style="font-weight:600;color:#7c3aed">${f.monto ? fmtMXN(f.monto) : ''}</span>
           </div>
           <div ${tipRefClick(f.det)} title="${f.det.length?'Toca para ver el detalle':''}" style="width:${w}%;min-width:22px;height:16px;background:linear-gradient(90deg,#a78bfa,#7c3aed);border-radius:8px;${f.det.length?'cursor:pointer':''}"></div>
-          ${i>0 && caida>0 ? `<div style="font-size:9px;color:#dc2626;margin-top:2px">▼ ${caida}% se quedó atrás</div>` : ''}
+          ${f.promDias != null ? (() => {
+            const c = f.maxDias > 30 ? '#dc2626' : f.maxDias > 14 ? '#d97706' : '#16a34a';
+            return `<div style="font-size:9px;font-weight:700;color:${c};margin-top:2px">⏱ ${f.actuales} aquí ahora · promedio ${f.promDias} día${f.promDias===1?'':'s'}${f.maxDias > 14 ? ` · la más vieja ${f.maxDias}` : ''}</div>`;
+          })() : ''}
+          ${i>0 && caida>0 ? `<div style="font-size:9px;color:#9ca3af;margin-top:1px">▼ ${caida}% se quedó atrás</div>` : ''}
         </div>`;
       }).join('')}
     </div>
