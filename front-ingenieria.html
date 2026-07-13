@@ -1144,11 +1144,29 @@ function abrirDetVend(i, col) {
   document.getElementById('hist-ov').style.display = 'flex';
 }
 
+// Volver al contenido anterior del modal (la lista desde donde se abrió el historial)
+function _histGuardarPrev() {
+  const ov = document.getElementById('hist-ov');
+  window._histPrev = (ov && ov.style.display === 'flex')
+    ? { t: document.getElementById('hist-tit').textContent, h: document.getElementById('hist-body').innerHTML }
+    : null;
+}
+function _histBtnVolver() {
+  return window._histPrev ? `<div style="margin-bottom:12px"><button onclick="volverHistorial()" style="border:1px solid #e5e7eb;background:#f9fafb;color:#374151;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">← Volver a la lista</button></div>` : '';
+}
+function volverHistorial() {
+  const p = window._histPrev; if (!p) return;
+  document.getElementById('hist-tit').textContent = p.t;
+  document.getElementById('hist-body').innerHTML = p.h;
+  window._histPrev = null;
+}
+
 // Historial comercial de un prospecto (lead) — mismo modal que las negociaciones
 async function abrirHistorialLead(leadId) {
   const ov = document.getElementById('hist-ov');
   const tit = document.getElementById('hist-tit');
   const body = document.getElementById('hist-body');
+  _histGuardarPrev();
   ov.style.display = 'flex';
   const ld = (_ceoData?.leadsArr || []).find(x => String(x.ID) === String(leadId)) || {};
   tit.textContent = ld.COMPANY_TITLE || [ld.NAME, ld.LAST_NAME].filter(Boolean).join(' ') || ld.TITLE || 'Prospecto';
@@ -1156,7 +1174,7 @@ async function abrirHistorialLead(leadId) {
     USER_NAMES[String(ld.ASSIGNED_BY_ID)] ? `👤 ${USER_NAMES[String(ld.ASSIGNED_BY_ID)]}` : '',
     ld.DATE_CREATE ? `📅 Creado ${new Date(ld.DATE_CREATE).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}` : ''
   ].filter(Boolean).map(c => `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#f3f4f6;color:#374151">${c}</span>`).join(' ');
-  body.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips}</div><div style="font-size:12px;color:#9ca3af">Cargando historial…</div>`;
+  body.innerHTML = `${_histBtnVolver()}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips}</div><div style="font-size:12px;color:#9ca3af">Cargando historial…</div>`;
   try {
     const [rAct, rCom] = await Promise.all([
       bx('crm.activity.list', { filter: { OWNER_TYPE_ID: 1, OWNER_ID: leadId }, select: ['ID','SUBJECT','DESCRIPTION','CREATED','TYPE_ID'], order: { CREATED: 'DESC' } }),
@@ -1177,6 +1195,7 @@ async function abrirHistorialLead(leadId) {
     });
     items.sort((a,b) => new Date(b.f) - new Date(a.f));
     body.innerHTML = `
+      ${_histBtnVolver()}
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips}</div>
       <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">📜 Historial comercial (${items.length})</div>
       ${items.length ? items.slice(0, 25).map(i => `
@@ -1193,6 +1212,7 @@ async function abrirHistorialDeal(dealId) {
   const ov = document.getElementById('hist-ov');
   const tit = document.getElementById('hist-tit');
   const body = document.getElementById('hist-body');
+  _histGuardarPrev();
   ov.style.display = 'flex';
   // Datos del deal desde el cache del panel
   const dl = (_ceoData?.dealsAll || []).find(x => String(x.ID) === String(dealId)) || {};
@@ -1202,7 +1222,7 @@ async function abrirHistorialDeal(dealId) {
     dl.UF_CRM_1741208352117 ? `⚡ ${dl.UF_CRM_1741208352117} kWp` : '',
     USER_NAMES[String(dl.ASSIGNED_BY_ID)] ? `👤 ${USER_NAMES[String(dl.ASSIGNED_BY_ID)]}` : ''
   ].filter(Boolean).map(c => `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#f3f4f6;color:#374151">${c}</span>`).join(' ');
-  body.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips}</div><div style="font-size:12px;color:#9ca3af">Cargando historial…</div>`;
+  body.innerHTML = `${_histBtnVolver()}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips}</div><div style="font-size:12px;color:#9ca3af">Cargando historial…</div>`;
   try {
     const [rAct, rCom] = await Promise.all([
       bx('crm.activity.list', { filter: { OWNER_TYPE_ID: 2, OWNER_ID: dealId }, select: ['ID','SUBJECT','DESCRIPTION','CREATED','TYPE_ID'], order: { CREATED: 'DESC' } }),
@@ -1223,6 +1243,7 @@ async function abrirHistorialDeal(dealId) {
     });
     items.sort((a,b) => new Date(b.f) - new Date(a.f));
     body.innerHTML = `
+      ${_histBtnVolver()}
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips}</div>
       <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">📜 Historial comercial (${items.length})</div>
       ${items.length ? items.slice(0, 25).map(i => `
