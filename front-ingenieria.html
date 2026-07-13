@@ -2504,7 +2504,7 @@ async function cargarCEO() {
 
 function pintarCEO() {
   const cont = document.getElementById('cont-ceo');
-  const anioVal = document.getElementById('ceo-anio')?.value || String(new Date().getFullYear());
+  const anioVal = document.getElementById('ceo-anio')?.value || 'todo';
   const esTodo = anioVal === 'todo';
   const anioSel = esTodo ? null : (parseInt(anioVal) || new Date().getFullYear());
   const etiquetaPeriodo = esTodo ? 'histórico completo' : anioSel;
