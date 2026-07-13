@@ -2493,7 +2493,7 @@ async function cargarCEO() {
       async function todosLosLeads() {
         let ls = [], start = 0;
         while (true) {
-          const r = await bx('crm.lead.list', { select: ['ID','STATUS_ID','DATE_CREATE','ASSIGNED_BY_ID'], start });
+          const r = await bx('crm.lead.list', { select: ['ID','STATUS_ID','DATE_CREATE','ASSIGNED_BY_ID','TITLE','NAME','LAST_NAME','COMPANY_TITLE'], start });
           ls = ls.concat(r.result || []);
           if (!r.next) break;
           start = r.next;
@@ -2665,7 +2665,7 @@ function pintarCEO() {
   window._tvDet = tablaVend.map(v => ({
     nombre: v.nombre,
     cols: {
-      leads:  { label: 'Prospectos',  items: (leadsVendRaw[v.id] || []).map(l => { const f = new Date(l.DATE_CREATE); return { y: f.getFullYear(), mo: f.getMonth(), t: l.TITLE || ('Prospecto ' + l.ID), m: 0 }; }) },
+      leads:  { label: 'Prospectos',  items: (leadsVendRaw[v.id] || []).map(l => { const f = new Date(l.DATE_CREATE); const nom = l.COMPANY_TITLE || [l.NAME, l.LAST_NAME].filter(Boolean).join(' ') || l.TITLE || ('Prospecto ' + l.ID); return { y: f.getFullYear(), mo: f.getMonth(), t: nom, m: 0 }; }) },
       recibo: { label: 'Con recibo',  items: v.conRecibo.map(_itemDeal) },
       neg:    { label: 'Negociación', items: v.neg.map(_itemDeal) },
       cie:    { label: 'Cierre',      items: v.cie.map(_itemDeal) },
