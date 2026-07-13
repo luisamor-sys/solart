@@ -978,7 +978,8 @@
     const embudoHtml = hitos ? `
       <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:2px">🎯 Mi embudo</div>
       <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Tu recorrido de venta · las flechas son la conversión de un hito al siguiente</div>
-      <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr;gap:3px;align-items:stretch;margin-bottom:8px">
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr;gap:3px;align-items:stretch;min-width:620px">
         ${cajaH('#fff7ed','#fed7aa','#c2410c','#7c2d12','PROSPECTOS',H.prospectos,'sin recibo')}
         ${flechaH(H.cvProsp,'#d97706')}
         ${cajaH('#fefce8','#fde68a','#a16207','#713f12','CON RECIBO',H.conRecibo,fMXNd(H.montoRecibo))}
@@ -988,6 +989,7 @@
         ${cajaH('#eff6ff','#bfdbfe','#1d4ed8','#1e3a8a','EN CIERRE',H.cierre,'contrato/anticipo')}
         ${flechaH(H.cvCieGan,'#15803d')}
         ${cajaH('#f0fdf4','#bbf7d0','#15803d','#14532d','GANADAS 🎉',H.ganadas,fMXNd(H.montoGan)+(H.ganadasChicas?` +${H.ganadasChicas} chica${H.ganadasChicas>1?'s':''}`:''))}
+      </div>
       </div>
       ${H.perdidas ? `<div style="text-align:right;margin-bottom:16px"><span style="font-size:11px;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:20px;padding:3px 10px">🔻 Tasa de pérdida: ${H.tasaPerdida}% · ${H.perdidas} perdidas</span></div>` : '<div style="margin-bottom:16px"></div>'}
     ` : '';
