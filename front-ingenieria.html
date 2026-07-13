@@ -2597,11 +2597,14 @@ function pintarCEO() {
   const leadsMesVend = {};
   prospectosSinRecibo.forEach(l => {
     const id = String(l.ASSIGNED_BY_ID);
-    (leadsMesVend[id] = leadsMesVend[id] || Array(12).fill(0))[new Date(l.DATE_CREATE).getMonth()]++;
+    const d = new Date(l.DATE_CREATE);
+    const k = d.getFullYear() * 12 + d.getMonth();   // clave año-mes, no se mezclan años
+    (leadsMesVend[id] = leadsMesVend[id] || {})[k] = (leadsMesVend[id][k] || 0) + 1;
   });
   const detMeses = id => {
     const m = leadsMesVend[id]; if (!m) return [];
-    return m.map((n,i) => n ? `${MESES_CORTOS[i]}: ${n} prospecto${n>1?'s':''}` : null).filter(Boolean);
+    return Object.keys(m).map(Number).sort((a,b) => a-b)
+      .map(k => `${MESES_CORTOS[k % 12]} ${Math.floor(k / 12)}: ${m[k]} prospecto${m[k]>1?'s':''}`);
   };
   const tablaVend = Object.entries(porVend)
     .map(([id, v]) => ({
