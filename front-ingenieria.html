@@ -3014,7 +3014,12 @@ function pintarCEO() {
 
     <div>
     <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:2px">🔻 Embudo del proceso (acumulado)</div>
-    <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Cada nivel incluye a todos los que ya pasaron por él. Ej: quien está en evaluación ya cumplió generación, presentación y visita.</div>
+    <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Cada nivel incluye a todos los que ya pasaron por él. Ej: quien está en evaluación ya cumplió generación, presentación y visita.</div>
+    <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:#4c1d95;line-height:1.5">
+      <b>¿Cómo leer los números de abajo?</b><br>
+      <b>▼ % no avanzó</b> = de cada 100 que llegaron al nivel de arriba, cuántos <b>no</b> han llegado a este. Ej: si arriba hay 100 y aquí 34, el 66% no avanzó.<br>
+      <b>⏱ días</b> = cuánto tiempo llevan esperando los que están detenidos en ese nivel. <span style="color:#16a34a;font-weight:700">Verde</span> va bien, <span style="color:#d97706;font-weight:700">naranja</span> ojo, <span style="color:#dc2626;font-weight:700">rojo</span> ya se atoró.
+    </div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px 14px;margin-bottom:20px">
       ${funnel.map((f,i) => {
         const w = Math.max(f.n/maxFun*100, 2);   // ancho real → se ve el angostamiento
@@ -3028,17 +3033,15 @@ function pintarCEO() {
             <span style="font-weight:600;color:#7c3aed">${f.monto ? fmtMXN(f.monto) : ''}</span>
           </div>
           <div ${tipRefClick(f.det)} title="${f.det.length?'Toca para ver el detalle':''}" style="width:${w}%;min-width:22px;height:16px;background:linear-gradient(90deg,#a78bfa,#7c3aed);border-radius:8px;${f.det.length?'cursor:pointer':''}"></div>
-          ${f.promDias != null && f.actuales > 0 ? (() => {
-            const grave = f.maxDias > 30, medio = f.maxDias > 14;
-            const c  = grave ? '#dc2626' : medio ? '#d97706' : '#16a34a';
-            const bg = grave ? '#fef2f2' : medio ? '#fffbeb' : '#f0fdf4';
-            const txt = f.actuales === 1
-              ? `1 negociación lleva ${f.promDias} día${f.promDias===1?'':'s'} en esta etapa`
-              : `${f.actuales} negociaciones llevan ${f.promDias} días en promedio aquí`;
-            const peor = grave ? ` — ⚠️ una lleva ${f.maxDias} días` : '';
-            return `<div style="display:inline-block;font-size:10px;font-weight:700;color:${c};background:${bg};border-radius:20px;padding:2px 10px;margin-top:3px">⏱ ${txt}${peor}</div>`;
-          })() : ''}
-          ${i>0 && caida>0 ? `<div style="font-size:9px;color:#9ca3af;margin-top:2px">▼ ${caida}% no avanzó a este nivel</div>` : ''}
+          ${(() => {
+            const partes = [];
+            if (i>0 && caida>0) partes.push(`<span style="color:#6b7280">▼ ${caida}% no avanzó</span>`);
+            if (f.promDias != null && f.actuales > 0) {
+              const c = f.maxDias > 30 ? '#dc2626' : f.maxDias > 14 ? '#d97706' : '#16a34a';
+              partes.push(`<span style="color:${c};font-weight:700">⏱ ${f.promDias} día${f.promDias===1?'':'s'} prom.${f.maxDias > 30 ? ` (peor: ${f.maxDias})` : ''}</span>`);
+            }
+            return partes.length ? `<div style="font-size:10px;margin-top:2px;white-space:nowrap">${partes.join(' <span style="color:#d1d5db">·</span> ')}</div>` : '';
+          })()}
         </div>`;
       }).join('')}
     </div>
