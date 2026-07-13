@@ -1206,15 +1206,54 @@ function tipRef(items) {
   window._tipsCEO = window._tipsCEO || {};
   const id = 't' + (++_tipSeq);
   window._tipsCEO[id] = items;
-  return `data-tip="${id}" onmouseenter="mostrarTipCEO(event)" onmouseleave="ocultarTipCEO()" onclick="event.stopPropagation();mostrarTipCEO(event)"`;
+  return `data-tip="${id}" onclick="event.stopPropagation();abrirTipModal(this.dataset.tip)"`;
 }
-// Variante solo-click (sin hover) — para el embudo, donde el hover estorba
-function tipRefClick(items) {
-  if (!items || !items.length) return '';
-  window._tipsCEO = window._tipsCEO || {};
-  const id = 't' + (++_tipSeq);
-  window._tipsCEO[id] = items;
-  return `data-tip="${id}" onclick="event.stopPropagation();mostrarTipCEO(event)"`;
+// Variante solo-click — hoy es idéntica; se conserva por compatibilidad
+function tipRefClick(items) { return tipRef(items); }
+
+// Abre el detalle en el modal, agrupado por año → mes (mismo estilo que la tabla por vendedor)
+function abrirTipModal(tipId) {
+  const items = window._tipsCEO?.[tipId];
+  if (!items || !items.length) return;
+  const body = document.getElementById('hist-body');
+  const fmt = n => n ? ' · ' + fmtMXN(n) : '';
+  if (typeof items[0] === 'string') {
+    document.getElementById('hist-tit').textContent = `Detalle · ${items.length}`;
+    body.innerHTML = items.map((s, i) => `<div style="font-size:12px;color:#374151;padding:3px 0;border-bottom:1px solid #f3f4f6">${items.length > 1 ? (i+1) + '. ' : ''}${s}</div>`).join('');
+  } else {
+    const filas = arr => `
+      <table style="border-collapse:collapse;width:100%;margin-top:4px">
+        ${arr.map(it => `
+        <tr style="border-top:1px solid #f3f4f6">
+          <td style="padding:4px 6px;font-size:12px;font-weight:600;color:#374151">${it.t}</td>
+          <td style="padding:4px 6px;font-size:12px;text-align:right;font-weight:700;color:#14532d;white-space:nowrap">${it.m ? fmtMXN(it.m) : '—'}</td>
+          <td style="padding:4px 6px;font-size:11px;text-align:right;color:#6b7280;white-space:nowrap">${it.kwp ? '⚡' + it.kwp : ''}</td>
+        </tr>`).join('')}
+      </table>`;
+    const porAnio = {};
+    items.forEach(it => { (porAnio[it.y] = porAnio[it.y] || []).push(it); });
+    const anios = Object.keys(porAnio).map(Number).sort((a,b) => b-a);
+    const totalM = items.reduce((s,x) => s + (x.m||0), 0);
+    document.getElementById('hist-tit').textContent = `Detalle · ${items.length}${totalM ? ' · ' + fmtMXN(totalM) : ''}`;
+    body.innerHTML = `<div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Toca un año para abrir o cerrar su detalle por mes.</div>` + anios.map((y, idx) => {
+      const arr = porAnio[y];
+      const montoY = arr.reduce((s,x) => s + (x.m||0), 0);
+      const porMes = {};
+      arr.forEach(it => { const k = (it.mo == null) ? -1 : it.mo; (porMes[k] = porMes[k] || []).push(it); });
+      const meses = Object.keys(porMes).map(Number).sort((a,b) => b-a);
+      return `<details ${idx===0?'open':''} style="margin-bottom:8px;border:1px solid #e5e7eb;border-radius:10px;padding:8px 12px;background:#fafafa">
+        <summary style="cursor:pointer;font-weight:800;font-size:14px;color:#111827">${y} — ${arr.length}${fmt(montoY)}</summary>
+        ${meses.map(mo => {
+          const a2 = porMes[mo], m2 = a2.reduce((s,x) => s + (x.m||0), 0);
+          return `<div style="margin-top:8px">
+            <div style="font-size:12px;font-weight:800;color:#7c3aed">${mo < 0 ? 'Sin fecha' : MESES_CORTOS[mo]} — ${a2.length}${fmt(m2)}</div>
+            ${filas(a2)}
+          </div>`;
+        }).join('')}
+      </details>`;
+    }).join('');
+  }
+  document.getElementById('hist-ov').style.display = 'flex';
 }
 function mostrarTipCEO(e) {
   const items = window._tipsCEO?.[e.currentTarget.dataset.tip];
@@ -2658,7 +2697,8 @@ function pintarCEO() {
     kwp: x.UF_CRM_1741208352117 || '',
     en: x.UF_CRM_1753209254287 ? (String(x.UF_CRM_1753209254287).includes('%') ? x.UF_CRM_1753209254287 : x.UF_CRM_1753209254287 + '%') : '',
     inm: INMUEBLE_NOMBRE[String(x.UF_CRM_1765995370491)] || '',
-    y: fechaDeal(x).getFullYear()
+    y: fechaDeal(x).getFullYear(),
+    mo: fechaDeal(x).getMonth()
   });
   // Detalle por vendedor para el modal (clic en la tabla) — agrupado año → mes
   const _itemDeal = x => { const f = fechaDeal(x); return { y: f.getFullYear(), mo: f.getMonth(), t: tituloAmigable(x.TITLE, x.UF_CRM_1741392978542) || 'Negociación ' + x.ID, m: parseFloat(x.OPPORTUNITY) || 0 }; };
