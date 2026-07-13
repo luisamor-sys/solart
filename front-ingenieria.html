@@ -2508,6 +2508,7 @@ function pintarCEO() {
   const esTodo = anioVal === 'todo';
   const anioSel = esTodo ? null : (parseInt(anioVal) || new Date().getFullYear());
   const etiquetaPeriodo = esTodo ? 'histórico completo' : anioSel;
+  const esCEOrol = usuarioActual?.rol === 'ceo';   // Victor: estratégico · Arturo López: operativo
   // Filtro por vendedor: solo sus negociaciones/prospectos
   const vendSel = document.getElementById('ceo-vend')?.value || 'todos';
   const fv = arr => vendSel === 'todos' ? arr : (arr || []).filter(x => String(x.ASSIGNED_BY_ID) === vendSel);
@@ -2751,7 +2752,7 @@ function pintarCEO() {
       ...d.abiertos.filter(x => ['UC_Y3LUYS','FINAL_INVOICE'].includes(x.STAGE_ID)).map(x => ({ x, accion: '🎯 Empuja el sí', color: '#7c3aed' }))
     ].sort((a,b) => (parseFloat(b.x.OPPORTUNITY)||0) - (parseFloat(a.x.OPPORTUNITY)||0)).slice(0, 8);
 
-    opHtml = `
+    const prioHtml = `
     <div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
       <div style="font-size:13px;font-weight:800;color:#111827">🎯 Prioridades comerciales</div>
@@ -2775,8 +2776,9 @@ function pintarCEO() {
         <div style="font-size:12px;font-weight:800;color:#14532d;flex-shrink:0">${fmtMXN(parseFloat(p.x.OPPORTUNITY)||0)}</div>
       </div>`).join('') : '<div style="font-size:12px;color:#9ca3af">Sin prioridades — nada en cierre ni casi cerrado.</div>'}
     </div>
-    </div>
+    </div>`;
 
+    const estHtml = `
     <div>
     <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:10px">🚨 Estancadas — sin actividad, tareas ni cambios en +30 días</div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:20px">
@@ -2793,6 +2795,8 @@ function pintarCEO() {
       <div style="font-size:10px;color:#9ca3af;margin-top:6px">El número es cuántas negociaciones · "días" es la más antigua sin tocar (naranja +30, rojo +60, vino +90)</div>
     </div>
     </div>`;
+    // Victor (estratégico): solo estancadas. Arturo López (operativo): prioridades + estancadas
+    opHtml = (usuarioActual?.rol === 'comercial' ? prioHtml : '') + estHtml;
   }
 
   // Equipo técnico: no generan negociaciones — se miden por sus tareas
@@ -2963,6 +2967,7 @@ function pintarCEO() {
       </table>
     </div>
 
+    ${esCEOrol ? `
     <!-- Dónde van las ganadas -->
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:14px">
       <div style="font-size:12px;font-weight:700;color:#111827;margin-bottom:8px">🎉 Las ganadas, ¿en qué van?</div>
@@ -2993,7 +2998,7 @@ function pintarCEO() {
           </div>
           <div style="width:70px;text-align:right;font-size:12px;font-weight:800;color:#14532d">${fmtMXN(v.monto)}</div>
         </div>`).join('') : '<div style="font-size:12px;color:#9ca3af">Sin ventas ganadas este año.</div>'}
-    </div>
+    </div>` : ''}
 
     <div>
     <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:2px">🔻 Embudo del proceso (acumulado)</div>
@@ -3018,6 +3023,7 @@ function pintarCEO() {
 
     </div>
 
+    ${esCEOrol ? `
     <div>
     <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:10px">⚙️ ¿Cómo está entregando el equipo? <span style="font-size:11px;font-weight:600;color:#9ca3af">(histórico completo)</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
@@ -3053,7 +3059,7 @@ function pintarCEO() {
           <div style="width:30px;text-align:right;font-size:13px;font-weight:800;color:#92400e">${s.n}</div>
         </div>`).join('') : '<div style="font-size:12px;color:#9ca3af">Sin propuestas activas ahora mismo.</div>'}
     </div>
-    </div>
+    </div>` : ''}
 
     <div>
     <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:10px">📱 ¿Quién usa el CRM?</div>
