@@ -3017,7 +3017,7 @@ function pintarCEO() {
     <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Cada nivel incluye a todos los que ya pasaron por él. Ej: quien está en evaluación ya cumplió generación, presentación y visita.</div>
     <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:#4c1d95;line-height:1.5">
       <b>¿Cómo leer los números de abajo?</b><br>
-      <b>▼ % no avanzó</b> = de cada 100 que llegaron al nivel de arriba, cuántos <b>no</b> han llegado a este. Ej: si arriba hay 100 y aquí 34, el 66% no avanzó.<br>
+      <b>✔ % avanzó</b> = de cada 100 que llegaron al nivel de arriba, cuántos <b>sí</b> llegaron a este. Ej: si arriba hay 100 y aquí 34, avanzó el 34%.<br>
       <b>⏱ días</b> = cuánto tiempo llevan esperando los que están detenidos en ese nivel. <span style="color:#16a34a;font-weight:700">Verde</span> va bien, <span style="color:#d97706;font-weight:700">naranja</span> ojo, <span style="color:#dc2626;font-weight:700">rojo</span> ya se atoró.
     </div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px 14px;margin-bottom:20px">
@@ -3035,7 +3035,7 @@ function pintarCEO() {
           <div ${tipRefClick(f.det)} title="${f.det.length?'Toca para ver el detalle':''}" style="width:${w}%;min-width:22px;height:16px;background:linear-gradient(90deg,#a78bfa,#7c3aed);border-radius:8px;${f.det.length?'cursor:pointer':''}"></div>
           ${(() => {
             const partes = [];
-            if (i>0 && caida>0) partes.push(`<span style="color:#6b7280">▼ ${caida}% no avanzó</span>`);
+            if (i>0 && prev>0) partes.push(`<span style="color:#6b7280">✔ ${100-caida}% avanzó</span>`);
             if (f.promDias != null && f.actuales > 0) {
               const c = f.maxDias > 30 ? '#dc2626' : f.maxDias > 14 ? '#d97706' : '#16a34a';
               partes.push(`<span style="color:${c};font-weight:700">⏱ ${f.promDias} día${f.promDias===1?'':'s'} prom.${f.maxDias > 30 ? ` (peor: ${f.maxDias})` : ''}</span>`);
