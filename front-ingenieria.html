@@ -2635,8 +2635,19 @@ async function cargarCEO() {
       _ceoData.ganadas.forEach(x => x._estado = 'ganada');
       _ceoData.dealsAll = [..._ceoData.abiertos, ..._ceoData.perdidos, ..._ceoData.enCierre, ..._ceoData.ganadas];
     }
+    window._ceoIntentos = 0; // carga exitosa: reiniciar el contador de reintentos
     pintarCEO();
-  } catch(e) { console.error('[ceo]', e); cont.innerHTML = '<div class="empty-msg"><div class="empty-icono">⚠️</div><div class="empty-txt">Error al cargar el panel.</div><div style="font-size:12px;color:#9ca3af;margin-top:6px">Recarga la página; si persiste, avísale a Luis.</div></div>'; }
+  } catch(e) {
+    console.error('[ceo]', e);
+    // Primer fallo: suele ser límite momentáneo de Bitrix → reintentar solo una vez
+    window._ceoIntentos = (window._ceoIntentos || 0) + 1;
+    if (window._ceoIntentos <= 1) {
+      cont.innerHTML = '<div class="empty-msg"><div class="empty-icono">⏳</div><div class="empty-txt">Bitrix tardó en responder — reintentando…</div></div>';
+      setTimeout(() => cargarCEO(), 5000);
+      return;
+    }
+    cont.innerHTML = '<div class="empty-msg"><div class="empty-icono">⚠️</div><div class="empty-txt">Error al cargar el panel.</div><div style="font-size:12px;color:#9ca3af;margin-top:6px">' + String(e?.message || e).slice(0,120) + '</div><button onclick="window._ceoIntentos=0;cargarCEO()" style="margin-top:12px;background:#1a1a2e;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer">🔄 Reintentar</button></div>';
+  }
 }
 
 function pintarCEO() {
