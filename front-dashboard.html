@@ -827,6 +827,18 @@
     const hoyFin = new Date(); hoyFin.setHours(23,59,59,0);
     const fmtAct = d => d.toISOString().slice(0,19).replace('T',' ');
 
+    // Trae TODAS las páginas de deals (Bitrix regresa máx. 50 por consulta)
+    async function bxTodosDeals(filter) {
+      const todos = [];
+      const select = ['ID','TITLE','STAGE_ID','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_ID','CONTACT_ID','OPPORTUNITY','CURRENCY_ID','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1777320644093','UF_CRM_1758675881434','UF_CRM_1741392978542'];
+      for (let start = 0, pag = 0; pag < 20; pag++) {
+        const r = await bx('crm.deal.list.json', { filter, select, order: { DATE_MODIFY: 'DESC' }, start });
+        todos.push(...(r.result || []));
+        if (r.next == null) break;
+        start = r.next;
+      }
+      return { result: todos };
+    }
     const [leadsActivosRes, leadsConvRes, dealsRes, dealsWonRes, dealsCierreRes,
            misTargetRes, tareasClienteRes, actividadesRes] = await Promise.all([
       // Prospectos activos (excluir JUNK y CONVERTED client-side)
@@ -840,23 +852,15 @@
         filter: { ASSIGNED_BY_ID: uid, STATUS_ID: 'CONVERTED', '>=DATE_MODIFY': ini, '<=DATE_MODIFY': fin },
         select: ['ID'], start: -1
       }),
-      // Negociaciones PROCESO DE VENTA
-      bx('crm.deal.list.json', {
-        filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 0 },
-        select: ['ID','TITLE','STAGE_ID','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_ID','OPPORTUNITY','CURRENCY_ID','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1777320644093','UF_CRM_1758675881434','UF_CRM_1741392978542'],
-        order: { DATE_MODIFY: 'DESC' }
-      }),
+      // Negociaciones PROCESO DE VENTA (paginado: puede haber más de 50)
+      bxTodosDeals({ ASSIGNED_BY_ID: uid, CATEGORY_ID: 0 }),
       // Deals ganados en período (para KPI)
       bx('crm.deal.list.json', {
         filter: { ASSIGNED_BY_ID: uid, STAGE_ID: 'WON', '>=DATE_MODIFY': ini, '<=DATE_MODIFY': fin },
         select: ['ID'], start: -1
       }),
-      // Negociaciones PROCESO DE CIERRE
-      bx('crm.deal.list.json', {
-        filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 2 },
-        select: ['ID','TITLE','STAGE_ID','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_ID','OPPORTUNITY','CURRENCY_ID','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1777320644093','UF_CRM_1758675881434','UF_CRM_1741392978542'],
-        order: { DATE_MODIFY: 'DESC' }
-      }),
+      // Negociaciones PROCESO DE CIERRE (paginado)
+      bxTodosDeals({ ASSIGNED_BY_ID: uid, CATEGORY_ID: 2 }),
       // Mis tareas: yo soy responsable, pendientes
       bx('tasks.task.list.json', {
         filter: { RESPONSIBLE_ID: uid, '!STATUS': '5' },
@@ -1168,7 +1172,7 @@
 
     // Prospectos activos
     const leadsHtml = leads.length
-      ? leads.slice(0,20).map(l => {
+      ? leads.map(l => {
           const etapa  = ETAPAS_LEAD[l.STATUS_ID] || l.STATUS_ID;
           const nombre = [l.NAME, l.LAST_NAME].filter(Boolean).join(' ') || 'Sin nombre';
           return `<div class="item-card">
@@ -1240,7 +1244,7 @@
     }
 
     const dealsHtml = deals.length
-      ? deals.slice(0,20).map(d => renderDealItem(d, ETAPAS_DEAL)).join('')
+      ? deals.map(d => renderDealItem(d, ETAPAS_DEAL)).join('')
       : '<div class="empty-msg">Sin negociaciones activas.</div>';
 
     const ETAPAS_CIERRE = {
@@ -1252,7 +1256,7 @@
       'C2:WON':        'Anticipo pagado',
     };
     const dealsCierreHtml = dealsCierre.length
-      ? dealsCierre.slice(0,20).map(d => renderDealItem(d, ETAPAS_CIERRE)).join('')
+      ? dealsCierre.map(d => renderDealItem(d, ETAPAS_CIERRE)).join('')
       : '<div class="empty-msg">Sin negociaciones en cierre.</div>';
 
     const TIPO_ACT_LABEL = { '1': '🤝 Reunión', '2': '📞 Llamada', '6': '📝 Nota', '4': '📋 Tarea' };
