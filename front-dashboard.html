@@ -441,7 +441,7 @@
     abrirModal('Detalle de la tarea');
     try {
       const [rTarea, rCom] = await Promise.all([
-        bx('tasks.task.get.json', { taskId: tareaId, select: ['ID','TITLE','STATUS','DEADLINE','RESPONSIBLE_ID','CREATED_BY','DESCRIPTION','UF_TASK_WEBDAV_FILES','GROUP_ID'] }),
+        bx('tasks.task.get.json', { taskId: tareaId, select: ['ID','TITLE','STATUS','DEADLINE','RESPONSIBLE_ID','CREATED_BY','DESCRIPTION','UF_TASK_WEBDAV_FILES','GROUP_ID','CREATED_DATE','CHANGED_DATE'] }),
         bx('tasks.task.comments.getList.json', { TASK_ID: tareaId, order: { ID: 'ASC' }, select: ['ID','AUTHOR_ID','TEXT','ADD_IN_TIME'] })
       ]);
       const t = rTarea?.result?.task || {};
@@ -475,11 +475,28 @@
         return `<div style="background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px"><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">${USER_NOMBRES[String(c.AUTHOR_ID)]||''} · ${fecha}</div><div style="font-size:12px;color:#374151;white-space:pre-line">${txt}</div></div>`;
       }).join('') : '<div style="font-size:12px;color:#9ca3af">Sin comentarios.</div>';
 
+      const fCorta = f => f ? new Date(f).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '';
+      const creada = t.createdDate || t.CREATED_DATE;
+      const modif  = t.changedDate || t.CHANGED_DATE;
+      const dlRaw  = t.deadline || t.DEADLINE;
+      const contador = (() => {
+        if (!dlRaw || st === '5') return '';
+        const dias = Math.ceil((new Date(dlRaw) - Date.now()) / 86400000);
+        if (dias > 1)   return `<span style="font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;background:#f0fdf4;color:#16a34a">⏳ Se entrega en ${dias} días</span>`;
+        if (dias === 1) return `<span style="font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;background:#fffbeb;color:#d97706">⏳ Se entrega mañana</span>`;
+        if (dias === 0) return `<span style="font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;background:#fffbeb;color:#d97706">📅 Se entrega HOY</span>`;
+        return `<span style="font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;background:#fef2f2;color:#dc2626">🔴 Venció hace ${Math.abs(dias)} día${Math.abs(dias)===1?'':'s'}</span>`;
+      })();
       document.getElementById('modal-body').innerHTML = `
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
           <span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:${(STATUS_COLOR[st]||'#6b7280')}22;color:${STATUS_COLOR[st]||'#6b7280'}">Estatus: ${STATUS_LABEL[st]||'—'}</span>
-          ${t.deadline||t.DEADLINE ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#f3f4f6;color:#374151">📅 Vence ${String(t.deadline||t.DEADLINE).substring(0,10)}</span>` : ''}
+          ${contador}
           <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#f3f4f6;color:#374151">👤 ${USER_NOMBRES[String(t.responsibleId||t.RESPONSIBLE_ID)]||'Responsable'}</span>
+        </div>
+        <div style="background:#f9fafb;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#374151;line-height:1.7">
+          ${creada ? `🗓 <b>Creada:</b> ${fCorta(creada)}<br>` : ''}
+          ${modif && fCorta(modif) !== fCorta(creada) ? `✏️ <b>Última modificación:</b> ${fCorta(modif)}<br>` : ''}
+          ${dlRaw ? `📅 <b>Fecha límite:</b> ${fCorta(dlRaw)}` : '📅 <b>Fecha límite:</b> <span style="color:#9ca3af">sin definir</span>'}
         </div>
         ${desc ? `<div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px">Descripción</div><div style="font-size:13px;color:#374151;background:#f9fafb;border-radius:10px;padding:10px;margin-bottom:14px;white-space:pre-line;max-height:160px;overflow:auto">${desc}</div>` : ''}
         <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px">📎 Adjuntos ${archivos.length?`(${archivos.length})`:''}</div>
@@ -1115,7 +1132,16 @@
       </div>`;
 
     function renderTareaItem(t, conCompletar = false) {
-      const vence = t.deadline ? ` · vence ${t.deadline.substring(0,10)}` : '';
+      const vence = (() => {
+        if (!t.deadline) return '';
+        const dias = Math.ceil((new Date(t.deadline) - Date.now()) / 86400000);
+        const cuenta = String(t.status) === '5' ? ''
+          : dias > 1  ? ` · <b style="color:#16a34a">se entrega en ${dias} días</b>`
+          : dias === 1 ? ' · <b style="color:#d97706">se entrega mañana</b>'
+          : dias === 0 ? ' · <b style="color:#d97706">se entrega HOY</b>'
+          : ` · <b style="color:#dc2626">venció hace ${Math.abs(dias)} día${Math.abs(dias)===1?'':'s'}</b>`;
+        return ` · vence ${t.deadline.substring(0,10)}${cuenta}`;
+      })();
       const btnCompletar = conCompletar
         ? `<button class="btn-completar-dash" id="btn-cd-${t.id}" onclick="pedirConfDash(event,${t.id})">✓</button>`
         : '';
