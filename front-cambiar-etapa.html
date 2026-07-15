@@ -865,7 +865,6 @@
       </div>
       <div class="lista-card-acciones">
         <button class="btn-lista etapa" onclick="seleccionarProspecto(${p.ID})">🔄 Cambiar etapa</button>
-        <button class="btn-lista chat"  onclick="toggleChat('lead','${p.ID}')">💬 Comentarios</button>
         <button class="btn-lista" style="background:#f5f3ff;color:#7c3aed;border-color:#ddd6fe" onclick="toggleActEnt('lead','${p.ID}')">📞 + Actividad</button>
       </div>
       <div class="chat-panel" id="chat-${p.ID}">
@@ -900,7 +899,6 @@
       </div>
       <div class="lista-card-acciones">
         <button class="btn-lista etapa" onclick="seleccionarDeal(${d.ID})">🔄 Cambiar etapa</button>
-        <button class="btn-lista chat"  onclick="toggleChat('deal','${d.ID}')">💬 Comentarios</button>
         <button class="btn-lista" style="background:#f5f3ff;color:#7c3aed;border-color:#ddd6fe" onclick="toggleActEnt('deal','${d.ID}')">📞 + Actividad</button>
         <button class="btn-lista tareas" onclick="irATareasDealId(${d.ID},'${d.TITLE.replace(/'/g,"\\'")}')">📋 Tareas</button>
       </div>
