@@ -552,6 +552,7 @@
           <select id="deal-stage-sel" style="flex:1;border:1.5px solid #c7d2fe;border-radius:8px;padding:9px;font-size:13px;font-weight:700;color:#1e3a8a;background:#eef2ff">${opciones}</select>
           <button onclick="guardarEtapaDeal(${dealId})" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">Mover</button>
         </div>
+        <div id="modal-contacto"></div>
         <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">✏️ Datos de la negociación</div>
         <div id="deal-campos">${campos}</div>
         <button onclick="guardarCamposDeal(${dealId})" style="width:100%;background:#1a1a2e;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:16px">💾 Guardar cambios</button>
@@ -565,9 +566,40 @@
         <div id="modal-act-form" style="display:none;margin-bottom:10px"></div>
         <div id="modal-historial"><div style="font-size:12px;color:#9ca3af">Cargando historial…</div></div>`;
       cargarHistorialModal(dealId);
+      cargarContactoModal(dl);
     } catch(e) {
       document.getElementById('modal-body').innerHTML = '<div style="color:#ef4444;font-size:13px">Error al cargar la negociación.</div>';
     }
+  }
+
+  // Datos del contacto del deal, con botones de WhatsApp y llamada
+  async function cargarContactoModal(dl) {
+    const cont = document.getElementById('modal-contacto');
+    if (!cont) return;
+    const contactId = dl.CONTACT_ID || null;
+    if (!contactId) { cont.innerHTML = ''; return; }
+    try {
+      const r = await bx('crm.contact.get.json', { id: contactId });
+      const c = r?.result;
+      if (!c) { cont.innerHTML = ''; return; }
+      const nombre = [c.NAME, c.LAST_NAME].filter(Boolean).join(' ') || 'Contacto';
+      const tel = (c.PHONE || [])[0]?.VALUE || '';
+      const mail = (c.EMAIL || [])[0]?.VALUE || '';
+      let dig = tel.replace(/\D/g, '');
+      if (dig.length === 10) dig = '52' + dig;
+      cont.innerHTML = `
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">👤 Contacto</div>
+        <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;padding:12px;margin-bottom:16px">
+          <div style="font-size:14px;font-weight:800;color:#0c4a6e">${nombre}</div>
+          ${tel ? `<div style="font-size:12px;color:#0369a1;margin-top:2px">📱 ${tel}</div>` : '<div style="font-size:12px;color:#9ca3af;margin-top:2px">Sin teléfono registrado en Bitrix</div>'}
+          ${mail ? `<div style="font-size:12px;color:#0369a1;margin-top:2px">✉️ ${mail}</div>` : ''}
+          ${dig ? `
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <a href="https://wa.me/${dig}" target="_blank" style="flex:1;text-align:center;background:#25d366;color:#fff;border-radius:8px;padding:9px;font-size:13px;font-weight:700;text-decoration:none">💬 WhatsApp</a>
+            <a href="tel:+${dig}" style="flex:1;text-align:center;background:#0369a1;color:#fff;border-radius:8px;padding:9px;font-size:13px;font-weight:700;text-decoration:none">📞 Llamar</a>
+          </div>` : ''}
+        </div>`;
+    } catch { cont.innerHTML = ''; }
   }
   // Historial comercial del deal en el modal (actividades + comentarios)
   const _limpiarHtml = h => String(h || '')
