@@ -852,11 +852,25 @@
 
     // Deals míos con actividad en los últimos 30 días (el timeline no refresca LAST_ACTIVITY_TIME)
     const desde30 = new Date(Date.now() - 30*86400000).toISOString().slice(0,19);
-    const actRes = await bx('crm.activity.list.json', {
-      filter: { OWNER_TYPE_ID: 2, RESPONSIBLE_ID: uid, '>=CREATED': desde30 },
-      select: ['ID','OWNER_ID']
-    });
+    const actividades30 = [];
+    for (let start = 0, pag = 0; pag < 20; pag++) {
+      const r = await bx('crm.activity.list.json', {
+        filter: { OWNER_TYPE_ID: 2, '>=CREATED': desde30 },
+        select: ['ID','OWNER_ID','CREATED'],
+        start
+      });
+      actividades30.push(...(r.result || []));
+      if (r.next == null) break;
+      start = r.next;
+    }
+    const actRes = { result: actividades30 };
     const dealsConAct = new Set((actRes.result || []).map(a => String(a.OWNER_ID)));
+    // Fecha de la actividad más reciente por deal (los campos del deal no siempre se actualizan vía API)
+    window._ultimaActDeal = {};
+    (actRes.result || []).forEach(a => {
+      const k = String(a.OWNER_ID), t = new Date(a.CREATED).getTime();
+      if (!window._ultimaActDeal[k] || t > window._ultimaActDeal[k]) window._ultimaActDeal[k] = t;
+    });
     // También cuentan las tareas ligadas a deals con movimiento reciente
     try {
       const tActRes = await bx('tasks.task.list.json', {
@@ -1036,7 +1050,8 @@
     // 3. Estancadas: sin movimiento en 30+ días (ficha editada O actividad en timeline)
     const ultimoMovD = d => Math.max(
       d.DATE_MODIFY ? new Date(d.DATE_MODIFY).getTime() : 0,
-      d.LAST_ACTIVITY_TIME ? new Date(d.LAST_ACTIVITY_TIME).getTime() : 0
+      d.LAST_ACTIVITY_TIME ? new Date(d.LAST_ACTIVITY_TIME).getTime() : 0,
+      window._ultimaActDeal?.[String(d.ID)] || 0
     );
     deals.filter(d => (Date.now() - ultimoMovD(d)) > 30*DIA_MS && !dealsConAct.has(String(d.ID))).slice(0,3).forEach(d => {
       const dias = Math.floor((Date.now() - ultimoMovD(d)) / DIA_MS);
@@ -1146,10 +1161,10 @@
 
     function renderDealItem(d, etapasMap) {
       const etapa    = etapasMap[d.STAGE_ID] || d.STAGE_ID;
-      const ultimo   = diasDesde(d.LAST_ACTIVITY_TIME || d.DATE_MODIFY);
+      const ultimo   = diasDesde(new Date(ultimoMovD(d)).toISOString());
       const urlBitrix = `https://crm-solart.bitrix24.mx/crm/deal/details/${d.ID}/`;
       const antiguedad = (() => {
-        const dias = Math.floor((Date.now() - new Date(d.DATE_MODIFY).getTime()) / 86400000);
+        const dias = Math.floor((Date.now() - ultimoMovD(d)) / 86400000);
         return dias > 14 ? 'rojo' : dias > 7 ? 'amarillo' : 'verde';
       })();
 
