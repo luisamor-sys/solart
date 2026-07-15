@@ -1948,9 +1948,16 @@ function cardCompletada(t, parentMap = {}) {
   const parentId = t.parentId || t.PARENT_ID;
   const parentTitulo = parentId ? (parentMap[String(parentId)] || `Tarea #${parentId}`) : null;
   const cerrada = t.closedDate || t.CLOSED_DATE;
+  const creadaT = t.createdDate || t.CREATED_DATE;
+  const durTardo = (() => {
+    if (!cerrada || !creadaT) return '';
+    const dias = Math.round((new Date(cerrada) - new Date(creadaT)) / 86400000);
+    return `<span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:#f0fdf4;color:#16a34a">⏱ ${dias < 1 ? 'el mismo día' : `en ${dias} día${dias===1?'':'s'}`}</span>`;
+  })();
   return `<div class="tarea-card" style="opacity:.92">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
       <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:#dcfce7;color:#166534">✅ Completada</span>
+      ${durTardo}
       ${cerrada ? `<span style="font-size:11px;color:#9ca3af">📅 ${fmtFecha(cerrada)}</span>` : ''}
       ${parentTitulo ? `<span onclick="abrirDrawerParent(${parentId})" style="font-size:11px;color:#7c3aed;cursor:pointer;text-decoration:underline;text-underline-offset:2px">📋 Ver tarea principal ↗</span>` : ''}
     </div>

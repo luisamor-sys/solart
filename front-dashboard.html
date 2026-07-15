@@ -441,7 +441,7 @@
     abrirModal('Detalle de la tarea');
     try {
       const [rTarea, rCom] = await Promise.all([
-        bx('tasks.task.get.json', { taskId: tareaId, select: ['ID','TITLE','STATUS','DEADLINE','RESPONSIBLE_ID','CREATED_BY','DESCRIPTION','UF_TASK_WEBDAV_FILES','GROUP_ID','CREATED_DATE','CHANGED_DATE'] }),
+        bx('tasks.task.get.json', { taskId: tareaId, select: ['ID','TITLE','STATUS','DEADLINE','RESPONSIBLE_ID','CREATED_BY','DESCRIPTION','UF_TASK_WEBDAV_FILES','GROUP_ID','CREATED_DATE','CHANGED_DATE','CLOSED_DATE'] }),
         bx('tasks.task.comments.getList.json', { TASK_ID: tareaId, order: { ID: 'ASC' }, select: ['ID','AUTHOR_ID','TEXT','ADD_IN_TIME'] })
       ]);
       const t = rTarea?.result?.task || {};
@@ -479,6 +479,13 @@
       const creada = t.createdDate || t.CREATED_DATE;
       const modif  = t.changedDate || t.CHANGED_DATE;
       const dlRaw  = t.deadline || t.DEADLINE;
+      const cerrada = t.closedDate || t.CLOSED_DATE;
+      const duracion = (() => {
+        if (st !== '5' || !cerrada || !creada) return '';
+        const dias = Math.round((new Date(cerrada) - new Date(creada)) / 86400000);
+        const txt = dias < 1 ? 'el mismo día' : `en ${dias} día${dias===1?'':'s'}`;
+        return `<span style="font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;background:#f0fdf4;color:#16a34a">⏱ Se completó ${txt}</span>`;
+      })();
       const contador = (() => {
         if (!dlRaw || st === '5') return '';
         const dias = Math.ceil((new Date(dlRaw) - Date.now()) / 86400000);
@@ -490,13 +497,14 @@
       document.getElementById('modal-body').innerHTML = `
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
           <span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:${(STATUS_COLOR[st]||'#6b7280')}22;color:${STATUS_COLOR[st]||'#6b7280'}">Estatus: ${STATUS_LABEL[st]||'—'}</span>
-          ${contador}
+          ${contador}${duracion}
           <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#f3f4f6;color:#374151">👤 ${USER_NOMBRES[String(t.responsibleId||t.RESPONSIBLE_ID)]||'Responsable'}</span>
         </div>
         <div style="background:#f9fafb;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#374151;line-height:1.7">
           ${creada ? `🗓 <b>Creada:</b> ${fCorta(creada)}<br>` : ''}
           ${modif && fCorta(modif) !== fCorta(creada) ? `✏️ <b>Última modificación:</b> ${fCorta(modif)}<br>` : ''}
           ${dlRaw ? `📅 <b>Fecha límite:</b> ${fCorta(dlRaw)}` : '📅 <b>Fecha límite:</b> <span style="color:#9ca3af">sin definir</span>'}
+          ${cerrada ? `<br>✅ <b>Completada:</b> ${fCorta(cerrada)}` : ''}
         </div>
         ${desc ? `<div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px">Descripción</div><div style="font-size:13px;color:#374151;background:#f9fafb;border-radius:10px;padding:10px;margin-bottom:14px;white-space:pre-line;max-height:160px;overflow:auto">${desc}</div>` : ''}
         <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px">📎 Adjuntos ${archivos.length?`(${archivos.length})`:''}</div>
@@ -531,7 +539,7 @@
     try {
       const [rDeal, rTareas] = await Promise.all([
         bx('crm.deal.get.json', { id: dealId }),
-        bx('tasks.task.list.json', { filter: { UF_CRM_TASK: ['D_' + dealId] }, select: ['ID','TITLE','STATUS','RESPONSIBLE_ID','DEADLINE'], order: { ID: 'DESC' } })
+        bx('tasks.task.list.json', { filter: { UF_CRM_TASK: ['D_' + dealId] }, select: ['ID','TITLE','STATUS','RESPONSIBLE_ID','DEADLINE','CREATED_DATE','CLOSED_DATE'], order: { ID: 'DESC' } })
       ]);
       const dl = rDeal?.result || {};
       window._dealModal = dl;
@@ -556,8 +564,19 @@
       const tareasHtml = tareas.length ? tareas.map(t => {
         const st = String(t.status);
         const done = st === '5';
+        const durTxt = (() => {
+          if (done && t.closedDate && t.createdDate) {
+            const dias = Math.round((new Date(t.closedDate) - new Date(t.createdDate)) / 86400000);
+            return ` · ⏱ ${dias < 1 ? 'el mismo día' : `en ${dias} día${dias===1?'':'s'}`}`;
+          }
+          if (!done && t.deadline) {
+            const dias = Math.ceil((new Date(t.deadline) - Date.now()) / 86400000);
+            return dias >= 0 ? ` · se entrega ${dias === 0 ? 'HOY' : dias === 1 ? 'mañana' : `en ${dias} días`}` : ` · venció hace ${Math.abs(dias)} día${Math.abs(dias)===1?'':'s'}`;
+          }
+          return '';
+        })();
         return `<div style="display:flex;align-items:center;gap:8px;background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px">
-          <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</div><div style="font-size:10px;color:${STATUS_COLOR[st]||'#6b7280'}">${STATUS_LABEL[st]||'en curso'}</div></div>
+          <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</div><div style="font-size:10px;color:${STATUS_COLOR[st]||'#6b7280'}">${STATUS_LABEL[st]||'en curso'}${durTxt}</div></div>
           <button onclick="abrirTareaModal(${t.id})" style="background:#eef2ff;color:#4338ca;border:none;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer">Ver</button>
           ${!done?`<button onclick="aprobarTareaModal(${t.id},${dealId})" style="background:#16a34a;color:#fff;border:none;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer">✓ Aprobar</button>`:''}
         </div>`;
