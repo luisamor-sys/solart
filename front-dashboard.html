@@ -1079,10 +1079,37 @@
         </div>
         <div class="tarea-acciones" style="margin-top:8px;justify-content:flex-end">
           ${btnCompletar}
+          <button class="btn-tarea-ver" onclick="toggleFechaTarea(${t.id})">📅 Fecha límite</button>
           <button class="btn-tarea-ver" onclick="abrirTareaModal(${t.id})">👁️ Ver detalle</button>
+        </div>
+        <div id="fecha-panel-${t.id}" style="display:none;margin-top:8px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:10px">
+          <div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px">Nueva fecha límite</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="date" id="fecha-inp-${t.id}" value="${t.deadline ? t.deadline.substring(0,10) : ''}" style="flex:1;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;background:#fff">
+            <button onclick="guardarFechaTarea(${t.id})" style="background:#d97706;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Guardar</button>
+          </div>
+          <div id="fecha-msg-${t.id}" style="font-size:11px;margin-top:5px"></div>
         </div>
       </div>`;
     }
+
+    window.toggleFechaTarea = id => {
+      const p = document.getElementById('fecha-panel-' + id);
+      if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    };
+    window.guardarFechaTarea = async id => {
+      const inp = document.getElementById('fecha-inp-' + id);
+      const msg = document.getElementById('fecha-msg-' + id);
+      if (!inp?.value) { if (msg) { msg.style.color = '#dc2626'; msg.textContent = 'Elige una fecha.'; } return; }
+      try {
+        await bx('tasks.task.update.json', { taskId: id, fields: { DEADLINE: inp.value + 'T18:00:00' } });
+        if (msg) { msg.style.color = '#16a34a'; msg.textContent = '✅ Fecha límite actualizada'; }
+        const st = document.querySelector('#tarea-dash-' + id + ' .tarea-status');
+        if (st) st.textContent = st.textContent.replace(/· vence .*/, '') .trim() + ' · vence ' + inp.value;
+      } catch(e) {
+        if (msg) { msg.style.color = '#dc2626'; msg.textContent = 'Error al guardar.'; }
+      }
+    };
 
     const misTareasHtml = misTareas.length
       ? misTareas.slice(0,10).map(t => renderTareaItem(t, true)).join('')
