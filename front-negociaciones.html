@@ -946,25 +946,28 @@
       document.getElementById('card-' + tipo).classList.remove('activa');
     });
 
-    // Botón de propuesta financiera: disponible siempre que NO exista ya una
-    // tarea de financiamiento (muchas negociaciones viejas no tienen tareas
-    // ligadas, así que no se puede exigir "propuesta entregada" como candado)
-    const tareaFin = todas.find(t => (t.title || '').toLowerCase().includes('financiamiento'));
-    document.getElementById('card-financiera').style.display = !tareaFin ? '' : 'none';
-    // Si ya existe tarea de financiamiento, mostrar su estado en lugar del botón
+    // Botón de propuesta financiera: SIEMPRE disponible (se pueden pedir varias).
+    // Si ya existe una tarea de financiamiento, se muestra el registro arriba.
+    const tareasFin = todas.filter(t => (t.title || '').toLowerCase().includes('financiamiento'));
+    document.getElementById('card-financiera').style.display = '';
     const infoFin = document.getElementById('info-financiera');
     if (infoFin) {
-      if (tareaFin) {
-        const done = String(tareaFin.status) === '5';
+      if (tareasFin.length) {
+        const hechas = tareasFin.filter(t => String(t.status) === '5').length;
+        const enCurso = tareasFin.length - hechas;
         infoFin.style.display = '';
-        infoFin.innerHTML = `
-          <div style="display:flex;align-items:center;gap:10px;background:${done?'#f0fdf4':'#fffbeb'};border:1.5px solid ${done?'#bbf7d0':'#fde68a'};border-radius:12px;padding:12px 14px">
+        infoFin.innerHTML = tareasFin.map(tf => {
+          const done = String(tf.status) === '5';
+          const fCierre = tf.closedDate || tf.CLOSED_DATE;
+          return `
+          <div style="display:flex;align-items:center;gap:10px;background:${done?'#f0fdf4':'#fffbeb'};border:1.5px solid ${done?'#bbf7d0':'#fde68a'};border-radius:12px;padding:12px 14px;margin-bottom:6px">
             <span style="font-size:20px">💰</span>
             <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:800;color:${done?'#15803d':'#92400e'}">${done ? 'Propuesta financiera entregada' : 'Propuesta financiera en curso con Erick'}</div>
-              <div style="font-size:12px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tareaFin.title}</div>
+              <div style="font-size:12px;font-weight:800;color:${done?'#15803d':'#92400e'}">${done ? `Propuesta financiera entregada${fCierre ? ' · ' + new Date(fCierre).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : ''}` : 'Propuesta financiera en curso con Erick'}</div>
+              <div style="font-size:12px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tf.title}</div>
             </div>
           </div>`;
+        }).join('') + `<div style="font-size:11px;color:#9ca3af;margin:2px 0 6px">Si necesitas otra propuesta financiera (ajuste, nueva condición, etc.), usa la tarjeta 💰 de abajo — quedará registro de ambas.</div>`;
       } else {
         infoFin.style.display = 'none';
       }
