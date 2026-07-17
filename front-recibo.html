@@ -185,14 +185,12 @@
           <table class="r-datos">
             <tr><td class="k">TARIFA:</td><td>${v('f-tarifa') || '—'}</td></tr>
             ${v('f-periodo') ? `<tr><td class="k">PERIODO FACTURADO:</td><td style="color:#15803d;font-weight:800">${v('f-periodo')}</td></tr>` : ''}
+            ${recupAnios ? `<tr><td class="k">RETORNO DE INVERSIÓN:</td><td style="font-weight:800;color:#1b3a5c">${recupAnios} años</td></tr>` : ''}
+            <tr><td class="k">AHORRO ANUAL:</td><td style="font-weight:800;color:#15803d">${fMX(ahorroMensual*12)}</td></tr>
+            ${n('f-kwp') ? `<tr><td class="k">CAPACIDAD INSTALADA:</td><td style="font-weight:800">${n('f-kwp').toLocaleString('es-MX')} kW</td></tr>` : ''}
+            ${n('f-kwh') ? `<tr><td class="k">GENERACIÓN MENSUAL:</td><td style="font-weight:800">${n('f-kwh').toLocaleString('es-MX')} kWh</td></tr>` : ''}
+            <tr><td class="k">BENEFICIO FISCAL:</td><td style="font-weight:800;color:#15803d">100% deducible el 1er año</td></tr>
           </table>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
-            ${recupAnios ? `<div style="border:2px dashed #f59e0b;border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;font-weight:800;color:#374151">📈 RETORNO DE<br>INVERSIÓN</div><div style="font-size:24px;font-weight:900;color:#1b3a5c;margin-top:4px">${recupAnios} años</div></div>` : ''}
-            <div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;font-weight:800;color:#374151">💰 AHORRO<br>ANUAL</div><div style="font-size:22px;font-weight:900;color:#15803d;margin-top:4px">${fMX(ahorroMensual*12)}</div></div>
-            ${n('f-kwp') ? `<div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;font-weight:800;color:#374151">⚡ CAPACIDAD<br>INSTALADA</div><div style="font-size:22px;font-weight:900;color:#1b3a5c;margin-top:4px">${n('f-kwp').toLocaleString('es-MX')} kW</div></div>` : ''}
-            ${n('f-kwh') ? `<div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;font-weight:800;color:#374151">☀️ GENERACIÓN<br>MENSUAL</div><div style="font-size:22px;font-weight:900;color:#d97706;margin-top:4px">${n('f-kwh').toLocaleString('es-MX')} kWh</div></div>` : ''}
-          </div>
-          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:11px;color:#15803d;font-weight:700;text-align:center">🧾 Beneficio fiscal: inversión 100% deducible el 1er año (Art. 34 Fracc. XIII LISR)</div>
         </div>
         <div>
           ${meses ? `
