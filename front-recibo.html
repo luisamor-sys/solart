@@ -100,6 +100,7 @@
       <div class="campo"><label>Inversión del proyecto ($)</label><input id="f-inversion" type="number" step="0.01" placeholder="Ej. 10,986,788"></div>
       <div class="campo"><label>Capacidad instalada (kWp)</label><input id="f-kwp" type="number" step="0.01" placeholder="Ej. 625"></div>
       <div class="campo"><label>Generación mensual (kWh)</label><input id="f-kwh" type="number" step="1" placeholder="Ej. 81,035"></div>
+      <div class="campo"><label>Retorno de inversión (años) — si lo dejas vacío se calcula solo</label><input id="f-roi" type="number" step="0.1" placeholder="Ej. 2.5"></div>
       <div class="campo"><label>Cliente desde (mes/año del primer recibo que vieron)</label><input id="f-desde" type="month"></div>
     </div>
     <button class="btn-gen" onclick="generar()">⚡ Generar recibo</button>
@@ -136,6 +137,7 @@
       // Inversión = Total de la negociación (OPPORTUNITY)
       if (parseFloat(d.OPPORTUNITY)) pon('f-inversion', d.OPPORTUNITY);
       if (d.UF_CRM_1741208352117) pon('f-kwp', d.UF_CRM_1741208352117);
+      if (d.UF_CRM_1758676152864) pon('f-roi', d.UF_CRM_1758676152864);
       if (d.UF_CRM_1753209254287) pon('f-pctenergia', String(d.UF_CRM_1753209254287).includes('%') ? d.UF_CRM_1753209254287 : d.UF_CRM_1753209254287 + '%');
       // Total del recibo CFE: se captura al convertir el prospecto
       const montoRecibo = typeof d.UF_CRM_67A2ED1D84E1E === 'string' ? parseFloat(d.UF_CRM_67A2ED1D84E1E.split('|')[0]) : parseFloat(d.UF_CRM_67A2ED1D84E1E) || 0;
@@ -186,9 +188,10 @@
       desdeTxt = `DESDE ${MES[am-1]} ${ay}`;
     }
     const acumulado = ahorroMensual * meses;
-    const recupAnios = inversion ? (inversion / (ahorroMensual * 12)).toFixed(1) : null;
+    const roiManual = n('f-roi');
+    const recupAnios = roiManual ? roiManual.toFixed(1) : (inversion ? (inversion / (ahorroMensual * 12)).toFixed(1) : null);
     const proy = a => a * 12 * ahorroMensual - inversion;
-    const anioRecup = inversion ? Math.ceil(inversion / (ahorroMensual * 12)) : 0;
+    const anioRecup = roiManual ? Math.ceil(roiManual) : (inversion ? Math.ceil(inversion / (ahorroMensual * 12)) : 0);
     const filaProy = (lbl, val) => `<tr><td>${lbl}</td><td class="num" style="font-weight:800;color:${val<0?'#dc2626':'#15803d'}">${val===0?'$0':fMX(val)}</td></tr>`;
     const ahora = new Date();
 
