@@ -88,17 +88,17 @@
     <div class="form-sub">Los datos de arriba salen del recibo CFE del cliente; los de abajo, de la propuesta de ingeniería. Todo lo demás se calcula solo.</div>
     <div class="grid">
       <div class="seccion-form">Cliente</div>
-      <div class="campo" style="grid-column:1/-1"><label>Nombre / Empresa</label><input id="f-nombre" placeholder="DISTRIBUIDORA RODIN"></div>
-      <div class="campo" style="grid-column:1/-1"><label>Dirección (una línea por renglón)</label><input id="f-dir" placeholder="Buena Suerte 51, Los Olivos, Tláhuac, CDMX"></div>
+      <div class="campo" style="grid-column:1/-1"><label>Nombre / Empresa</label><input id="f-nombre" placeholder="Ej. DISTRIBUIDORA RODIN"></div>
+      <div class="campo" style="grid-column:1/-1"><label>Dirección (una línea por renglón)</label><input id="f-dir" placeholder="Ej. Buena Suerte 51, Los Olivos, Tláhuac, CDMX"></div>
       <div class="seccion-form">Datos del recibo CFE</div>
-      <div class="campo"><label>Total del recibo CFE ($/mes) — el "TOTAL A PAGAR" que viene en el recibo</label><input id="f-total" type="number" step="0.01" placeholder="222970"></div>
-      <div class="campo"><label>Tarifa</label><input id="f-tarifa" placeholder="GDMTH"></div>
-      <div class="campo"><label>Periodo facturado</label><input id="f-periodo" placeholder="31 MAR 26 - 30 ABR 26"></div>
+      <div class="campo"><label>Total del recibo CFE ($/mes) — el "TOTAL A PAGAR" que viene en el recibo</label><input id="f-total" type="number" step="0.01" placeholder="Ej. 222,970"></div>
+      <div class="campo"><label>Tarifa</label><input id="f-tarifa" placeholder="Ej. GDMTH"></div>
+      <div class="campo"><label>Periodo facturado</label><input id="f-periodo" placeholder="Ej. 31 MAR 26 - 30 ABR 26"></div>
       <div class="seccion-form">De la propuesta de ingeniería</div>
-      <div class="campo"><label>Pago mensual CON SOLART ($)</label><input id="f-consolart" type="number" step="0.01" placeholder="20329"></div>
-      <div class="campo"><label>Inversión del proyecto ($)</label><input id="f-inversion" type="number" step="0.01" placeholder="10986788"></div>
-      <div class="campo"><label>Capacidad instalada (kWp)</label><input id="f-kwp" type="number" step="0.01" placeholder="625"></div>
-      <div class="campo"><label>Generación mensual (kWh)</label><input id="f-kwh" type="number" step="1" placeholder="81035"></div>
+      <div class="campo"><label>Pago mensual CON SOLART ($)</label><input id="f-consolart" type="number" step="0.01" placeholder="Ej. 20,329"></div>
+      <div class="campo"><label>Inversión del proyecto ($)</label><input id="f-inversion" type="number" step="0.01" placeholder="Ej. 10,986,788"></div>
+      <div class="campo"><label>Capacidad instalada (kWp)</label><input id="f-kwp" type="number" step="0.01" placeholder="Ej. 625"></div>
+      <div class="campo"><label>Generación mensual (kWh)</label><input id="f-kwh" type="number" step="1" placeholder="Ej. 81,035"></div>
       <div class="campo"><label>Cliente desde (mes/año del primer recibo que vieron)</label><input id="f-desde" type="month"></div>
     </div>
     <button class="btn-gen" onclick="generar()">⚡ Generar recibo</button>
