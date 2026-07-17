@@ -91,14 +91,9 @@
       <div class="campo" style="grid-column:1/-1"><label>Nombre / Empresa</label><input id="f-nombre" placeholder="DISTRIBUIDORA RODIN"></div>
       <div class="campo" style="grid-column:1/-1"><label>Dirección (una línea por renglón)</label><input id="f-dir" placeholder="Buena Suerte 51, Los Olivos, Tláhuac, CDMX"></div>
       <div class="seccion-form">Datos del recibo CFE</div>
+      <div class="campo"><label>Total del recibo CFE ($/mes) — el "TOTAL A PAGAR" que viene en el recibo</label><input id="f-total" type="number" step="0.01" placeholder="222970"></div>
       <div class="campo"><label>Tarifa</label><input id="f-tarifa" placeholder="GDMTH"></div>
       <div class="campo"><label>Periodo facturado</label><input id="f-periodo" placeholder="31 MAR 26 - 30 ABR 26"></div>
-      <div class="campo"><label>Cargo fijo ($)</label><input id="f-cargofijo" type="number" step="0.01"></div>
-      <div class="campo"><label>Energía ($)</label><input id="f-energia" type="number" step="0.01"></div>
-      <div class="campo"><label>Bonificación F.P. ($, negativo si aplica)</label><input id="f-bonif" type="number" step="0.01" value="0"></div>
-      <div class="campo"><label>Alumbrado público ($)</label><input id="f-alumbrado" type="number" step="0.01" value="0"></div>
-      <div class="campo"><label>Adeudo anterior ($)</label><input id="f-adeudo" type="number" step="0.01" value="0"></div>
-      <div class="campo"><label>Su pago ($, negativo)</label><input id="f-pago" type="number" step="0.01" value="0"></div>
       <div class="seccion-form">De la propuesta de ingeniería</div>
       <div class="campo"><label>Pago mensual CON SOLART ($)</label><input id="f-consolart" type="number" step="0.01" placeholder="20329"></div>
       <div class="campo"><label>Inversión del proyecto ($)</label><input id="f-inversion" type="number" step="0.01" placeholder="10986788"></div>
@@ -144,12 +139,7 @@
   const n = id => parseFloat(document.getElementById(id).value) || 0;
 
   function generar() {
-    const cargoFijo = n('f-cargofijo'), energia = n('f-energia'), bonif = n('f-bonif');
-    const subtotal = cargoFijo + energia + bonif;
-    const iva = subtotal * 0.16;
-    const facturacion = subtotal + iva;
-    const alumbrado = n('f-alumbrado');
-    const reciboActual = facturacion + alumbrado;
+    const reciboActual = n('f-total');
     const conSolart = n('f-consolart');
     const inversion = n('f-inversion');
     if (!reciboActual || !conSolart) { alert('Faltan los importes del recibo o el pago con SOLART.'); return; }
@@ -221,24 +211,10 @@
       </div>
       <div class="r-cols">
         <div>
-          <div class="r-tabla-tit"><span>CONCEPTOS DEL IMPORTE A PAGAR</span><span>Importe (MXN)</span></div>
-          <table class="r-conceptos">
-            <tr><td>Cargo Fijo</td><td class="num">${fMX2(cargoFijo)}</td></tr>
-            <tr><td>Energía</td><td class="num">${fMX2(energia)}</td></tr>
-            ${bonif ? `<tr><td>Bonificación Factor de Potencia</td><td class="num" style="color:#15803d">${fMX2(bonif)}</td></tr>` : ''}
-            <tr class="bold"><td>Subtotal</td><td class="num">${fMX2(subtotal)}</td></tr>
-            <tr><td>IVA 16%</td><td class="num">${fMX2(iva)}</td></tr>
-            <tr class="bold"><td>Facturación del Periodo</td><td class="num">${fMX2(facturacion)}</td></tr>
-            ${alumbrado ? `<tr><td>Derecho de Alumbrado Público</td><td class="num">${fMX2(alumbrado)}</td></tr>` : ''}
-            ${n('f-adeudo') ? `<tr><td>Adeudo Anterior</td><td class="num">${fMX2(n('f-adeudo'))}</td></tr>` : ''}
-            ${n('f-pago') ? `<tr><td>Su Pago</td><td class="num">${fMX2(n('f-pago'))}</td></tr>` : ''}
-          </table>
-          <div class="r-total">
+          <div class="r-total" style="border-radius:6px;margin-bottom:12px">
             <div class="t">TOTAL A PAGAR CON SOLART<small>APROXIMADO, SEGÚN PROPUESTA DE INGENIERÍA</small></div>
             <div class="m">${fMX(conSolart)}</div>
           </div>
-        </div>
-        <div>
           ${inversion ? `
           <div class="r-tabla-tit"><span>PROYECCIÓN DE AHORRO ACUMULADO CON SOLART</span></div>
           <table class="r-conceptos">
@@ -249,7 +225,9 @@
             ${filaProy('Año 25', proy(25))}
           </table>
           <div style="font-size:9px;color:#6b7280;margin:4px 0 10px">*Proyección basada en ahorro mensual estimado de ${fMX(ahorroMensual)} MXN.</div>` : ''}
-          <div class="r-resumen">
+        </div>
+        <div>
+          <div class="r-resumen" style="margin-top:0">
             <div class="h"><span>RESUMEN DE TU OPORTUNIDAD</span><span>Importe (MXN)</span></div>
             ${meses ? `<div class="fila"><span>💰 Costo de oportunidad acumulado</span><b class="v">${fMX(acumulado)}</b></div>` : ''}
             <div class="fila"><span>📅 Ahorro mensual no capturado</span><b class="v">${fMX(ahorroMensual)}</b></div>
