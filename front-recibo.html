@@ -125,8 +125,16 @@
       if (!d) return;
       const partes = String(d.TITLE||'').split('_').map(x=>x.trim()).filter(Boolean);
       document.getElementById('f-nombre').value = partes[1] || partes[0] || '';
-      if (d.OPPORTUNITY) document.getElementById('f-inversion').value = d.OPPORTUNITY;
+      // Inversión: preferir la propuesta final c/IVA si existe; si no, el monto de la negociación
+      const propFinal = typeof d.UF_CRM_1758675881434 === 'string' ? parseFloat(d.UF_CRM_1758675881434.split('|')[0]) : 0;
+      if (propFinal) document.getElementById('f-inversion').value = propFinal;
+      else if (d.OPPORTUNITY) document.getElementById('f-inversion').value = d.OPPORTUNITY;
       if (d.UF_CRM_1741208352117) document.getElementById('f-kwp').value = d.UF_CRM_1741208352117;
+      // Total del recibo CFE: se captura al convertir el prospecto
+      const montoRecibo = typeof d.UF_CRM_67A2ED1D84E1E === 'string' ? parseFloat(d.UF_CRM_67A2ED1D84E1E.split('|')[0]) : parseFloat(d.UF_CRM_67A2ED1D84E1E) || 0;
+      if (montoRecibo) document.getElementById('f-total').value = montoRecibo;
+      // Cliente desde: cuando se creó la negociación
+      if (d.DATE_CREATE) document.getElementById('f-desde').value = String(d.DATE_CREATE).substring(0, 7);
       if (d.COMPANY_ID) {
         const rc = await fetch(WEBHOOK + 'crm.company.get.json', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: d.COMPANY_ID }) });
         const c = (await rc.json()).result;
