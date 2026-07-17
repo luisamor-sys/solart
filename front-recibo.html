@@ -73,6 +73,7 @@
   .r-pie { display:flex; justify-content:space-between; align-items:center; gap:10px; border-top:1px solid #e5e7eb; margin-top:16px; padding-top:12px; font-size:9.5px; color:#6b7280; flex-wrap:wrap; }
   @media (max-width:640px){ .r-cols{grid-template-columns:1fr} }
   @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body { background:#fff; }
     .no-print { display:none !important; }
     .wrap { max-width:none; padding:0; }
@@ -106,6 +107,7 @@
 
   <div class="recibo" id="recibo"></div>
   <button class="btn-pdf no-print" id="btn-pdf" style="display:none" onclick="window.print()">📄 Descargar PDF (imprimir → guardar como PDF)</button>
+  <button class="btn-pdf no-print" id="btn-wa" style="display:none;background:#25d366" onclick="enviarWA()">💬 Enviar por WhatsApp</button>
   <button class="btn-pdf no-print" id="btn-editar" style="display:none;background:#f3f4f6;color:#374151" onclick="document.getElementById('form-card').style.display='block';window.scrollTo({top:0,behavior:'smooth'})">✏️ Editar datos</button>
 
 </div>
@@ -266,9 +268,43 @@
       </div>`;
     document.getElementById('recibo').style.display = 'block';
     document.getElementById('btn-pdf').style.display = 'block';
+    document.getElementById('btn-wa').style.display = 'block';
     document.getElementById('btn-editar').style.display = 'block';
     document.getElementById('form-card').style.display = 'none';
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Enviar por WhatsApp: convierte el recibo en imagen y abre el menú de compartir
+  async function enviarWA() {
+    const btn = document.getElementById('btn-wa');
+    btn.disabled = true; btn.textContent = '💬 Preparando imagen…';
+    try {
+      if (!window.html2canvas) {
+        await new Promise((ok, err) => {
+          const sc = document.createElement('script');
+          sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+          sc.onload = ok; sc.onerror = err;
+          document.head.appendChild(sc);
+        });
+      }
+      const canvas = await html2canvas(document.getElementById('recibo'), { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const blob = await new Promise(ok => canvas.toBlob(ok, 'image/png'));
+      const nombre = (v('f-nombre') || 'recibo').replace(/[^\w\d]+/g, '_');
+      const file = new File([blob], `Recibo_SOLART_${nombre}.png`, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Recibo simulado SOLART' });
+      } else {
+        // Escritorio: descargar la imagen y abrir WhatsApp Web
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+        window.open('https://web.whatsapp.com', '_blank');
+        alert('Se descargó la imagen del recibo. Arrástrala al chat de WhatsApp Web que se abrió.');
+      }
+    } catch(e) {
+      if (String(e).indexOf('AbortError') === -1) alert('No se pudo preparar la imagen: ' + (e?.message || e));
+    } finally {
+      btn.disabled = false; btn.textContent = '💬 Enviar por WhatsApp';
+    }
   }
 </script>
 </body>
