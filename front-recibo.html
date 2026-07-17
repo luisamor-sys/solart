@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recibo simulado — SOLART</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+  body { background:#f1f5f9; color:#111827; }
+  .wrap { max-width:900px; margin:0 auto; padding:20px 14px 60px; }
+
+  /* ── FORMULARIO ── */
+  .form-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:20px; margin-bottom:24px; }
+  .form-tit { font-size:16px; font-weight:800; margin-bottom:4px; }
+  .form-sub { font-size:12px; color:#6b7280; margin-bottom:16px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+  .campo label { display:block; font-size:11px; font-weight:700; color:#6b7280; margin-bottom:3px; }
+  .campo input { width:100%; border:1.5px solid #e5e7eb; border-radius:8px; padding:8px 10px; font-size:13px; outline:none; }
+  .campo input:focus { border-color:#0369a1; }
+  .seccion-form { font-size:11px; font-weight:800; color:#0369a1; text-transform:uppercase; letter-spacing:.04em; margin:16px 0 8px; grid-column:1/-1; }
+  .btn-gen { width:100%; background:#16a34a; color:#fff; border:none; border-radius:10px; padding:13px; font-size:15px; font-weight:800; cursor:pointer; margin-top:16px; }
+  .btn-pdf { width:100%; background:#1a1a2e; color:#fff; border:none; border-radius:10px; padding:13px; font-size:15px; font-weight:800; cursor:pointer; margin:14px 0 0; }
+
+  /* ── RECIBO ── */
+  .recibo { background:#fff; border:1px solid #e5e7eb; border-radius:4px; padding:26px 28px; display:none; }
+  .r-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .r-logo { background:#1b3a5c; border-radius:8px; padding:8px 14px; }
+  .r-logo img { height:34px; display:block; }
+  .r-banner { background:#1b3a5c; color:#fff; font-size:13px; font-weight:800; padding:8px 16px; border-radius:6px; letter-spacing:.03em; }
+  .r-cols { display:grid; grid-template-columns:1fr 1.15fr; gap:16px; }
+  .r-cliente { background:#f3f4f6; border-radius:8px; padding:12px 14px; margin-bottom:10px; }
+  .r-cliente .n { font-size:14px; font-weight:800; }
+  .r-cliente .d { font-size:11.5px; color:#374151; margin-top:2px; line-height:1.5; white-space:pre-line; }
+  table.r-datos { width:100%; border-collapse:collapse; }
+  table.r-datos td { font-size:10.5px; padding:5px 6px; border-bottom:1px solid #e5e7eb; }
+  table.r-datos td.k { font-weight:800; color:#374151; white-space:nowrap; }
+  .r-verde { border:2px solid #16a34a; border-radius:10px; padding:14px 16px; text-align:center; margin-bottom:12px; }
+  .r-verde .t { font-size:11px; font-weight:800; color:#15803d; letter-spacing:.05em; }
+  .r-verde .m { font-size:38px; font-weight:900; color:#15803d; margin:4px 0; }
+  .r-verde .d { font-size:10.5px; font-weight:800; color:#374151; border-top:1px solid #bbf7d0; padding-top:6px; letter-spacing:.05em; }
+  .r-verde .nota { font-size:10.5px; color:#374151; margin-top:8px; text-align:left; }
+  .r-vs { display:grid; grid-template-columns:1fr auto 1fr; gap:0; align-items:stretch; margin-bottom:12px; border-radius:10px; overflow:hidden; }
+  .r-vs .lado { padding:12px 10px; text-align:center; color:#fff; }
+  .r-vs .rojo { background:#dc2626; }
+  .r-vs .verdeb { background:#15803d; }
+  .r-vs .tt { font-size:10px; font-weight:800; letter-spacing:.03em; }
+  .r-vs .mm { font-size:26px; font-weight:900; margin:4px 0 2px; }
+  .r-vs .ss { font-size:9.5px; font-weight:700; opacity:.9; }
+  .r-vs .circulo { background:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; color:#374151; padding:0 8px; font-size:13px; border-top:1px solid #e5e7eb; border-bottom:1px solid #e5e7eb; }
+  .r-franja { display:flex; justify-content:space-between; align-items:center; gap:10px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:10px 14px; margin:14px 0; flex-wrap:wrap; }
+  .r-franja .a { font-size:12px; font-weight:800; color:#374151; }
+  .r-franja .pct { font-size:22px; font-weight:900; color:#15803d; }
+  .r-franja .mens { font-size:20px; font-weight:900; color:#15803d; }
+  .r-tabla-tit { background:#15803d; color:#fff; font-size:11px; font-weight:800; padding:7px 12px; border-radius:6px 6px 0 0; letter-spacing:.04em; display:flex; justify-content:space-between; }
+  table.r-conceptos { width:100%; border-collapse:collapse; border:1px solid #e5e7eb; }
+  table.r-conceptos td { font-size:11px; padding:6px 12px; border-bottom:1px solid #f3f4f6; }
+  table.r-conceptos td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  table.r-conceptos tr.bold td { font-weight:800; }
+  .r-total { background:#15803d; color:#fff; display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-radius:0 0 6px 6px; }
+  .r-total .t { font-size:12px; font-weight:800; }
+  .r-total .t small { display:block; font-size:9px; font-weight:600; opacity:.85; }
+  .r-total .m { background:#fff; color:#15803d; font-size:20px; font-weight:900; border-radius:6px; padding:4px 14px; }
+  .r-resumen { border:1px solid #bbf7d0; border-radius:8px; overflow:hidden; margin-top:12px; }
+  .r-resumen .h { background:#15803d; color:#fff; font-size:11px; font-weight:800; padding:7px 12px; display:flex; justify-content:space-between; }
+  .r-resumen .fila { display:flex; justify-content:space-between; font-size:11.5px; padding:7px 12px; border-bottom:1px solid #f0fdf4; }
+  .r-resumen .fila b.v { color:#15803d; }
+  .r-aviso { display:flex; gap:12px; align-items:center; border:2px solid #dc2626; border-radius:10px; padding:12px 16px; margin-top:16px; }
+  .r-aviso .icono { font-size:26px; }
+  .r-aviso .rojo-t { font-size:12px; font-weight:900; color:#dc2626; }
+  .r-aviso .txt { font-size:11px; color:#374151; }
+  .r-aviso .grande { font-size:24px; font-weight:900; color:#dc2626; white-space:nowrap; }
+  .r-aviso .grande small { display:block; font-size:10px; color:#374151; font-weight:600; }
+  .r-pie { display:flex; justify-content:space-between; align-items:center; gap:10px; border-top:1px solid #e5e7eb; margin-top:16px; padding-top:12px; font-size:9.5px; color:#6b7280; flex-wrap:wrap; }
+  @media (max-width:640px){ .r-cols{grid-template-columns:1fr} }
+  @media print {
+    body { background:#fff; }
+    .no-print { display:none !important; }
+    .wrap { max-width:none; padding:0; }
+    .recibo { border:none; padding:10px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="form-card no-print" id="form-card">
+    <div class="form-tit">🧾 Generar recibo simulado</div>
+    <div class="form-sub">Los datos de arriba salen del recibo CFE del cliente; los de abajo, de la propuesta de ingeniería. Todo lo demás se calcula solo.</div>
+    <div class="grid">
+      <div class="seccion-form">Cliente</div>
+      <div class="campo" style="grid-column:1/-1"><label>Nombre / Empresa</label><input id="f-nombre" placeholder="DISTRIBUIDORA RODIN"></div>
+      <div class="campo" style="grid-column:1/-1"><label>Dirección (una línea por renglón)</label><input id="f-dir" placeholder="Buena Suerte 51, Los Olivos, Tláhuac, CDMX"></div>
+      <div class="seccion-form">Datos del recibo CFE (cópialos tal cual)</div>
+      <div class="campo"><label>No. de servicio</label><input id="f-servicio"></div>
+      <div class="campo"><label>RMU</label><input id="f-rmu"></div>
+      <div class="campo"><label>Cuenta</label><input id="f-cuenta"></div>
+      <div class="campo"><label>Tarifa</label><input id="f-tarifa" placeholder="GDMTH"></div>
+      <div class="campo"><label>Multiplicador</label><input id="f-mult"></div>
+      <div class="campo"><label>No. hilos</label><input id="f-hilos"></div>
+      <div class="campo"><label>No. medidor</label><input id="f-medidor"></div>
+      <div class="campo"><label>Carga conectada kW</label><input id="f-carga"></div>
+      <div class="campo"><label>Demanda contratada kW</label><input id="f-demanda"></div>
+      <div class="campo"><label>Periodo facturado</label><input id="f-periodo" placeholder="31 MAR 26 - 30 ABR 26"></div>
+      <div class="campo"><label>Cargo fijo ($)</label><input id="f-cargofijo" type="number" step="0.01"></div>
+      <div class="campo"><label>Energía ($)</label><input id="f-energia" type="number" step="0.01"></div>
+      <div class="campo"><label>Bonificación F.P. ($, negativo si aplica)</label><input id="f-bonif" type="number" step="0.01" value="0"></div>
+      <div class="campo"><label>Alumbrado público ($)</label><input id="f-alumbrado" type="number" step="0.01" value="0"></div>
+      <div class="campo"><label>Adeudo anterior ($)</label><input id="f-adeudo" type="number" step="0.01" value="0"></div>
+      <div class="campo"><label>Su pago ($, negativo)</label><input id="f-pago" type="number" step="0.01" value="0"></div>
+      <div class="seccion-form">De la propuesta de ingeniería</div>
+      <div class="campo"><label>Pago mensual CON SOLART ($)</label><input id="f-consolart" type="number" step="0.01" placeholder="20329"></div>
+      <div class="campo"><label>Inversión del proyecto ($)</label><input id="f-inversion" type="number" step="0.01" placeholder="10986788"></div>
+      <div class="campo"><label>Cliente desde (mes/año del primer recibo que vieron)</label><input id="f-desde" type="month"></div>
+    </div>
+    <button class="btn-gen" onclick="generar()">⚡ Generar recibo</button>
+  </div>
+
+  <div class="recibo" id="recibo"></div>
+  <button class="btn-pdf no-print" id="btn-pdf" style="display:none" onclick="window.print()">📄 Descargar PDF (imprimir → guardar como PDF)</button>
+  <button class="btn-pdf no-print" id="btn-editar" style="display:none;background:#f3f4f6;color:#374151" onclick="document.getElementById('form-card').style.display='block';window.scrollTo({top:0,behavior:'smooth'})">✏️ Editar datos</button>
+
+</div>
+
+<script>
+  const WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/';
+  const fMX = n => '$' + Math.round(n).toLocaleString('es-MX');
+  const fMX2 = n => Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // Precargar desde la negociación si llega ?dealId=
+  (async () => {
+    const dealId = new URLSearchParams(location.search).get('dealId');
+    if (!dealId) return;
+    try {
+      const r = await fetch(WEBHOOK + 'crm.deal.get.json', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: dealId }) });
+      const d = (await r.json()).result;
+      if (!d) return;
+      const partes = String(d.TITLE||'').split('_').map(x=>x.trim()).filter(Boolean);
+      document.getElementById('f-nombre').value = partes[1] || partes[0] || '';
+      if (d.OPPORTUNITY) document.getElementById('f-inversion').value = d.OPPORTUNITY;
+      if (d.COMPANY_ID) {
+        const rc = await fetch(WEBHOOK + 'crm.company.get.json', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: d.COMPANY_ID }) });
+        const c = (await rc.json()).result;
+        if (c?.ADDRESS) document.getElementById('f-dir').value = c.ADDRESS.replace(/\n/g, ', ');
+      }
+    } catch {}
+  })();
+
+  const v = id => document.getElementById(id).value;
+  const n = id => parseFloat(document.getElementById(id).value) || 0;
+
+  function generar() {
+    const cargoFijo = n('f-cargofijo'), energia = n('f-energia'), bonif = n('f-bonif');
+    const subtotal = cargoFijo + energia + bonif;
+    const iva = subtotal * 0.16;
+    const facturacion = subtotal + iva;
+    const alumbrado = n('f-alumbrado');
+    const reciboActual = facturacion + alumbrado;
+    const conSolart = n('f-consolart');
+    const inversion = n('f-inversion');
+    if (!reciboActual || !conSolart) { alert('Faltan los importes del recibo o el pago con SOLART.'); return; }
+    const ahorroMensual = reciboActual - conSolart;
+    const reduccion = (ahorroMensual / reciboActual * 100).toFixed(1);
+    // Meses desde "cliente desde"
+    let meses = 0, desdeTxt = '';
+    if (v('f-desde')) {
+      const [ay, am] = v('f-desde').split('-').map(Number);
+      const hoy = new Date();
+      meses = Math.max(0, (hoy.getFullYear() - ay) * 12 + (hoy.getMonth() + 1 - am));
+      const MES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+      desdeTxt = `DESDE ${MES[am-1]} ${ay}`;
+    }
+    const acumulado = ahorroMensual * meses;
+    const recupAnios = inversion ? (inversion / (ahorroMensual * 12)).toFixed(1) : null;
+    const proy = a => a * 12 * ahorroMensual - inversion;
+    const anioRecup = inversion ? Math.ceil(inversion / (ahorroMensual * 12)) : 0;
+    const filaProy = (lbl, val) => `<tr><td>${lbl}</td><td class="num" style="font-weight:800;color:${val<0?'#dc2626':'#15803d'}">${val===0?'$0':fMX(val)}</td></tr>`;
+    const ahora = new Date();
+
+    document.getElementById('recibo').innerHTML = `
+      <div class="r-head">
+        <div class="r-logo"><img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART"></div>
+        <div class="r-banner">ESTE PUDO SER TU RECIBO ESTE MES</div>
+      </div>
+      <div class="r-cols">
+        <div>
+          <div class="r-cliente">
+            <div class="n">${v('f-nombre') || '—'}</div>
+            <div class="d">${v('f-dir')}</div>
+          </div>
+          <table class="r-datos">
+            ${v('f-servicio') ? `<tr><td class="k">NO. DE SERVICIO:</td><td>${v('f-servicio')}</td></tr>` : ''}
+            ${v('f-rmu') ? `<tr><td class="k">RMU:</td><td>${v('f-rmu')}</td></tr>` : ''}
+            ${v('f-cuenta') ? `<tr><td class="k">CUENTA:</td><td>${v('f-cuenta')}</td></tr>` : ''}
+            <tr><td class="k">TARIFA:</td><td>${v('f-tarifa') || '—'}${v('f-mult') ? ` &nbsp; <b>MULTIPLICADOR:</b> ${v('f-mult')}` : ''}${v('f-hilos') ? ` &nbsp; <b>NO. HILOS:</b> ${v('f-hilos')}` : ''}</td></tr>
+            ${v('f-medidor') ? `<tr><td class="k">NO. MEDIDOR:</td><td>${v('f-medidor')}${v('f-carga') ? ` &nbsp; <b>CARGA CONECTADA kW:</b> ${v('f-carga')}` : ''}</td></tr>` : ''}
+            ${v('f-demanda') ? `<tr><td class="k">DEMANDA CONTRATADA kW:</td><td>${v('f-demanda')}</td></tr>` : ''}
+            ${v('f-periodo') ? `<tr><td class="k">PERIODO FACTURADO:</td><td style="color:#15803d;font-weight:800">${v('f-periodo')}</td></tr>` : ''}
+          </table>
+        </div>
+        <div>
+          ${meses ? `
+          <div class="r-verde">
+            <div class="t">AHORRO ACUMULADO NO CAPTURADO</div>
+            <div class="m">${fMX(acumulado)}</div>
+            <div class="d">${desdeTxt}</div>
+            <div class="nota">💰 Cada mes que retrasas la decisión, este número sigue creciendo. <b style="color:#15803d">Este dinero ya pudo estar en tu flujo de efectivo.</b></div>
+          </div>` : ''}
+          <div class="r-vs">
+            <div class="lado rojo">
+              <div class="tt">RECIBO ACTUAL<br>SIN ENERGÍA SOLAR</div>
+              <div class="mm">${fMX(reciboActual)}</div>
+              <div class="ss">MXN/mes${v('f-tarifa') ? `<br>TARIFA: ${v('f-tarifa')}` : ''}</div>
+            </div>
+            <div class="circulo">VS</div>
+            <div class="lado verdeb">
+              <div class="tt">RECIBO CON SOLART<br>CON ENERGÍA SOLAR</div>
+              <div class="mm">${fMX(conSolart)}</div>
+              <div class="ss">MXN/mes${v('f-tarifa') ? `<br>TARIFA: ${v('f-tarifa')}` : ''}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="r-franja">
+        <div class="a">📉 REDUCCIÓN EN TU GASTO ENERGÉTICO</div><div class="pct">-${reduccion}%</div>
+        <div class="a">AHORRO MENSUAL QUE NO ESTÁS CAPTURANDO:</div><div class="mens">${fMX(ahorroMensual)}</div>
+      </div>
+      <div class="r-cols">
+        <div>
+          <div class="r-tabla-tit"><span>CONCEPTOS DEL IMPORTE A PAGAR</span><span>Importe (MXN)</span></div>
+          <table class="r-conceptos">
+            <tr><td>Cargo Fijo</td><td class="num">${fMX2(cargoFijo)}</td></tr>
+            <tr><td>Energía</td><td class="num">${fMX2(energia)}</td></tr>
+            ${bonif ? `<tr><td>Bonificación Factor de Potencia</td><td class="num" style="color:#15803d">${fMX2(bonif)}</td></tr>` : ''}
+            <tr class="bold"><td>Subtotal</td><td class="num">${fMX2(subtotal)}</td></tr>
+            <tr><td>IVA 16%</td><td class="num">${fMX2(iva)}</td></tr>
+            <tr class="bold"><td>Facturación del Periodo</td><td class="num">${fMX2(facturacion)}</td></tr>
+            ${alumbrado ? `<tr><td>Derecho de Alumbrado Público</td><td class="num">${fMX2(alumbrado)}</td></tr>` : ''}
+            ${n('f-adeudo') ? `<tr><td>Adeudo Anterior</td><td class="num">${fMX2(n('f-adeudo'))}</td></tr>` : ''}
+            ${n('f-pago') ? `<tr><td>Su Pago</td><td class="num">${fMX2(n('f-pago'))}</td></tr>` : ''}
+          </table>
+          <div class="r-total">
+            <div class="t">TOTAL A PAGAR CON SOLART<small>APROXIMADO, SEGÚN PROPUESTA DE INGENIERÍA</small></div>
+            <div class="m">${fMX(conSolart)}</div>
+          </div>
+        </div>
+        <div>
+          ${inversion ? `
+          <div class="r-tabla-tit"><span>PROYECCIÓN DE AHORRO ACUMULADO CON SOLART</span></div>
+          <table class="r-conceptos">
+            <tr><td>Año 0 <span style="color:#9ca3af">(inversión inicial)</span></td><td class="num" style="font-weight:800;color:#dc2626">-${fMX(inversion).slice(1)}</td></tr>
+            ${filaProy(`Año ${anioRecup} <span style="color:#9ca3af">(inversión recuperada)</span>`, Math.max(0, proy(anioRecup)))}
+            ${filaProy('Año 5', proy(5))}
+            ${filaProy('Año 10', proy(10))}
+            ${filaProy('Año 25', proy(25))}
+          </table>
+          <div style="font-size:9px;color:#6b7280;margin:4px 0 10px">*Proyección basada en ahorro mensual estimado de ${fMX(ahorroMensual)} MXN.</div>` : ''}
+          <div class="r-resumen">
+            <div class="h"><span>RESUMEN DE TU OPORTUNIDAD</span><span>Importe (MXN)</span></div>
+            ${meses ? `<div class="fila"><span>💰 Costo de oportunidad acumulado</span><b class="v">${fMX(acumulado)}</b></div>` : ''}
+            <div class="fila"><span>📅 Ahorro mensual no capturado</span><b class="v">${fMX(ahorroMensual)}</b></div>
+            ${recupAnios ? `<div class="fila"><span>📈 Recuperación de inversión</span><b class="v">${recupAnios} años</b></div>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="r-aviso">
+        <div class="icono">⚠️</div>
+        <div style="flex:1">
+          <div class="rojo-t">¡AVISO IMPORTANTE!</div>
+          <div class="txt">Cada mes que pasa sin implementar tu proyecto SOLART estás pagando aproximadamente:</div>
+        </div>
+        <div class="grande">${fMX(ahorroMensual)} MÁS<small>de lo necesario en energía eléctrica.</small></div>
+      </div>
+      <div class="r-pie">
+        <div><b>SOLART CONTIGO</b> · 🌱 Energía limpia · 🐷 Ahorro garantizado · 📈 Inversión inteligente · 🛡 Respaldo y confianza</div>
+        <div>Fecha de impresión: ${ahora.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'})} ${ahora.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})} hrs.<br>Este documento es una simulación informativa, no un CFDI.</div>
+      </div>`;
+    document.getElementById('recibo').style.display = 'block';
+    document.getElementById('btn-pdf').style.display = 'block';
+    document.getElementById('btn-editar').style.display = 'block';
+    document.getElementById('form-card').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>

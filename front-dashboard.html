@@ -588,7 +588,10 @@
           <select id="deal-stage-sel" style="flex:1;border:1.5px solid #c7d2fe;border-radius:8px;padding:9px;font-size:13px;font-weight:700;color:#1e3a8a;background:#eef2ff">${opciones}</select>
           <button onclick="guardarEtapaDeal(${dealId})" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">Mover</button>
         </div>
-        <button onclick="abrirContextoCliente(${dealId})" style="width:100%;background:linear-gradient(90deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:800;cursor:pointer;margin-bottom:16px">🧠 Contexto del cliente</button>
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <button onclick="abrirContextoCliente(${dealId})" style="flex:1;background:linear-gradient(90deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:800;cursor:pointer">🧠 Contexto del cliente</button>
+          <button onclick="window.open('https://app.solart.mx/front-recibo.html?dealId=${dealId}','_blank')" style="flex:1;background:#15803d;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:800;cursor:pointer">🧾 Recibo simulado</button>
+        </div>
         <div id="modal-contacto"></div>
         <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">✏️ Datos de la negociación</div>
         <div id="deal-campos">${campos}</div>
