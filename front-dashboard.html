@@ -609,6 +609,9 @@
     }
   }
 
+  // URL del proxy de IA (Apps Script). Vacío = botón de IA muestra instrucciones.
+  const IA_PROXY_URL = '';
+
   // ── CONTEXTO DEL CLIENTE ────────────────────────────────────────────────
   // Junta ficha + tareas + actividades + notas + chat en una línea de tiempo
   async function abrirContextoCliente(dealId) {
@@ -659,6 +662,14 @@
       const vencidas = tareas.filter(t => String(t.status) !== '5' && t.deadline && new Date(t.deadline) < new Date()).length;
       const hechas = tareas.filter(t => String(t.status) === '5').length;
       const fL = f => f.toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' });
+      // Texto plano del contexto para el resumen con IA
+      window._ctxTexto = [
+        `NEGOCIACIÓN: ${tituloAmigable(dl.TITLE, dl.UF_CRM_1741392978542)}`,
+        `Monto: ${dl.OPPORTUNITY ? '$' + Number(dl.OPPORTUNITY).toLocaleString('es-MX') + ' MXN' : 'sin capturar'} · Etapa actual: ${dl.STAGE_ID}${diasEtapa != null ? ` (lleva ${diasEtapa} días aquí)` : ''}`,
+        `Días sin movimiento: ${diasSin ?? 'n/d'} · Tareas: ${hechas}/${tareas.length} completadas${vencidas ? ` · ${vencidas} vencidas` : ''}`,
+        '', 'HISTORIA CRONOLÓGICA:',
+        ...linea.map(i => `[${fL(i.f)}] ${i.tit}${i.autor ? ' (' + i.autor + ')' : ''}${i.txt ? ': ' + i.txt : ''}`)
+      ].join('\n').slice(0, 24000);
       const chipS = (txt, c, bg) => `<span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:${bg};color:${c}">${txt}</span>`;
       body.innerHTML = `
         <button onclick="abrirDealModal(${dealId})" style="border:1px solid #e5e7eb;background:#f9fafb;color:#374151;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:12px">← Volver a la negociación</button>
@@ -670,6 +681,8 @@
           ${chipS(`📋 ${hechas}/${tareas.length} tareas completadas`, '#374151', '#f3f4f6')}
           ${vencidas ? chipS(`⏰ ${vencidas} tarea${vencidas>1?'s':''} vencida${vencidas>1?'s':''}`, '#dc2626', '#fef2f2') : ''}
         </div>
+        <button onclick="resumenIA(${dealId})" id="btn-ia" style="width:100%;background:#fff;border:2px solid #7c3aed;color:#7c3aed;border-radius:10px;padding:10px;font-size:13px;font-weight:800;cursor:pointer;margin-bottom:10px">✨ Redactar resumen con IA</button>
+        <div id="ctx-ia" style="display:none;background:#faf5ff;border:1.5px solid #ddd6fe;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#3b0764;line-height:1.6;white-space:pre-line"></div>
         <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">📜 Todo lo que ha pasado (${linea.length})</div>
         <div style="max-height:340px;overflow-y:auto;margin-bottom:14px">
         ${linea.length ? linea.map(i => `
@@ -686,6 +699,31 @@
         <div id="ctx-chat-msg" style="font-size:11px;margin-top:5px;text-align:center"></div>`;
     } catch(e) {
       body.innerHTML = '<div style="color:#ef4444;font-size:13px">Error al armar el contexto: ' + (e?.message || e) + '</div>';
+    }
+  }
+
+  // Resumen redactado por IA vía proxy (Apps Script con la llave guardada del lado del servidor)
+  async function resumenIA(dealId) {
+    const btn = document.getElementById('btn-ia');
+    const caja = document.getElementById('ctx-ia');
+    if (!IA_PROXY_URL) {
+      caja.style.display = 'block';
+      caja.textContent = '⚙️ Falta configurar el proxy de IA. Pídele a Luis que despliegue el Apps Script y ponga la URL en IA_PROXY_URL.';
+      return;
+    }
+    if (!window._ctxTexto) return;
+    btn.disabled = true; btn.textContent = '✨ Redactando…';
+    caja.style.display = 'block'; caja.textContent = 'La IA está leyendo todo el historial…';
+    try {
+      // Content-Type text/plain: evita el preflight CORS que Apps Script no contesta
+      const r = await fetch(IA_PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ contexto: window._ctxTexto }) });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      caja.textContent = d.resumen || 'Sin respuesta.';
+    } catch(e) {
+      caja.textContent = 'No se pudo generar el resumen: ' + (e?.message || e);
+    } finally {
+      btn.disabled = false; btn.textContent = '✨ Redactar resumen con IA';
     }
   }
 
