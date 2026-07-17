@@ -163,6 +163,11 @@
     const inversion = n('f-inversion');
     if (!reciboActual || !conSolart) { alert('Faltan los importes del recibo o el pago con SOLART.'); return; }
     const ahorroMensual = reciboActual - conSolart;
+    if (ahorroMensual <= 0) { alert('El pago con SOLART es mayor o igual al recibo actual — revisa los importes.'); return; }
+    if (inversion > 0 && inversion < ahorroMensual * 6) {
+      const roiMeses = Math.round(inversion / ahorroMensual);
+      if (!confirm(`⚠️ La inversión capturada (${'$'+Math.round(inversion).toLocaleString('es-MX')}) parece baja: se recuperaría en ~${roiMeses} mes${roiMeses===1?'':'es'}. Los proyectos normalmente se recuperan en 2-5 años.\n\nRevisa que sea el monto TOTAL del proyecto (no un anticipo o mensualidad).\n\n¿Generar de todos modos?`)) return;
+    }
     const reduccion = (ahorroMensual / reciboActual * 100).toFixed(1);
     // Meses desde "cliente desde"
     let meses = 0, desdeTxt = '';
