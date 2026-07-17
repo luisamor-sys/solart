@@ -133,10 +133,11 @@
       const pon = (id, val) => { if (val === undefined || val === null || val === '') return; document.getElementById(id).value = val; marca(id); };
       const partes = String(d.TITLE||'').split('_').map(x=>x.trim()).filter(Boolean);
       pon('f-nombre', partes[1] || partes[0] || '');
-      // Inversión: preferir la propuesta final c/IVA si existe; si no, el monto de la negociación
+      // Inversión: el monto de la propuesta (el que mantienen los vendedores);
+      // la "propuesta final c/IVA" de ingeniería solo como respaldo
       const propFinal = typeof d.UF_CRM_1758675881434 === 'string' ? parseFloat(d.UF_CRM_1758675881434.split('|')[0]) : 0;
-      if (propFinal) pon('f-inversion', propFinal);
-      else if (d.OPPORTUNITY) pon('f-inversion', d.OPPORTUNITY);
+      if (parseFloat(d.OPPORTUNITY)) pon('f-inversion', d.OPPORTUNITY);
+      else if (propFinal) pon('f-inversion', propFinal);
       if (d.UF_CRM_1741208352117) pon('f-kwp', d.UF_CRM_1741208352117);
       if (d.UF_CRM_1753209254287) pon('f-pctenergia', String(d.UF_CRM_1753209254287).includes('%') ? d.UF_CRM_1753209254287 : d.UF_CRM_1753209254287 + '%');
       // Total del recibo CFE: se captura al convertir el prospecto
