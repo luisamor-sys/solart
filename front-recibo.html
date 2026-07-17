@@ -86,7 +86,7 @@
 
   <div class="form-card no-print" id="form-card">
     <div class="form-tit">🧾 Generar recibo simulado</div>
-    <div class="form-sub">Los datos de arriba salen del recibo CFE del cliente; los de abajo, de la propuesta de ingeniería. Todo lo demás se calcula solo.</div>
+    <div class="form-sub">Los datos de arriba salen del recibo CFE del cliente; los de abajo, de la propuesta de ingeniería. Todo lo demás se calcula solo. Los campos con <span style="color:#16a34a;font-weight:800">✓ de Bitrix</span> se precargaron de la negociación — verifícalos antes de generar.</div>
     <div class="grid">
       <div class="seccion-form">Cliente</div>
       <div class="campo" style="grid-column:1/-1"><label>Nombre / Empresa</label><input id="f-nombre" placeholder="Ej. DISTRIBUIDORA RODIN"></div>
@@ -125,23 +125,29 @@
       const r = await fetch(WEBHOOK + 'crm.deal.get.json', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: dealId }) });
       const d = (await r.json()).result;
       if (!d) return;
+      // Marcar visualmente qué campos vienen de Bitrix
+      const marca = id => {
+        const lbl = document.getElementById(id)?.closest('.campo')?.querySelector('label');
+        if (lbl && !lbl.querySelector('.de-bx')) lbl.insertAdjacentHTML('beforeend', ' <span class="de-bx" style="color:#16a34a;font-weight:800">✓ de Bitrix</span>');
+      };
+      const pon = (id, val) => { if (val === undefined || val === null || val === '') return; document.getElementById(id).value = val; marca(id); };
       const partes = String(d.TITLE||'').split('_').map(x=>x.trim()).filter(Boolean);
-      document.getElementById('f-nombre').value = partes[1] || partes[0] || '';
+      pon('f-nombre', partes[1] || partes[0] || '');
       // Inversión: preferir la propuesta final c/IVA si existe; si no, el monto de la negociación
       const propFinal = typeof d.UF_CRM_1758675881434 === 'string' ? parseFloat(d.UF_CRM_1758675881434.split('|')[0]) : 0;
-      if (propFinal) document.getElementById('f-inversion').value = propFinal;
-      else if (d.OPPORTUNITY) document.getElementById('f-inversion').value = d.OPPORTUNITY;
-      if (d.UF_CRM_1741208352117) document.getElementById('f-kwp').value = d.UF_CRM_1741208352117;
-      if (d.UF_CRM_1753209254287) document.getElementById('f-pctenergia').value = String(d.UF_CRM_1753209254287).includes('%') ? d.UF_CRM_1753209254287 : d.UF_CRM_1753209254287 + '%';
+      if (propFinal) pon('f-inversion', propFinal);
+      else if (d.OPPORTUNITY) pon('f-inversion', d.OPPORTUNITY);
+      if (d.UF_CRM_1741208352117) pon('f-kwp', d.UF_CRM_1741208352117);
+      if (d.UF_CRM_1753209254287) pon('f-pctenergia', String(d.UF_CRM_1753209254287).includes('%') ? d.UF_CRM_1753209254287 : d.UF_CRM_1753209254287 + '%');
       // Total del recibo CFE: se captura al convertir el prospecto
       const montoRecibo = typeof d.UF_CRM_67A2ED1D84E1E === 'string' ? parseFloat(d.UF_CRM_67A2ED1D84E1E.split('|')[0]) : parseFloat(d.UF_CRM_67A2ED1D84E1E) || 0;
-      if (montoRecibo) document.getElementById('f-total').value = montoRecibo;
+      if (montoRecibo) pon('f-total', montoRecibo);
       // Cliente desde: cuando se creó la negociación
-      if (d.DATE_CREATE) document.getElementById('f-desde').value = String(d.DATE_CREATE).substring(0, 7);
+      if (d.DATE_CREATE) pon('f-desde', String(d.DATE_CREATE).substring(0, 7));
       if (d.COMPANY_ID) {
         const rc = await fetch(WEBHOOK + 'crm.company.get.json', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: d.COMPANY_ID }) });
         const c = (await rc.json()).result;
-        if (c?.ADDRESS) document.getElementById('f-dir').value = c.ADDRESS.replace(/\n/g, ', ');
+        if (c?.ADDRESS) pon('f-dir', c.ADDRESS.replace(/\n/g, ', '));
       }
     } catch {}
   })();
