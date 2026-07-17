@@ -133,16 +133,16 @@
       const pon = (id, val) => { if (val === undefined || val === null || val === '') return; document.getElementById(id).value = val; marca(id); };
       const partes = String(d.TITLE||'').split('_').map(x=>x.trim()).filter(Boolean);
       pon('f-nombre', partes[1] || partes[0] || '');
-      // Inversión: el monto de la propuesta (el que mantienen los vendedores);
-      // la "propuesta final c/IVA" de ingeniería solo como respaldo
-      const propFinal = typeof d.UF_CRM_1758675881434 === 'string' ? parseFloat(d.UF_CRM_1758675881434.split('|')[0]) : 0;
+      // Inversión = Total de la negociación (OPPORTUNITY)
       if (parseFloat(d.OPPORTUNITY)) pon('f-inversion', d.OPPORTUNITY);
-      else if (propFinal) pon('f-inversion', propFinal);
       if (d.UF_CRM_1741208352117) pon('f-kwp', d.UF_CRM_1741208352117);
       if (d.UF_CRM_1753209254287) pon('f-pctenergia', String(d.UF_CRM_1753209254287).includes('%') ? d.UF_CRM_1753209254287 : d.UF_CRM_1753209254287 + '%');
       // Total del recibo CFE: se captura al convertir el prospecto
       const montoRecibo = typeof d.UF_CRM_67A2ED1D84E1E === 'string' ? parseFloat(d.UF_CRM_67A2ED1D84E1E.split('|')[0]) : parseFloat(d.UF_CRM_67A2ED1D84E1E) || 0;
       if (montoRecibo) pon('f-total', montoRecibo);
+      // Pago con SOLART = recibo CFE - "Ahorro mensual CON SOLART" (campo de Bitrix)
+      const ahorroBx = typeof d.UF_CRM_1758675881434 === 'string' ? parseFloat(d.UF_CRM_1758675881434.split('|')[0]) : parseFloat(d.UF_CRM_1758675881434) || 0;
+      if (montoRecibo && ahorroBx && ahorroBx < montoRecibo) pon('f-consolart', Math.round(montoRecibo - ahorroBx));
       // Cliente desde: cuando se creó la negociación
       if (d.DATE_CREATE) pon('f-desde', String(d.DATE_CREATE).substring(0, 7));
       if (d.COMPANY_ID) {

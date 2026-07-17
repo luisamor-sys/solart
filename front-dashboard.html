@@ -410,6 +410,7 @@
     { k:'UF_CRM_1765995370491', lbl:'🏠 Inmueble', tipo:'enum', mapa:'INMUEBLE_MAP' },
     { k:'UF_CRM_1777320644093', lbl:'⚙️ Proveedor energético', tipo:'enum', mapa:'PROVEEDOR_MAP' },
     { k:'OPPORTUNITY', lbl:'💰 Monto de la propuesta (MXN)', tipo:'num' },
+    { k:'UF_CRM_1758675881434', lbl:'📉 Ahorro mensual CON SOLART (MXN)', tipo:'num' },
   ];
 
   // Mapas de enums UF — se actualizan dinámicamente con crm.deal.fields
@@ -1393,15 +1394,17 @@
       const inmueble = INMUEBLE_MAP[inmuebleId] || inmuebleId || '';
       const provId   = d.UF_CRM_1777320644093 || '';
       const prov     = PROVEEDOR_MAP[provId] || provId || '';
-      const valorRaw = d.UF_CRM_1758675881434 || '';
-      const valor    = valorRaw ? '$' + Number(valorRaw.split('|')[0]).toLocaleString('es-MX') + ' MXN' : (d.OPPORTUNITY ? '$' + Number(d.OPPORTUNITY).toLocaleString('es-MX') + ' MXN' : '');
+      const ahorroRaw = d.UF_CRM_1758675881434 || '';
+      const ahorroBx  = ahorroRaw ? '$' + Number(String(ahorroRaw).split('|')[0]).toLocaleString('es-MX') + ' MXN' : '';
+      const valor     = d.OPPORTUNITY ? '$' + Number(d.OPPORTUNITY).toLocaleString('es-MX') + ' MXN' : '';
 
       const camposDeal = [
         kwp     ? `<div class="deal-campo"><span class="deal-campo-label">⚡ kWp</span><span class="deal-campo-valor">${kwp} kWp</span></div>` : '',
         energia ? `<div class="deal-campo"><span class="deal-campo-label">☀️ Energía cubierta</span><span class="deal-campo-valor">${energia}</span></div>` : '',
         inmueble? `<div class="deal-campo"><span class="deal-campo-label">🏠 Inmueble</span><span class="deal-campo-valor">${inmueble}</span></div>` : '',
         prov    ? `<div class="deal-campo"><span class="deal-campo-label">⚙️ Proveedor actual</span><span class="deal-campo-valor">${prov}</span></div>` : '',
-        valor   ? `<div class="deal-campo"><span class="deal-campo-label">💰 Propuesta final c/IVA</span><span class="deal-campo-valor">${valor}</span></div>` : '',
+        valor   ? `<div class="deal-campo"><span class="deal-campo-label">💰 Total de la propuesta</span><span class="deal-campo-valor">${valor}</span></div>` : '',
+        ahorroBx? `<div class="deal-campo"><span class="deal-campo-label">📉 Ahorro mensual CON SOLART</span><span class="deal-campo-valor">${ahorroBx}</span></div>` : '',
       ].filter(Boolean).join('');
 
       const tieneDetalle = camposDeal.length > 0;
