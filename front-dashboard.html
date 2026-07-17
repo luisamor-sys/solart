@@ -588,6 +588,7 @@
           <select id="deal-stage-sel" style="flex:1;border:1.5px solid #c7d2fe;border-radius:8px;padding:9px;font-size:13px;font-weight:700;color:#1e3a8a;background:#eef2ff">${opciones}</select>
           <button onclick="guardarEtapaDeal(${dealId})" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">Mover</button>
         </div>
+        <button onclick="abrirContextoCliente(${dealId})" style="width:100%;background:linear-gradient(90deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:800;cursor:pointer;margin-bottom:16px">🧠 Contexto del cliente</button>
         <div id="modal-contacto"></div>
         <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">✏️ Datos de la negociación</div>
         <div id="deal-campos">${campos}</div>
@@ -605,6 +606,101 @@
       cargarContactoModal(dl);
     } catch(e) {
       document.getElementById('modal-body').innerHTML = '<div style="color:#ef4444;font-size:13px">Error al cargar la negociación.</div>';
+    }
+  }
+
+  // ── CONTEXTO DEL CLIENTE ────────────────────────────────────────────────
+  // Junta ficha + tareas + actividades + notas + chat en una línea de tiempo
+  async function abrirContextoCliente(dealId) {
+    const body = document.getElementById('modal-body');
+    document.getElementById('modal-tit').textContent = '🧠 Contexto del cliente';
+    body.innerHTML = '<div style="font-size:12px;color:#9ca3af">Armando el contexto…</div>';
+    try {
+      const [rDeal, rTareas, rAct, rCom] = await Promise.all([
+        bx('crm.deal.get.json', { id: dealId }),
+        bx('tasks.task.list.json', { filter: { UF_CRM_TASK: ['D_' + dealId] }, select: ['ID','TITLE','STATUS','RESPONSIBLE_ID','CREATED_DATE','CLOSED_DATE','DEADLINE'], order: { ID: 'ASC' } }),
+        bx('crm.activity.list.json', { filter: { OWNER_TYPE_ID: 2, OWNER_ID: dealId }, select: ['ID','SUBJECT','DESCRIPTION','CREATED','TYPE_ID'], order: { CREATED: 'ASC' } }),
+        bx('crm.timeline.comment.list.json', { filter: { ENTITY_TYPE: 'deal', ENTITY_ID: dealId }, select: ['ID','COMMENT','CREATED','AUTHOR_ID'], order: { CREATED: 'ASC' } })
+      ]);
+      const dl = rDeal?.result || {};
+      const tareas = rTareas?.result?.tasks || [];
+      // Comentarios de las tareas (la conversación con ingeniería) — máx 6 tareas
+      const comTareas = [];
+      for (const t of tareas.slice(0, 6)) {
+        try {
+          const rc = await bx('tasks.task.comments.getList.json', { TASK_ID: t.id, order: { ID: 'ASC' }, select: ['ID','AUTHOR_ID','TEXT','ADD_IN_TIME'] });
+          (rc.result || []).forEach(c => {
+            const txt = _limpiarHtml(c.TEXT || c.POST_MESSAGE || '');
+            if (txt && !txt.startsWith('Descargar:')) comTareas.push({ f: c.ADD_IN_TIME ? new Date(c.ADD_IN_TIME * 1000) : null, icono: '🗨️', tit: `En tarea: ${(t.title||'').slice(0,60)}`, txt: txt.slice(0, 240), autor: USER_NOMBRES[String(c.AUTHOR_ID)] || '' });
+          });
+        } catch {}
+      }
+      // Línea de tiempo unificada
+      const linea = [];
+      (rAct.result || []).forEach(a => {
+        const tid = String(a.TYPE_ID); if (tid === '4') { linea.push({ f: new Date(a.CREATED), icono: '✉️', tit: _limpiarHtml(a.SUBJECT) || 'Email', txt: '' }); return; }
+        linea.push({ f: new Date(a.CREATED), icono: tid === '1' ? '🤝' : '📞', tit: _limpiarHtml(a.SUBJECT) || 'Actividad', txt: _limpiarHtml(a.DESCRIPTION).slice(0, 240) });
+      });
+      (rCom.result || []).forEach(c => {
+        const txt = _limpiarHtml(c.COMMENT);
+        const esChat = txt.startsWith('💬');
+        linea.push({ f: new Date(c.CREATED), icono: esChat ? '💬' : '📝', tit: esChat ? 'Chat interno' : 'Nota', txt: txt.slice(0, 240), autor: USER_NOMBRES[String(c.AUTHOR_ID)] || '' });
+      });
+      tareas.forEach(t => {
+        if (t.createdDate) linea.push({ f: new Date(t.createdDate), icono: '📋', tit: 'Se creó tarea', txt: (t.title||'').slice(0,100) });
+        if (String(t.status) === '5' && t.closedDate) linea.push({ f: new Date(t.closedDate), icono: '✅', tit: 'Tarea completada', txt: (t.title||'').slice(0,100) });
+      });
+      comTareas.forEach(c => { if (c.f) linea.push(c); });
+      linea.sort((a,b) => a.f - b.f);
+      // Señales
+      const diasEtapa = dl.MOVED_TIME ? Math.floor((Date.now() - new Date(dl.MOVED_TIME)) / 86400000) : null;
+      const ultimaAct = linea.length ? linea[linea.length-1].f : null;
+      const diasSin = ultimaAct ? Math.floor((Date.now() - ultimaAct) / 86400000) : null;
+      const vencidas = tareas.filter(t => String(t.status) !== '5' && t.deadline && new Date(t.deadline) < new Date()).length;
+      const hechas = tareas.filter(t => String(t.status) === '5').length;
+      const fL = f => f.toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' });
+      const chipS = (txt, c, bg) => `<span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:${bg};color:${c}">${txt}</span>`;
+      body.innerHTML = `
+        <button onclick="abrirDealModal(${dealId})" style="border:1px solid #e5e7eb;background:#f9fafb;color:#374151;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:12px">← Volver a la negociación</button>
+        <div style="font-size:15px;font-weight:800;color:#111827;margin-bottom:8px">${tituloAmigable(dl.TITLE, dl.UF_CRM_1741392978542)}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          ${dl.OPPORTUNITY ? chipS('💰 $' + Number(dl.OPPORTUNITY).toLocaleString('es-MX'), '#14532d', '#f0fdf4') : ''}
+          ${diasEtapa != null ? chipS(`⏱ ${diasEtapa} día${diasEtapa===1?'':'s'} en la etapa actual`, diasEtapa > 30 ? '#dc2626' : '#374151', diasEtapa > 30 ? '#fef2f2' : '#f3f4f6') : ''}
+          ${diasSin != null ? chipS(`🕐 ${diasSin === 0 ? 'con movimiento hoy' : diasSin + ' día' + (diasSin===1?'':'s') + ' sin movimiento'}`, diasSin > 14 ? '#dc2626' : '#374151', diasSin > 14 ? '#fef2f2' : '#f3f4f6') : ''}
+          ${chipS(`📋 ${hechas}/${tareas.length} tareas completadas`, '#374151', '#f3f4f6')}
+          ${vencidas ? chipS(`⏰ ${vencidas} tarea${vencidas>1?'s':''} vencida${vencidas>1?'s':''}`, '#dc2626', '#fef2f2') : ''}
+        </div>
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:8px">📜 Todo lo que ha pasado (${linea.length})</div>
+        <div style="max-height:340px;overflow-y:auto;margin-bottom:14px">
+        ${linea.length ? linea.map(i => `
+          <div style="background:#f9fafb;border-radius:10px;padding:7px 10px;margin-bottom:5px">
+            <div style="font-size:10px;color:#9ca3af">${i.icono} ${i.tit} · ${fL(i.f)}${i.autor ? ' · ' + i.autor : ''}</div>
+            ${i.txt ? `<div style="font-size:12px;color:#374151;margin-top:2px">${i.txt}</div>` : ''}
+          </div>`).join('') : '<div style="font-size:12px;color:#9ca3af">Sin historia registrada todavía.</div>'}
+        </div>
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:6px">💬 Chat del cliente <span style="font-weight:600;color:#9ca3af;text-transform:none">(se guarda en Bitrix)</span></div>
+        <div style="display:flex;gap:6px">
+          <input id="ctx-chat-inp" placeholder="Escribe algo sobre este cliente…" style="flex:1;border:1.5px solid #ddd6fe;border-radius:8px;padding:9px;font-size:13px">
+          <button onclick="enviarChatContexto(${dealId})" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">Enviar</button>
+        </div>
+        <div id="ctx-chat-msg" style="font-size:11px;margin-top:5px;text-align:center"></div>`;
+    } catch(e) {
+      body.innerHTML = '<div style="color:#ef4444;font-size:13px">Error al armar el contexto: ' + (e?.message || e) + '</div>';
+    }
+  }
+
+  async function enviarChatContexto(dealId) {
+    const inp = document.getElementById('ctx-chat-inp');
+    const msg = document.getElementById('ctx-chat-msg');
+    const txt = inp?.value?.trim(); if (!txt) return;
+    inp.disabled = true;
+    try {
+      const autor = usuarioActual?.nombre || 'Portal';
+      await bx('crm.timeline.comment.add.json', { fields: { ENTITY_TYPE: 'deal', ENTITY_ID: dealId, COMMENT: `💬 ${autor}: ${txt}` } });
+      abrirContextoCliente(dealId); // recargar con el mensaje ya guardado
+    } catch(e) {
+      inp.disabled = false;
+      if (msg) { msg.style.color = '#dc2626'; msg.textContent = 'No se pudo enviar.'; }
     }
   }
 
