@@ -24,8 +24,8 @@
   /* ── RECIBO ── */
   .recibo { background:#fff; border:1px solid #e5e7eb; border-radius:4px; padding:24px 22px; display:none; max-width:750px; margin:0 auto; }
   .r-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
-  .r-logo { background:#1b3a5c; border-radius:10px; padding:12px 20px; }
-  .r-logo img { height:52px; display:block; }
+  .r-logo { padding:0; }
+  .r-logo img { height:74px; display:block; }
   .r-banner { background:#1b3a5c; color:#fff; font-size:13px; font-weight:800; padding:8px 16px; border-radius:6px; letter-spacing:.03em; }
   .r-cols { display:grid; grid-template-columns:1fr 1.1fr; gap:14px; }
   .r-cliente { background:#f3f4f6; border-radius:8px; padding:12px 14px; margin-bottom:10px; }
@@ -197,7 +197,7 @@
 
     document.getElementById('recibo').innerHTML = `
       <div class="r-head">
-        <div class="r-logo"><img src="https://cdn.prod.website-files.com/64810c0330f7e2c50d2847db/649b1fa870996992b3498b93_SOLART_blanco-01.png" alt="SOLART"></div>
+        <div class="r-logo"><img src="logo-azul.png" alt="SOLART"></div>
         <div class="r-banner">ESTE PUDO SER TU RECIBO ESTE MES</div>
       </div>
       <div class="r-cols">
