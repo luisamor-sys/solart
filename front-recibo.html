@@ -23,10 +23,20 @@
 
   /* ── RECIBO ── */
   .recibo { background:#fff; border:1px solid #e5e7eb; border-radius:4px; padding:24px 22px; display:none; max-width:750px; margin:0 auto; }
-  .r-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .r-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .r-emisor { text-align:right; font-size:9px; color:#374151; line-height:1.5; }
+  .r-emisor b { font-size:10px; }
+  .cfe-linea { height:3px; background:#00874a; border-radius:2px; margin:10px 0 14px; }
+  .r-pago { text-align:right; }
+  .r-pago .lbl { font-size:11px; font-weight:700; color:#374151; }
+  .r-pago .monto { font-size:34px; font-weight:900; color:#111827; line-height:1.1; }
+  .r-pago .letras { font-size:8.5px; color:#6b7280; text-transform:uppercase; }
+  .barcode { height:38px; margin:14px auto 4px; max-width:520px;
+    background: repeating-linear-gradient(90deg,#111 0 2px,#fff 2px 4px,#111 4px 5px,#fff 5px 9px,#111 9px 12px,#fff 12px 14px,#111 14px 15px,#fff 15px 19px); }
+  .barcode-num { text-align:center; font-size:9px; letter-spacing:3px; color:#111827; font-variant-numeric:tabular-nums; }
   .r-logo { padding:0; }
   .r-logo img { height:74px; display:block; }
-  .r-banner { background:#1b3a5c; color:#fff; font-size:13px; font-weight:800; padding:8px 16px; border-radius:6px; letter-spacing:.03em; }
+  .r-banner { background:#00874a; color:#fff; font-size:13px; font-weight:800; padding:8px 16px; border-radius:6px; letter-spacing:.03em; }
   .r-cols { display:grid; grid-template-columns:1fr 1.1fr; gap:14px; }
   .r-cliente { background:#f3f4f6; border-radius:8px; padding:12px 14px; margin-bottom:10px; }
   .r-cliente .n { font-size:14px; font-weight:800; }
@@ -166,6 +176,31 @@
   const v = id => document.getElementById(id).value;
   const n = id => parseFloat(document.getElementById(id).value) || 0;
 
+  // Monto en letras (pesos m.n.) — estilo recibo CFE
+  function enLetras(num) {
+    num = Math.round(num);
+    const U = ['','UN','DOS','TRES','CUATRO','CINCO','SEIS','SIETE','OCHO','NUEVE','DIEZ','ONCE','DOCE','TRECE','CATORCE','QUINCE','DIECISEIS','DIECISIETE','DIECIOCHO','DIECINUEVE','VEINTE'];
+    const D = ['','','VEINTI','TREINTA','CUARENTA','CINCUENTA','SESENTA','SETENTA','OCHENTA','NOVENTA'];
+    const C = ['','CIENTO','DOSCIENTOS','TRESCIENTOS','CUATROCIENTOS','QUINIENTOS','SEISCIENTOS','SETECIENTOS','OCHOCIENTOS','NOVECIENTOS'];
+    const cientos = x => {
+      if (x === 0) return '';
+      if (x === 100) return 'CIEN';
+      let t = C[Math.floor(x/100)], r = x % 100, out = t ? t + ' ' : '';
+      if (r === 0) return out.trim();
+      if (r <= 20) return (out + U[r]).trim();
+      const d = Math.floor(r/10), u = r % 10;
+      if (d === 2) return (out + 'VEINTI' + (u ? U[u] : '')).replace('VEINTI ', 'VEINTE').trim();
+      return (out + D[d] + (u ? ' Y ' + U[u] : '')).trim();
+    };
+    if (num === 0) return 'CERO PESOS M.N.';
+    let out = '';
+    const mill = Math.floor(num / 1000000), miles = Math.floor((num % 1000000) / 1000), resto = num % 1000;
+    if (mill) out += (mill === 1 ? 'UN MILLON' : cientos(mill) + ' MILLONES') + ' ';
+    if (miles) out += (miles === 1 ? 'MIL' : cientos(miles) + ' MIL') + ' ';
+    if (resto) out += cientos(resto) + ' ';
+    return (out.trim() + ' PESOS M.N.').replace('UN PESOS', 'UN PESO');
+  }
+
   function generar() {
     const reciboActual = n('f-total');
     const conSolart = n('f-consolart');
@@ -198,14 +233,24 @@
     document.getElementById('recibo').innerHTML = `
       <div class="r-head">
         <div class="r-logo"><img src="logo-color.png" alt="SOLART"></div>
-        <div class="r-banner">ESTE PUDO SER TU RECIBO ESTE MES</div>
+        <div class="r-emisor"><b>SOLART · Energía Fotovoltaica</b><br>www.solart.mx<br>Este documento es una simulación informativa<br>elaborada con base en tu recibo de CFE.</div>
       </div>
+      <div class="cfe-linea"></div>
+      <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <div style="font-size:15px;font-weight:900;letter-spacing:.02em">${(v('f-nombre') || '—').toUpperCase()}</div>
+          <div style="font-size:10.5px;color:#374151;line-height:1.5;margin-top:2px">${v('f-dir')}</div>
+        </div>
+        <div class="r-pago">
+          <div class="lbl">TOTAL A PAGAR CON SOLART:</div>
+          <div class="monto">${fMX(conSolart)}</div>
+          <div class="letras">(${enLetras(conSolart)})</div>
+          <div style="font-size:9px;color:#00874a;font-weight:800;margin-top:2px">EN VEZ DE ${fMX(reciboActual)} SIN ENERGÍA SOLAR</div>
+        </div>
+      </div>
+      <div class="r-banner" style="display:block;text-align:center;margin-bottom:12px">ESTE PUDO SER TU RECIBO ESTE MES</div>
       <div class="r-cols">
         <div>
-          <div class="r-cliente">
-            <div class="n">${v('f-nombre') || '—'}</div>
-            <div class="d">${v('f-dir')}</div>
-          </div>
           <table class="r-datos">
             ${v('f-pctenergia') ? `<tr><td class="k">% DE ENERGÍA QUE CUBRIMOS:</td><td style="font-weight:800;color:#d97706">${v('f-pctenergia')}</td></tr>` : ''}
             ${v('f-periodo') ? `<tr><td class="k">PERIODO:</td><td style="color:#15803d;font-weight:800">${v('f-periodo')}</td></tr>` : ''}
@@ -277,6 +322,9 @@
         </div>
         <div class="grande">${fMX(ahorroMensual)} MÁS<small>de lo necesario en energía eléctrica.</small></div>
       </div>
+      <div class="cfe-linea" style="margin-top:16px"></div>
+      <div class="barcode"></div>
+      <div class="barcode-num">${String(Math.abs(conSolart)).padStart(6,'0')} ${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')} 000${Math.round(ahorroMensual)}</div>
       <div class="r-pie">
         <div><b>SOLART CONTIGO</b> · 🌱 Energía limpia · 🐷 Ahorro garantizado · 📈 Inversión inteligente · 🛡 Respaldo y confianza</div>
         <div>Fecha de impresión: ${ahora.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'})} ${ahora.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})} hrs.<br>Este documento es una simulación informativa, no un CFDI.</div>
