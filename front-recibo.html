@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recibo simulado — SOLART</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,700;0,800;0,900;1,900&display=swap" rel="stylesheet">
 <style>
+  .flyer, .flyer * { font-family:'Montserrat',-apple-system,sans-serif !important; }
   * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
   body { background:#f1f5f9; color:#111827; }
   .wrap { max-width:900px; margin:0 auto; padding:20px 14px 60px; }
@@ -402,80 +405,87 @@
     const c = window._calc;
     const az = '#006099', azOsc = '#00344f', dor = '#d8ae3f', ver = '#15803d';
     let wa = (v('f-wa') || '').replace(/\D/g, '');
-    const sombra = 'box-shadow:0 6px 18px rgba(0,52,79,.14)';
-    const beneficio = (icono, txt) => `<div style="flex:1;min-width:88px;text-align:center"><div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,${az},${azOsc});display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 6px;${sombra}">${icono}</div><div style="font-size:8.5px;font-weight:900;color:#1f2937;line-height:1.3;letter-spacing:.02em">${txt}</div></div>`;
-    const tarjeta = (titulo, colorHead, monto, letras, pieTxt, pieBg, logoHtml) => `
-      <div style="flex:1;min-width:220px">
-        <div style="background:${colorHead};color:#fff;font-size:12.5px;font-weight:900;text-align:center;padding:8px;border-radius:12px 12px 0 0;letter-spacing:.05em">${titulo}</div>
-        <div style="border:1.5px solid #e5e7eb;border-top:none;padding:12px;background:#fff">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+    const sombra = 'box-shadow:0 10px 26px rgba(0,52,79,.18)';
+    const beneficio = (icono, txt) => `<div style="flex:1;min-width:86px;text-align:center"><div style="width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,${az},${azOsc});display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 7px;${sombra};transform:rotate(-4deg)">${icono}</div><div style="font-size:8.5px;font-weight:800;color:#1f2937;line-height:1.35">${txt}</div></div>`;
+    const tarjeta = (titulo, colorHead, monto, letras, pieTxt, pieBg, logoHtml, rot) => `
+      <div style="flex:1;min-width:225px;transform:rotate(${rot});${sombra};border-radius:14px">
+        <div style="background:${colorHead};color:#fff;font-size:13px;font-weight:900;text-align:center;padding:9px;border-radius:14px 14px 0 0;letter-spacing:.08em">${titulo}</div>
+        <div style="border:1.5px solid #e5e7eb;border-top:none;padding:14px;background:#fff">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
             ${logoHtml}
-            <div style="font-size:8px;color:#6b7280;line-height:1.4;text-align:right">RECIBO DE LUZ<br>${v('f-periodo') || ''}</div>
+            <div style="font-size:8px;color:#6b7280;line-height:1.4;text-align:right;font-weight:700">RECIBO DE LUZ<br>${v('f-periodo') || ''}</div>
           </div>
-          <div style="background:#f3f4f6;font-size:9px;font-weight:800;color:#374151;padding:2px 8px;display:inline-block;border-radius:4px">TOTAL A PAGAR</div>
-          <div style="font-size:30px;font-weight:900;color:#111827;letter-spacing:-.01em">${fMX(monto)}</div>
-          <div style="font-size:7px;color:#6b7280;text-transform:uppercase">(${letras})</div>
+          <div style="background:#eef2f6;font-size:9px;font-weight:800;color:#374151;padding:3px 9px;display:inline-block;border-radius:5px;letter-spacing:.06em">TOTAL A PAGAR</div>
+          <div style="font-size:32px;font-weight:900;color:#111827;letter-spacing:-.02em">${fMX(monto)}</div>
+          <div style="font-size:6.5px;color:#6b7280;text-transform:uppercase;font-weight:700">(${letras})</div>
         </div>
-        <div style="background:${pieBg};color:#fff;text-align:center;border-radius:0 0 12px 12px;padding:10px;${sombra}">
-          <div style="font-size:10px;font-weight:800;letter-spacing:.04em;opacity:.9">${pieTxt}</div>
-          <div style="font-size:24px;font-weight:900">${fMX(monto)} <span style="font-size:11px;font-weight:700">/mes</span></div>
+        <div style="background:${pieBg};color:#fff;text-align:center;border-radius:0 0 14px 14px;padding:11px">
+          <div style="font-size:9.5px;font-weight:800;letter-spacing:.08em;opacity:.9">${pieTxt}</div>
+          <div style="font-size:25px;font-weight:900">${fMX(monto)} <span style="font-size:11px;font-weight:700">/mes</span></div>
         </div>
       </div>`;
     return `
-      <div style="max-width:620px;margin:0 auto">
+      <div class="flyer" style="max-width:620px;margin:0 auto;background:linear-gradient(180deg,#fff 0%,#f4f9fc 60%,#fff);border-radius:18px;overflow:hidden">
 
-      <!-- HÉROE: foto con titular encima -->
-      <div style="position:relative;border-radius:16px;overflow:hidden;min-height:330px;display:flex;flex-direction:column;justify-content:space-between;${sombra}">
-        <img src="promo-solar.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-        <div style="position:absolute;inset:0;background:linear-gradient(115deg,rgba(0,32,50,.94) 32%,rgba(0,52,79,.55) 60%,rgba(0,52,79,.15))"></div>
-        <div style="position:relative;display:flex;justify-content:space-between;align-items:center;padding:14px 16px 0">
-          <div style="background:#fff;border-radius:10px;padding:6px 12px"><img src="logo-color.png" style="height:30px;display:block"></div>
-          <div style="text-align:right;font-size:10px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.4)">Soluciones inteligentes<br><span style="color:${dor}">para un futuro sustentable</span></div>
+      <!-- HÉROE -->
+      <div style="position:relative;min-height:400px;display:flex;flex-direction:column;justify-content:space-between;clip-path:polygon(0 0,100% 0,100% 93%,0 100%)">
+        <img src="flyer-hero.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%">
+        <div style="position:absolute;inset:0;background:linear-gradient(100deg,rgba(0,26,41,.96) 25%,rgba(0,52,79,.62) 55%,rgba(0,96,153,.22))"></div>
+        <div style="position:absolute;right:-60px;top:-60px;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(216,174,63,.5),transparent 70%)"></div>
+        <div style="position:relative;display:flex;justify-content:space-between;align-items:center;padding:16px 18px 0">
+          <div style="background:#fff;border-radius:12px;padding:7px 14px;${sombra}"><img src="logo-color.png" style="height:32px;display:block"></div>
+          <div style="text-align:right;font-size:10.5px;font-weight:800;color:#fff;line-height:1.45;text-shadow:0 1px 5px rgba(0,0,0,.5)">Soluciones inteligentes<br><span style="color:${dor}">para un futuro sustentable</span></div>
         </div>
-        <div style="position:relative;padding:18px 16px 20px">
-          <div style="font-size:34px;font-weight:900;line-height:1.02;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.35)">TRANSFORMA<br>TU ENERGÍA,<br><span style="color:${dor}">TRANSFORMA<br>TU FUTURO.</span></div>
-          <div style="display:inline-block;background:${dor};color:${azOsc};font-size:13px;font-weight:900;padding:7px 16px;border-radius:8px;margin-top:12px;letter-spacing:.03em;${sombra}">☀️ AHORRA HOY, DISFRUTA MAÑANA</div>
+        <div style="position:relative;padding:20px 18px 40px">
+          <div style="font-size:40px;font-weight:900;font-style:italic;line-height:.98;color:#fff;text-shadow:0 3px 14px rgba(0,0,0,.45);letter-spacing:-.02em">TRANSFORMA<br>TU ENERGÍA,</div>
+          <div style="font-size:40px;font-weight:900;font-style:italic;line-height:.98;letter-spacing:-.02em;background:linear-gradient(90deg,${dor},#f0d488);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 8px rgba(0,0,0,.45))">TRANSFORMA<br>TU FUTURO.</div>
+          <div style="display:inline-block;background:linear-gradient(100deg,${dor},#c99a2e);color:#001a29;font-size:14px;font-weight:900;padding:9px 20px;border-radius:8px;margin-top:14px;letter-spacing:.04em;transform:skewX(-8deg);${sombra}"><span style="display:inline-block;transform:skewX(8deg)">☀️ AHORRA HOY, DISFRUTA MAÑANA</span></div>
         </div>
       </div>
 
       <!-- Tres promesas -->
-      <div style="display:flex;gap:8px;justify-content:space-around;background:linear-gradient(90deg,#f0f7fb,#fdf9ef);border-radius:12px;padding:10px;margin:12px 0">
+      <div style="display:flex;gap:6px;justify-content:space-around;padding:2px 16px 14px">
         <div style="font-size:11.5px;font-weight:900;color:${azOsc}">🌱 Energía limpia</div>
         <div style="font-size:11.5px;font-weight:900;color:${azOsc}">💰 Ahorro constante</div>
         <div style="font-size:11.5px;font-weight:900;color:${azOsc}">🌎 Planeta más saludable</div>
       </div>
 
       <!-- COMPARATIVA -->
-      <div style="display:flex;gap:12px;align-items:stretch;flex-wrap:wrap;margin-bottom:14px">
-        ${tarjeta('SIN PANELES SOLARES', '#374151', c.reciboActual, enLetras(c.reciboActual), 'LO QUE PAGAS HOY:', '#374151',
-          `<div style="line-height:1"><div style="font-size:20px;font-weight:900;font-style:italic;color:#008E46;letter-spacing:.02em">CFE</div><div style="font-size:6.5px;font-weight:700;color:#008E46">Comisión Federal de Electricidad</div></div>`)}
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:120px;gap:4px">
-          <div style="width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 32% 28%,#22c55e,${ver});display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;${sombra};border:4px solid #fff;outline:3px solid ${ver}">
-            <div style="font-size:10px;font-weight:900;letter-spacing:.06em">AHORRA</div>
-            <div style="font-size:26px;font-weight:900;line-height:1">${c.reduccion}%</div>
-            <div style="font-size:7.5px;font-weight:800;text-align:center;opacity:.95">EN TU RECIBO<br>DE LUZ</div>
+      <div style="padding:0 16px">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:22px">
+        ${tarjeta('SIN PANELES SOLARES', '#3a4453', c.reciboActual, enLetras(c.reciboActual), 'LO QUE PAGAS HOY:', '#3a4453',
+          `<div style="line-height:1"><div style="font-size:21px;font-weight:900;font-style:italic;color:#008E46">CFE</div><div style="font-size:6.5px;font-weight:700;color:#008E46">Comisión Federal de Electricidad</div></div>`, '-1.2deg')}
+        <div style="display:flex;flex-direction:column;align-items:center;min-width:118px;position:relative;z-index:2;margin:0 -14px">
+          <div style="width:116px;height:116px;border-radius:50%;background:conic-gradient(${dor} 0 25%,#fff 25% 26%,${ver} 26% 100%);display:flex;align-items:center;justify-content:center;${sombra}">
+            <div style="width:100px;height:100px;border-radius:50%;background:radial-gradient(circle at 30% 26%,#25b45c,${ver});display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;border:3px solid #fff">
+              <div style="font-size:10px;font-weight:900;letter-spacing:.1em">AHORRA</div>
+              <div style="font-size:29px;font-weight:900;line-height:1;font-style:italic">${c.reduccion}%</div>
+              <div style="font-size:7px;font-weight:800;text-align:center;opacity:.95">EN TU RECIBO<br>DE LUZ</div>
+            </div>
           </div>
-          <div style="font-size:30px;color:${ver};font-weight:900">➜</div>
         </div>
         ${tarjeta('CON SOLART', az, c.conSolart, enLetras(c.conSolart), 'LO QUE PAGARÍAS CON SOLART:', az,
-          `<img src="logo-color.png" style="height:22px">`)}
+          `<img src="logo-color.png" style="height:24px">`, '1.2deg')}
+      </div>
       </div>
 
-      <!-- BANDA DE AHORRO -->
-      <div style="background:linear-gradient(100deg,${ver},#16a34a 55%,#4ea830);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:16px;color:#fff;${sombra}">
-        <div style="font-size:34px">💸</div>
-        <div style="flex:1">
-          <div style="font-size:17px;font-weight:900;letter-spacing:.01em">AHORRO REAL, IMPACTO REAL</div>
-          <div style="font-size:12px;opacity:.95;margin-top:2px">Un planeta más limpio para las próximas generaciones… y en tu empresa:</div>
-        </div>
-        <div style="text-align:center;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.5);border-radius:12px;padding:8px 14px">
-          <div style="font-size:22px;font-weight:900;white-space:nowrap">${fMX(c.ahorroMensual*12)}</div>
-          <div style="font-size:9px;font-weight:800;letter-spacing:.08em">DE AHORRO AL AÑO</div>
+      <!-- BANDA DE AHORRO diagonal -->
+      <div style="background:linear-gradient(100deg,${ver},#22a04b 55%,#5cb033);padding:18px;margin:0 0 18px;color:#fff;clip-path:polygon(0 12%,100% 0,100% 100%,0 100%);padding-top:26px">
+        <div style="display:flex;align-items:center;gap:14px;max-width:580px;margin:0 auto">
+          <div style="font-size:38px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))">💸</div>
+          <div style="flex:1">
+            <div style="font-size:18px;font-weight:900;font-style:italic;letter-spacing:.01em;text-shadow:0 1px 4px rgba(0,0,0,.2)">AHORRO REAL, IMPACTO REAL</div>
+            <div style="font-size:11.5px;opacity:.96;margin-top:2px;font-weight:700">Un planeta más limpio… y en la caja de tu empresa:</div>
+          </div>
+          <div style="text-align:center;background:#fff;color:${ver};border-radius:14px;padding:10px 16px;${sombra};transform:rotate(2deg)">
+            <div style="font-size:23px;font-weight:900;white-space:nowrap;letter-spacing:-.01em">${fMX(c.ahorroMensual*12)}</div>
+            <div style="font-size:8.5px;font-weight:900;letter-spacing:.1em">DE AHORRO AL AÑO</div>
+          </div>
         </div>
       </div>
 
       <!-- BENEFICIOS -->
-      <div style="display:flex;gap:6px;justify-content:space-between;margin-bottom:16px">
+      <div style="display:flex;gap:6px;justify-content:space-between;padding:0 16px;margin-bottom:18px">
         ${beneficio('🔆','ENERGÍA LIMPIA Y RENOVABLE')}
         ${beneficio('🤑','AHORRO DESDE EL PRIMER MES')}
         ${beneficio('🛡️','PROTEGE TU EMPRESA DE LAS ALTAS TARIFAS')}
@@ -484,12 +494,12 @@
       </div>
 
       <!-- CTA -->
-      <div style="background:linear-gradient(100deg,${azOsc},${az});border-radius:14px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;${sombra}">
+      <div style="background:linear-gradient(100deg,#001a29,${azOsc} 45%,${az});padding:20px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;clip-path:polygon(0 0,100% 14%,100% 100%,0 100%);padding-top:30px">
         <div>
-          <div style="font-size:19px;font-weight:900;color:#fff">¡ES MOMENTO DE CAMBIAR!</div>
-          <div style="font-size:11.5px;color:#cfe6f3">Invierte en energía solar y comienza a ahorrar hoy.</div>
+          <div style="font-size:22px;font-weight:900;font-style:italic;color:#fff;letter-spacing:-.01em">¡ES MOMENTO DE CAMBIAR!</div>
+          <div style="font-size:11.5px;color:#cfe6f3;font-weight:700">Invierte en energía solar y comienza a ahorrar hoy.</div>
         </div>
-        ${wa ? `<div style="background:#25d366;color:#fff;border-radius:26px;padding:10px 18px;font-size:15px;font-weight:900;white-space:nowrap;${sombra}">💬 ${wa.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')}</div>` : `<div style="background:${dor};color:${azOsc};border-radius:26px;padding:10px 18px;font-size:14px;font-weight:900;${sombra}">www.solart.mx</div>`}
+        ${wa ? `<div style="background:#25d366;color:#fff;border-radius:28px;padding:11px 20px;font-size:16px;font-weight:900;white-space:nowrap;${sombra}">💬 ${wa.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')}</div>` : `<div style="background:${dor};color:#001a29;border-radius:28px;padding:11px 20px;font-size:15px;font-weight:900;${sombra}">www.solart.mx</div>`}
       </div>
 
       </div>`;
