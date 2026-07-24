@@ -44,11 +44,11 @@
   .promo .chips span { font-size:9px; font-weight:800; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.4); border-radius:20px; padding:3px 8px; }
   .nivel { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:12px 14px; margin:0 0 14px; }
   .nivel .tit { font-size:10.5px; font-weight:800; color:#374151; margin-bottom:14px; }
-  .nivel .barra { position:relative; height:14px; border-radius:20px; background:linear-gradient(90deg,#16a34a,#84cc16,#facc15,#f97316,#dc2626); }
+  .nivel .barra { position:relative; height:14px; border-radius:20px; margin:0 46px; background:linear-gradient(90deg,#16a34a,#84cc16,#facc15,#f97316,#dc2626); }
   .nivel .marca { position:absolute; top:-7px; transform:translateX(-50%); text-align:center; }
   .nivel .marca .pin { width:4px; height:28px; border-radius:2px; margin:0 auto; }
   .nivel .marca .lbl { font-size:8.5px; font-weight:900; white-space:nowrap; margin-top:2px; }
-  .nivel .leyenda { display:flex; justify-content:space-between; font-size:8.5px; color:#6b7280; margin-top:16px; }
+  .nivel .leyenda { display:flex; justify-content:space-between; font-size:8.5px; color:#6b7280; margin-top:30px; }
   .r-logo { padding:0; }
   .r-logo img { height:74px; display:block; }
   .r-banner { background:#00874a; color:#fff; font-size:13px; font-weight:800; padding:8px 16px; border-radius:6px; letter-spacing:.03em; }
@@ -275,17 +275,17 @@
             ${n('f-kwh') ? `<tr><td class="k">GENERACIÓN MENSUAL:</td><td style="font-weight:800">${n('f-kwh').toLocaleString('es-MX')} kWh</td></tr>` : ''}
             <tr><td class="k">BENEFICIO FISCAL:</td><td style="font-weight:800;color:#15803d">100% deducible el 1er año</td></tr>
           </table>
-          <div class="promo">
+        </div>
+        <div>
+          <div class="promo" style="margin:0 0 12px;min-height:130px">
             <img src="promo-solar.jpg" alt="Planta solar SOLART">
             <div class="cover"></div>
             <div class="txt">
               <div class="t1">☀️ TU ENERGÍA, TU DINERO</div>
               <div class="t2">Genera tu propia electricidad y monitoréala en tiempo real desde tu celular.</div>
-              <div class="chips"><span>🌱 Energía limpia</span><span>📊 Monitoreo 24/7</span><span>🛡 Garantía 30 años</span></div>
+              <div class="chips"><span>🌱 Energía limpia</span><span>📊 Monitoreo 24/7</span><span>🛡 Garantía 25 años</span></div>
             </div>
           </div>
-        </div>
-        <div>
           ${meses ? `
           <div class="r-verde">
             <div class="t">AHORRO ACUMULADO NO CAPTURADO</div>
@@ -315,11 +315,11 @@
       <div class="nivel">
         <div class="tit">📊 Tu nivel de gasto energético — a menor gasto, mayor ahorro</div>
         <div class="barra">
-          <div class="marca" style="left:${Math.min(95, Math.max(5, conSolart / reciboActual * 100))}%">
+          <div class="marca" style="left:${Math.min(88, Math.max(0, conSolart / reciboActual * 100))}%">
             <div class="pin" style="background:#14532d"></div>
             <div class="lbl" style="color:#15803d">CON SOLART<br>${fMX(conSolart)}</div>
           </div>
-          <div class="marca" style="left:95%">
+          <div class="marca" style="left:100%">
             <div class="pin" style="background:#7f1d1d"></div>
             <div class="lbl" style="color:#dc2626">HOY<br>${fMX(reciboActual)}</div>
           </div>
