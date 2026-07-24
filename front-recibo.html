@@ -391,10 +391,18 @@
     const btn = document.getElementById('btn-flyer');
     if (window._vista === 'recibo') {
       r.innerHTML = htmlFlyer();
+      r.style.padding = '0';           // el flyer va de borde a borde
+      r.style.border = 'none';
+      r.style.borderRadius = '18px';
+      r.style.overflow = 'hidden';
       window._vista = 'flyer';
       btn.textContent = '🧾 Ver versión recibo';
     } else {
       r.innerHTML = window._htmlRecibo;
+      r.style.padding = '';
+      r.style.border = '';
+      r.style.borderRadius = '';
+      r.style.overflow = '';
       window._vista = 'recibo';
       btn.textContent = '🎨 Ver versión flyer';
     }
@@ -425,7 +433,7 @@
         </div>
       </div>`;
     return `
-      <div class="flyer" style="max-width:620px;margin:0 auto;background:linear-gradient(180deg,#fff 0%,#f4f9fc 60%,#fff);border-radius:18px;overflow:hidden">
+      <div class="flyer" style="background:linear-gradient(180deg,#fff 0%,#f4f9fc 60%,#fff);border-radius:18px;overflow:hidden">
 
       <!-- HÉROE -->
       <div style="position:relative;min-height:400px;display:flex;flex-direction:column;justify-content:space-between;clip-path:polygon(0 0,100% 0,100% 93%,0 100%)">
