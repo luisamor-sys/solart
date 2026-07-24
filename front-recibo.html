@@ -44,11 +44,11 @@
   .promo .chips span { font-size:9px; font-weight:800; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.4); border-radius:20px; padding:3px 8px; }
   .nivel { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:12px 14px; margin:0 0 14px; }
   .nivel .tit { font-size:10.5px; font-weight:800; color:#374151; margin-bottom:14px; }
-  .nivel .barra { position:relative; height:14px; border-radius:20px; margin:0 46px; background:linear-gradient(90deg,#16a34a,#84cc16,#facc15,#f97316,#dc2626); }
+  .nivel .barra { position:relative; height:14px; border-radius:20px; background:linear-gradient(90deg,#16a34a,#84cc16,#facc15,#f97316,#dc2626); }
   .nivel .marca { position:absolute; top:-7px; transform:translateX(-50%); text-align:center; }
   .nivel .marca .pin { width:4px; height:28px; border-radius:2px; margin:0 auto; }
   .nivel .marca .lbl { font-size:8.5px; font-weight:900; white-space:nowrap; margin-top:2px; }
-  .nivel .leyenda { display:flex; justify-content:space-between; font-size:8.5px; color:#6b7280; margin-top:30px; }
+  .nivel { }
   .r-logo { padding:0; }
   .r-logo img { height:74px; display:block; }
   .r-banner { background:#00874a; color:#fff; font-size:13px; font-weight:800; padding:8px 16px; border-radius:6px; letter-spacing:.03em; }
@@ -57,7 +57,7 @@
   .r-cliente .n { font-size:14px; font-weight:800; }
   .r-cliente .d { font-size:11.5px; color:#374151; margin-top:2px; line-height:1.5; white-space:pre-line; }
   table.r-datos { width:100%; border-collapse:collapse; }
-  table.r-datos td { font-size:10.5px; padding:5px 6px; border-bottom:1px solid #e5e7eb; }
+  table.r-datos td { font-size:10.5px; padding:4px 8px; border-bottom:1px solid #e5e7eb; }
   table.r-datos td.k { font-weight:800; color:#374151; white-space:nowrap; }
   .r-verde { border:2px solid #16a34a; border-radius:10px; padding:14px 16px; text-align:center; margin-bottom:12px; }
   .r-verde .t { font-size:11px; font-weight:800; color:#15803d; letter-spacing:.05em; }
@@ -266,7 +266,8 @@
       <div class="r-banner" style="display:block;text-align:center;margin-bottom:12px">ESTE PUDO SER TU RECIBO ESTE MES</div>
       <div class="r-cols">
         <div>
-          <table class="r-datos">
+          <div class="r-tabla-tit" style="border-radius:6px 6px 0 0"><span>TU PROYECTO SOLART</span></div>
+          <table class="r-datos" style="border:1px solid #e5e7eb;border-top:none">
             ${v('f-pctenergia') ? `<tr><td class="k">% DE ENERGÍA QUE CUBRIMOS:</td><td style="font-weight:800;color:#d97706">${v('f-pctenergia')}</td></tr>` : ''}
             ${v('f-periodo') ? `<tr><td class="k">PERIODO:</td><td style="color:#15803d;font-weight:800">${v('f-periodo')}</td></tr>` : ''}
             ${recupAnios ? `<tr><td class="k">RETORNO DE INVERSIÓN:</td><td style="font-weight:800;color:#1b3a5c">${recupAnios} años</td></tr>` : ''}
@@ -275,6 +276,19 @@
             ${n('f-kwh') ? `<tr><td class="k">GENERACIÓN MENSUAL:</td><td style="font-weight:800">${n('f-kwh').toLocaleString('es-MX')} kWh</td></tr>` : ''}
             <tr><td class="k">BENEFICIO FISCAL:</td><td style="font-weight:800;color:#15803d">100% deducible el 1er año</td></tr>
           </table>
+          <div class="r-vs" style="margin-top:10px">
+            <div class="lado rojo">
+              <div class="tt">RECIBO ACTUAL<br>SIN ENERGÍA SOLAR</div>
+              <div class="mm">${fMX(reciboActual)}</div>
+              <div class="ss">MXN/mes</div>
+            </div>
+            <div class="circulo">VS</div>
+            <div class="lado verdeb">
+              <div class="tt">RECIBO CON SOLART<br>CON ENERGÍA SOLAR</div>
+              <div class="mm">${fMX(conSolart)}</div>
+              <div class="ss">MXN/mes</div>
+            </div>
+          </div>
         </div>
         <div>
           <div class="promo" style="margin:0 0 12px;min-height:130px">
@@ -293,38 +307,24 @@
             <div class="d">${desdeTxt}</div>
             <div class="nota">💰 Cada mes que retrasas la decisión, este número sigue creciendo. <b style="color:#15803d">Este dinero ya pudo estar en tu flujo de efectivo.</b></div>
           </div>` : ''}
-          <div class="r-vs">
-            <div class="lado rojo">
-              <div class="tt">RECIBO ACTUAL<br>SIN ENERGÍA SOLAR</div>
-              <div class="mm">${fMX(reciboActual)}</div>
-              <div class="ss">MXN/mes</div>
-            </div>
-            <div class="circulo">VS</div>
-            <div class="lado verdeb">
-              <div class="tt">RECIBO CON SOLART<br>CON ENERGÍA SOLAR</div>
-              <div class="mm">${fMX(conSolart)}</div>
-              <div class="ss">MXN/mes</div>
-            </div>
-          </div>
         </div>
       </div>
-      <div class="r-franja">
-        <div class="a">📉 REDUCCIÓN EN TU GASTO ENERGÉTICO</div><div class="pct">-${reduccion}%</div>
-        <div class="a">AHORRO MENSUAL QUE NO ESTÁS CAPTURANDO:</div><div class="mens">${fMX(ahorroMensual)}</div>
-      </div>
-      <div class="nivel">
+      <div class="nivel" style="padding-bottom:40px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <div class="a" style="font-size:12px;font-weight:800;color:#374151">📉 REDUCCIÓN EN TU GASTO ENERGÉTICO</div><div class="pct" style="font-size:22px;font-weight:900;color:#15803d">-${reduccion}%</div>
+          <div class="a" style="font-size:12px;font-weight:800;color:#374151">AHORRO MENSUAL QUE NO ESTÁS CAPTURANDO:</div><div class="mens" style="font-size:20px;font-weight:900;color:#15803d">${fMX(ahorroMensual)}</div>
+        </div>
         <div class="tit">📊 Tu nivel de gasto energético — a menor gasto, mayor ahorro</div>
         <div class="barra">
           <div class="marca" style="left:${Math.min(88, Math.max(0, conSolart / reciboActual * 100))}%">
             <div class="pin" style="background:#14532d"></div>
             <div class="lbl" style="color:#15803d">CON SOLART<br>${fMX(conSolart)}</div>
           </div>
-          <div class="marca" style="left:100%">
+          <div class="marca" style="left:96%">
             <div class="pin" style="background:#7f1d1d"></div>
             <div class="lbl" style="color:#dc2626">HOY<br>${fMX(reciboActual)}</div>
           </div>
         </div>
-        <div class="leyenda"><span>Gasto bajo</span><span>Gasto alto</span></div>
       </div>
       <div class="r-cols">
         <div>
