@@ -271,25 +271,25 @@
       <div class="r-banner" style="display:block;text-align:center;margin-bottom:12px">ESTE PUDO SER TU RECIBO ESTE MES</div>
       <div class="r-cols">
         <div>
-          <div class="r-tabla-tit" style="border-radius:6px 6px 0 0"><span>TU PROYECTO SOLART</span></div>
+          <div class="r-tabla-tit" style="border-radius:6px 6px 0 0"><span>ASÍ QUEDARÍA TU PROYECTO</span></div>
           <table class="r-datos" style="border:1px solid #e5e7eb;border-top:none">
-            ${v('f-pctenergia') ? `<tr><td class="k">% DE ENERGÍA QUE CUBRIMOS:</td><td style="font-weight:800;color:#d97706">${v('f-pctenergia')}</td></tr>` : ''}
+            ${v('f-pctenergia') ? `<tr><td class="k">TU SISTEMA SOLAR CUBRIRÍA:</td><td style="font-weight:800;color:#d97706">${v('f-pctenergia')} de la luz que consumes</td></tr>` : ''}
             ${v('f-periodo') ? `<tr><td class="k">PERIODO:</td><td style="color:#15803d;font-weight:800">${v('f-periodo')}</td></tr>` : ''}
-            ${recupAnios ? `<tr><td class="k">RETORNO DE INVERSIÓN:</td><td style="font-weight:800;color:#1b3a5c">${recupAnios} años</td></tr>` : ''}
-            <tr><td class="k">AHORRO ANUAL:</td><td style="font-weight:800;color:#15803d">${fMX(ahorroMensual*12)}</td></tr>
-            ${n('f-kwp') ? `<tr><td class="k">CAPACIDAD INSTALADA:</td><td style="font-weight:800">${n('f-kwp').toLocaleString('es-MX')} kW</td></tr>` : ''}
-            ${n('f-kwh') ? `<tr><td class="k">GENERACIÓN MENSUAL:</td><td style="font-weight:800">${n('f-kwh').toLocaleString('es-MX')} kWh</td></tr>` : ''}
-            <tr><td class="k">BENEFICIO FISCAL:</td><td style="font-weight:800;color:#15803d">100% deducible el 1er año</td></tr>
+            ${recupAnios ? `<tr><td class="k">RECUPERAS TU INVERSIÓN EN:</td><td style="font-weight:800;color:#1b3a5c">${recupAnios} años</td></tr>` : ''}
+            <tr><td class="k">AHORRO CADA AÑO:</td><td style="font-weight:800;color:#15803d">${fMX(ahorroMensual*12)}</td></tr>
+            ${n('f-kwp') ? `<tr><td class="k">TAMAÑO DEL SISTEMA:</td><td style="font-weight:800">${n('f-kwp').toLocaleString('es-MX')} kW</td></tr>` : ''}
+            ${n('f-kwh') ? `<tr><td class="k">ENERGÍA QUE PRODUCES AL MES:</td><td style="font-weight:800">${n('f-kwh').toLocaleString('es-MX')} kWh</td></tr>` : ''}
+            <tr><td class="k">IMPUESTOS:</td><td style="font-weight:800;color:#15803d">La inversión se deduce al 100% el 1er año</td></tr>
           </table>
           <div class="r-vs" style="margin-top:10px">
             <div class="lado rojo">
-              <div class="tt">RECIBO ACTUAL<br>SIN ENERGÍA SOLAR</div>
+              <div class="tt">LO QUE PAGAS HOY<br>DE LUZ</div>
               <div class="mm">${fMX(reciboActual)}</div>
               <div class="ss">MXN/mes</div>
             </div>
             <div class="circulo">VS</div>
             <div class="lado verdeb">
-              <div class="tt">RECIBO CON SOLART<br>CON ENERGÍA SOLAR</div>
+              <div class="tt">LO QUE PAGARÍAS<br>CON SOLART</div>
               <div class="mm">${fMX(conSolart)}</div>
               <div class="ss">MXN/mes</div>
             </div>
@@ -307,7 +307,7 @@
           </div>
           ${meses ? `
           <div class="r-verde">
-            <div class="t">AHORRO ACUMULADO NO CAPTURADO</div>
+            <div class="t">DINERO QUE YA PAGASTE DE MÁS</div>
             <div class="m">${fMX(acumulado)}</div>
             <div class="d">${desdeTxt}</div>
             <div class="nota">💰 Cada mes que retrasas la decisión, este número sigue creciendo. <b style="color:#15803d">Este dinero ya pudo estar en tu flujo de efectivo.</b></div>
@@ -316,10 +316,10 @@
       </div>
       <div class="nivel" style="padding-bottom:40px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-          <div class="a" style="font-size:12px;font-weight:800;color:#374151">📉 REDUCCIÓN EN TU GASTO ENERGÉTICO</div><div class="pct" style="font-size:22px;font-weight:900;color:#15803d">-${reduccion}%</div>
-          <div class="a" style="font-size:12px;font-weight:800;color:#374151">AHORRO MENSUAL QUE NO ESTÁS CAPTURANDO:</div><div class="mens" style="font-size:20px;font-weight:900;color:#15803d">${fMX(ahorroMensual)}</div>
+          <div class="a" style="font-size:12px;font-weight:800;color:#374151">📉 TU RECIBO DE LUZ BAJARÍA</div><div class="pct" style="font-size:22px;font-weight:900;color:#15803d">-${reduccion}%</div>
+          <div class="a" style="font-size:12px;font-weight:800;color:#374151">CADA MES PAGAS DE MÁS:</div><div class="mens" style="font-size:20px;font-weight:900;color:#15803d">${fMX(ahorroMensual)}</div>
         </div>
-        <div class="tit">📊 Tu nivel de gasto energético — a menor gasto, mayor ahorro</div>
+        <div class="tit">📊 ¿Qué tanto pagas de luz? Así te moverías con SOLART</div>
         <div class="barra">
           <div class="marca" style="left:${Math.min(88, Math.max(0, conSolart / reciboActual * 100))}%">
             <div class="pin" style="background:#14532d"></div>
@@ -338,10 +338,10 @@
             <div class="m">${fMX(conSolart)}</div>
           </div>
           ${inversion ? `
-          <div class="r-tabla-tit"><span>PROYECCIÓN DE AHORRO ACUMULADO CON SOLART</span></div>
+          <div class="r-tabla-tit"><span>LO QUE HABRÁS AHORRADO CON LOS AÑOS</span></div>
           <table class="r-conceptos">
-            <tr><td>Año 0 <span style="color:#9ca3af">(inversión inicial)</span></td><td class="num" style="font-weight:800;color:#dc2626">-${fMX(inversion).slice(1)}</td></tr>
-            ${filaProy(`Año ${anioRecup} <span style="color:#9ca3af">(inversión recuperada)</span>`, Math.max(0, proy(anioRecup)))}
+            <tr><td>Año 0 <span style="color:#9ca3af">(lo que inviertes)</span></td><td class="num" style="font-weight:800;color:#dc2626">-${fMX(inversion).slice(1)}</td></tr>
+            ${filaProy(`Año ${anioRecup} <span style="color:#9ca3af">(ya recuperaste tu inversión)</span>`, Math.max(0, proy(anioRecup)))}
             ${filaProy('Año 5', proy(5))}
             ${filaProy('Año 10', proy(10))}
             ${filaProy('Año 25', proy(25))}
@@ -350,10 +350,10 @@
         </div>
         <div>
           <div class="r-resumen" style="margin-top:0">
-            <div class="h"><span>RESUMEN DE TU OPORTUNIDAD</span><span>Importe (MXN)</span></div>
-            ${meses ? `<div class="fila"><span>💰 Costo de oportunidad acumulado</span><b class="v">${fMX(acumulado)}</b></div>` : ''}
-            <div class="fila"><span>📅 Ahorro mensual no capturado</span><b class="v">${fMX(ahorroMensual)}</b></div>
-            ${recupAnios ? `<div class="fila"><span>📈 Recuperación de inversión</span><b class="v">${recupAnios} años</b></div>` : ''}
+            <div class="h"><span>EN RESUMEN</span><span>Importe (MXN)</span></div>
+            ${meses ? `<div class="fila"><span>💸 Dinero que ya pagaste de más</span><b class="v">${fMX(acumulado)}</b></div>` : ''}
+            <div class="fila"><span>📅 Lo que pagas de más cada mes</span><b class="v">${fMX(ahorroMensual)}</b></div>
+            ${recupAnios ? `<div class="fila"><span>📈 Recuperas tu inversión en</span><b class="v">${recupAnios} años</b></div>` : ''}
           </div>
         </div>
       </div>
