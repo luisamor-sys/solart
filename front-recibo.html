@@ -369,7 +369,7 @@
       <div class="barcode"></div>
       <div class="barcode-num">${String(Math.abs(conSolart)).padStart(6,'0')} ${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')} 000${Math.round(ahorroMensual)}</div>
       <div class="r-pie">
-        <div><b>SOLART CONTIGO</b> · 🌱 Energía limpia · 🐷 Ahorro garantizado · 📈 Inversión inteligente · 🛡 Respaldo y confianza</div>
+        <div><b>SOLART CONTIGO</b> · 🌱 Energía limpia · 💰 Ahorro garantizado · 📈 Inversión inteligente · 🛡 Respaldo y confianza</div>
         <div>Fecha de impresión: ${ahora.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'})} ${ahora.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})} hrs.<br>Este documento es una simulación informativa, no un CFDI.</div>
       </div>`;
     window._calc = { reciboActual, conSolart, ahorroMensual, reduccion, meses, desdeTxt, acumulado, recupAnios, inversion };
