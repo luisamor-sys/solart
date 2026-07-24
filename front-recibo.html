@@ -291,22 +291,21 @@
           </div>
         </div>
         <div>
-          <div class="promo" style="margin:0 0 12px;min-height:130px">
+          <div class="promo" style="margin:0;min-height:150px">
             <img src="promo-solar.jpg" alt="Planta solar SOLART">
-            <div class="cover"></div>
-            <div class="txt">
+            <div class="cover" style="background:linear-gradient(180deg,rgba(15,42,68,.45),rgba(10,28,46,.92) 55%)"></div>
+            <div class="txt" style="width:100%">
               <div class="t1">☀️ TU ENERGÍA, TU DINERO</div>
               <div class="t2">Genera tu propia electricidad y monitoréala en tiempo real desde tu celular.</div>
+              ${meses ? `
+              <div style="background:rgba(255,255,255,.95);border-radius:10px;padding:10px 12px;margin-top:10px;text-align:center">
+                <div style="font-size:10.5px;font-weight:800;color:#15803d;letter-spacing:.05em">AHORRO ACUMULADO NO CAPTURADO · ${desdeTxt}</div>
+                <div style="font-size:30px;font-weight:900;color:#15803d;line-height:1.15">${fMX(acumulado)}</div>
+                <div style="font-size:10px;color:#374151">💰 Cada mes que retrasas la decisión este número sigue creciendo — <b style="color:#15803d">ya pudo estar en tu flujo de efectivo.</b></div>
+              </div>` : ''}
               <div class="chips"><span>🌱 Energía limpia</span><span>📊 Monitoreo 24/7</span><span>🛡 Garantía 25 años</span></div>
             </div>
           </div>
-          ${meses ? `
-          <div class="r-verde">
-            <div class="t">AHORRO ACUMULADO NO CAPTURADO</div>
-            <div class="m">${fMX(acumulado)}</div>
-            <div class="d">${desdeTxt}</div>
-            <div class="nota">💰 Cada mes que retrasas la decisión, este número sigue creciendo. <b style="color:#15803d">Este dinero ya pudo estar en tu flujo de efectivo.</b></div>
-          </div>` : ''}
         </div>
       </div>
       <div class="nivel" style="padding-bottom:40px">
