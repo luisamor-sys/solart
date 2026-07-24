@@ -281,7 +281,7 @@
         <div>
           <div class="r-tabla-tit" style="border-radius:6px 6px 0 0"><span>ASÍ QUEDARÍA TU PROYECTO</span></div>
           <table class="r-datos" style="border:1px solid #e5e7eb;border-top:none">
-            ${v('f-pctenergia') ? `<tr><td class="k">DE TU LUZ, LA GENERARÍAS TÚ:</td><td style="font-weight:800;color:#d97706">${v('f-pctenergia')}</td></tr>` : ''}
+            ${v('f-pctenergia') ? `<tr><td class="k">TU SISTEMA SOLAR CUBRIRÍA:</td><td style="font-weight:800;color:#d97706">${v('f-pctenergia')} de la luz que consumes</td></tr>` : ''}
             ${v('f-periodo') ? `<tr><td class="k">PERIODO:</td><td style="color:#15803d;font-weight:800">${v('f-periodo')}</td></tr>` : ''}
             ${recupAnios ? `<tr><td class="k">RECUPERAS TU INVERSIÓN EN:</td><td style="font-weight:800;color:#006099">${recupAnios} años</td></tr>` : ''}
             <tr><td class="k">AHORRO CADA AÑO:</td><td style="font-weight:800;color:#15803d">${fMX(ahorroMensual*12)}</td></tr>
