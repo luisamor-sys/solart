@@ -260,7 +260,7 @@
           <div class="lbl">TOTAL A PAGAR CON SOLART:</div>
           <div class="monto">${fMX(conSolart)}</div>
           <div class="letras">(${enLetras(conSolart)})</div>
-          <div style="font-size:9px;color:#00874a;font-weight:800;margin-top:2px">EN VEZ DE ${fMX(reciboActual)} SIN ENERGÍA SOLAR</div>
+          <div style="font-size:9px;color:#dc2626;font-weight:800;margin-top:2px">EN VEZ DE ${fMX(reciboActual)} SIN ENERGÍA SOLAR</div>
         </div>
       </div>
       <div class="r-banner" style="display:block;text-align:center;margin-bottom:12px">ESTE PUDO SER TU RECIBO ESTE MES</div>
@@ -309,15 +309,10 @@
         </div>
       </div>
       <div class="nivel" style="padding-bottom:40px;margin-top:16px">
-        <div style="margin-bottom:18px">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;padding:10px 4px;border-bottom:1px solid #e5e7eb">
-            <span style="font-size:13px;font-weight:800;color:#374151">📉 TU RECIBO DE LUZ BAJARÍA</span>
-            <span style="font-size:26px;font-weight:900;color:#15803d;white-space:nowrap">-${reduccion}%</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;padding:10px 4px">
-            <span style="font-size:13px;font-weight:800;color:#374151">💸 CADA MES PAGAS DE MÁS</span>
-            <span style="font-size:24px;font-weight:900;color:#dc2626;white-space:nowrap">${fMX(ahorroMensual)}</span>
-          </div>
+        <div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:14px;align-items:center;margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap"><span style="font-size:13px;font-weight:800;color:#374151">📉 TU RECIBO DE LUZ BAJARÍA</span><span style="font-size:26px;font-weight:900;color:#15803d">-${reduccion}%</span></div>
+          <div style="background:#e5e7eb;height:34px"></div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap"><span style="font-size:13px;font-weight:800;color:#374151">💸 CADA MES PAGAS DE MÁS</span><span style="font-size:24px;font-weight:900;color:#dc2626">${fMX(ahorroMensual)}</span></div>
         </div>
         <div class="tit">📊 ¿Qué tanto pagas de luz? Así te moverías con SOLART</div>
         <div class="barra">
