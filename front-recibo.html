@@ -133,7 +133,7 @@
       <div class="campo"><label>WhatsApp de contacto (para el flyer, 10 dígitos)</label><input id="f-wa" type="tel" placeholder="Ej. 4461180361"></div>
     </div>
     <button class="btn-gen" onclick="generar()">⚡ Generar recibo</button>
-    <button class="btn-gen" style="background:#006099;margin-top:8px" onclick="mostrarDolar()">💵 Imagen para WhatsApp: "El dólar bajó" (no necesita datos)</button>
+    <button class="btn-gen" style="background:#006099;margin-top:8px" onclick="mostrarDolar()">💵 Imagen para WhatsApp: "Hoy tu proyecto cuesta menos"</button>
   </div>
 
   <div class="recibo" id="recibo"></div>
@@ -521,36 +521,65 @@
 
   // ── IMAGEN FLASH: EL DÓLAR BAJÓ (material de cierre) ────────────────────
   function mostrarDolar() {
-    const tc = window._tcHoy;
-    // Personalización: usa el nombre del formulario o pregunta una vez
+    const az = '#1e3a5f', dor = '#c99a2e', ver = '#15803d';
+    // Datos: nombre, monto de la negociación, T.C. de la propuesta y T.C. de hoy
     let cliente = (v('f-nombre') || '').trim();
     if (!cliente) {
       cliente = (prompt('¿Nombre del cliente o empresa? (opcional — deja vacío para versión genérica)') || '').trim();
       if (cliente) document.getElementById('f-nombre').value = cliente;
     }
-    const az = '#006099', azOsc = '#00344f', dor = '#d8ae3f', ver = '#22c55e';
-    const sombra = 'box-shadow:0 10px 26px rgba(0,0,0,.3)';
+    const monto = parseFloat(prompt('Monto de la negociación en PESOS (con el tipo de cambio de la propuesta):', v('f-inversion') || '')) || 0;
+    if (!monto) { alert('Necesito el monto para calcular el ahorro.'); return; }
+    const tcProp = parseFloat(prompt('Tipo de cambio con el que se cotizó la propuesta (ej. 18.20):')) || 0;
+    if (!tcProp) { alert('Necesito el tipo de cambio de la propuesta.'); return; }
+    const tcHoy = parseFloat(prompt('Tipo de cambio de HOY:', window._tcHoy ? window._tcHoy.toFixed(2) : '')) || 0;
+    if (!tcHoy) { alert('Necesito el tipo de cambio de hoy.'); return; }
+    if (tcHoy >= tcProp) {
+      if (!confirm('⚠️ El tipo de cambio de hoy NO es menor al de la propuesta — no hay ahorro que mostrar. ¿Generar de todos modos?')) return;
+    }
+    const montoHoy = monto / tcProp * tcHoy;
+    const ahorro = monto - montoHoy;
+
     const r = document.getElementById('recibo');
     r.innerHTML = `
-      <div class="flyer" style="background:linear-gradient(150deg,#001a29,${azOsc} 55%,${az});color:#fff;padding:26px 22px;text-align:center;position:relative;overflow:hidden">
-        <div style="position:absolute;right:-70px;top:-70px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(216,174,63,.45),transparent 70%)"></div>
-        <div style="position:absolute;left:-60px;bottom:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.25),transparent 70%)"></div>
-        <div style="position:relative">
-          <div style="background:#fff;border-radius:12px;padding:7px 16px;display:inline-block;${sombra}"><img src="logo-color.png" style="height:30px;display:block"></div>
-          ${cliente ? `<div style="margin-top:12px"><span style="display:inline-block;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.4);border-radius:20px;padding:5px 16px;font-size:12px;font-weight:900;letter-spacing:.06em">⭐ ESPECIAL PARA ${cliente.toUpperCase()}</span></div>` : ''}
-          <div style="font-size:15px;font-weight:900;letter-spacing:.14em;color:${dor};margin-top:${cliente ? '10px' : '18px'}">📉 EL DÓLAR BAJÓ</div>
-          <div style="font-size:64px;font-weight:900;font-style:italic;line-height:1;margin:6px 0;text-shadow:0 4px 16px rgba(0,0,0,.4)">${tc ? '$' + tc.toFixed(2) : '$—'}</div>
-          <div style="font-size:13px;font-weight:800;color:#cfe6f3">TIPO DE CAMBIO HOY · ${new Date().toLocaleDateString('es-MX', { day:'numeric', month:'long', year:'numeric' })}</div>
-          <div style="font-size:19px;font-weight:900;font-style:italic;margin:20px auto 6px;max-width:440px;line-height:1.35">${cliente ? `Y COMO EL PROYECTO SOLAR DE <span style="color:${dor}">${cliente.toUpperCase()}</span> SE COTIZA EN DÓLARES…` : 'Y COMO TU PROYECTO SOLAR SE COTIZA EN DÓLARES…'}<br><span style="color:${ver}">HOY CUESTA MENOS PESOS.</span></div>
-          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0">
-            <div style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35);border-radius:12px;padding:10px 14px;font-size:11px;font-weight:900">✅ MISMO AHORRO<br>EN TU RECIBO</div>
-            <div style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35);border-radius:12px;padding:10px 14px;font-size:11px;font-weight:900">💰 MENOR<br>INVERSIÓN</div>
-            <div style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35);border-radius:12px;padding:10px 14px;font-size:11px;font-weight:900">📈 RECUPERAS<br>MÁS RÁPIDO</div>
-          </div>
-          <div style="background:rgba(216,174,63,.15);border:1.5px dashed ${dor};border-radius:12px;padding:10px 14px;font-size:12px;font-weight:800;color:${dor};max-width:440px;margin:0 auto 18px">⏳ El tipo de cambio de tu cotización tiene vigencia de 10 días — esta ventana no espera.</div>
-          <div style="background:${dor};color:#001a29;border-radius:28px;padding:13px 26px;font-size:16px;font-weight:900;display:inline-block;${sombra}">PÍDEME HOY TU PROPUESTA ACTUALIZADA →</div>
-          <div style="font-size:10px;font-weight:700;color:#cfe6f3;margin-top:14px">SOLART · Energía Fotovoltaica · www.solart.mx</div>
+      <div class="flyer" style="background:linear-gradient(180deg,#fdfdfb,#f4f8fb);padding:30px 26px;text-align:center">
+
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:26px">
+          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:9px 16px;box-shadow:0 4px 14px rgba(30,58,95,.08)"><img src="logo-color.png" style="height:30px;display:block"></div>
+          ${cliente ? `<div style="background:#eef4f9;border:1.5px solid #c9d9e6;border-radius:14px;padding:11px 20px;font-size:14px;font-weight:800;color:${az};letter-spacing:.05em">ESPECIAL PARA ${cliente.toUpperCase()}</div>` : ''}
         </div>
+
+        <div style="font-size:16px;font-weight:800;color:${dor};letter-spacing:.06em;margin-bottom:4px">UNA OPORTUNIDAD PARA AHORRAR</div>
+        <div style="font-size:42px;font-weight:900;color:${az};line-height:1.05">HOY TU PROYECTO<br><span style="color:${dor}">CUESTA MENOS</span></div>
+
+        <div style="background:#eaf2f8;border-radius:20px;padding:24px 20px;max-width:520px;margin:24px auto">
+          <div style="font-size:14px;font-weight:800;color:${az};letter-spacing:.04em">AHORRAS AL ACTUALIZAR TU PROPUESTA</div>
+          <div style="font-size:58px;font-weight:900;color:${ver};line-height:1;margin-top:8px">${fMX(ahorro)}</div>
+          <div style="font-size:44px;font-weight:900;color:${az};line-height:1.1">PESOS</div>
+          <div style="font-size:13px;font-weight:700;color:#374151;margin-top:8px">Pagas menos por el mismo proyecto solar</div>
+          <div style="display:flex;justify-content:center;gap:0;margin-top:16px">
+            <div style="flex:1;max-width:180px;border-right:1px solid #c9d9e6">
+              <div style="font-size:11px;font-weight:800;color:#6b7280;letter-spacing:.08em">ANTES</div>
+              <div style="font-size:19px;font-weight:900;color:${az}">${fMX(monto)}</div>
+            </div>
+            <div style="flex:1;max-width:180px">
+              <div style="font-size:11px;font-weight:800;color:#6b7280;letter-spacing:.08em">HOY</div>
+              <div style="font-size:19px;font-weight:900;color:${ver}">${fMX(montoHoy)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:17px;font-weight:800;color:${az};max-width:520px;margin:0 auto 22px;line-height:1.4">El dólar bajó y hoy puedes obtener <span style="color:${ver}">el mismo proyecto por menos dinero.</span></div>
+
+        <div style="border:2px solid ${dor};background:#fffbeb;border-radius:14px;padding:12px 18px;max-width:520px;margin:0 auto 20px">
+          <div style="font-size:16px;font-weight:900;color:${dor};letter-spacing:.03em">ESTE PRECIO ES VÁLIDO POR 10 DÍAS</div>
+          <div style="font-size:12.5px;font-weight:700;color:#374151;margin-top:2px">Después puede subir o bajar según el precio del dólar.</div>
+        </div>
+
+        <div style="background:linear-gradient(100deg,#e8c25a,${dor});color:${az};border-radius:30px;padding:15px 30px;font-size:18px;font-weight:900;display:inline-block;letter-spacing:.02em;box-shadow:0 8px 20px rgba(201,154,46,.35)">RESPONDE “SÍ” PARA APROVECHARLO</div>
+
+        <div style="font-size:12px;font-weight:700;color:#6b7280;margin-top:14px">Tu asesor SOLART te enviará la propuesta con el precio de hoy.</div>
+        <div style="font-size:9.5px;color:#9ca3af;margin-top:6px">T.C. propuesta $${tcProp.toFixed(2)} → T.C. hoy $${tcHoy.toFixed(2)} · Cálculo informativo, sujeto a cotización formal.</div>
       </div>`;
     r.style.display = 'block';
     r.style.padding = '0'; r.style.border = 'none'; r.style.borderRadius = '18px'; r.style.overflow = 'hidden';
