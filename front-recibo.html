@@ -522,6 +522,12 @@
   // ── IMAGEN FLASH: EL DÓLAR BAJÓ (material de cierre) ────────────────────
   function mostrarDolar() {
     const tc = window._tcHoy;
+    // Personalización: usa el nombre del formulario o pregunta una vez
+    let cliente = (v('f-nombre') || '').trim();
+    if (!cliente) {
+      cliente = (prompt('¿Nombre del cliente o empresa? (opcional — deja vacío para versión genérica)') || '').trim();
+      if (cliente) document.getElementById('f-nombre').value = cliente;
+    }
     const az = '#006099', azOsc = '#00344f', dor = '#d8ae3f', ver = '#22c55e';
     const sombra = 'box-shadow:0 10px 26px rgba(0,0,0,.3)';
     const r = document.getElementById('recibo');
@@ -531,10 +537,11 @@
         <div style="position:absolute;left:-60px;bottom:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.25),transparent 70%)"></div>
         <div style="position:relative">
           <div style="background:#fff;border-radius:12px;padding:7px 16px;display:inline-block;${sombra}"><img src="logo-color.png" style="height:30px;display:block"></div>
-          <div style="font-size:15px;font-weight:900;letter-spacing:.14em;color:${dor};margin-top:18px">📉 EL DÓLAR BAJÓ</div>
+          ${cliente ? `<div style="display:inline-block;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.4);border-radius:20px;padding:5px 16px;font-size:12px;font-weight:900;letter-spacing:.06em;margin-top:14px">⭐ ESPECIAL PARA ${cliente.toUpperCase()}</div>` : ''}
+          <div style="font-size:15px;font-weight:900;letter-spacing:.14em;color:${dor};margin-top:${cliente ? '10px' : '18px'}">📉 EL DÓLAR BAJÓ</div>
           <div style="font-size:64px;font-weight:900;font-style:italic;line-height:1;margin:6px 0;text-shadow:0 4px 16px rgba(0,0,0,.4)">${tc ? '$' + tc.toFixed(2) : '$—'}</div>
           <div style="font-size:13px;font-weight:800;color:#cfe6f3">TIPO DE CAMBIO HOY · ${new Date().toLocaleDateString('es-MX', { day:'numeric', month:'long', year:'numeric' })}</div>
-          <div style="font-size:19px;font-weight:900;font-style:italic;margin:20px auto 6px;max-width:440px;line-height:1.35">Y COMO TU PROYECTO SOLAR SE COTIZA EN DÓLARES…<br><span style="color:${ver}">HOY CUESTA MENOS PESOS.</span></div>
+          <div style="font-size:19px;font-weight:900;font-style:italic;margin:20px auto 6px;max-width:440px;line-height:1.35">${cliente ? `Y COMO EL PROYECTO SOLAR DE <span style="color:${dor}">${cliente.toUpperCase()}</span> SE COTIZA EN DÓLARES…` : 'Y COMO TU PROYECTO SOLAR SE COTIZA EN DÓLARES…'}<br><span style="color:${ver}">HOY CUESTA MENOS PESOS.</span></div>
           <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0">
             <div style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35);border-radius:12px;padding:10px 14px;font-size:11px;font-weight:900">✅ MISMO AHORRO<br>EN TU RECIBO</div>
             <div style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35);border-radius:12px;padding:10px 14px;font-size:11px;font-weight:900">💰 MENOR<br>INVERSIÓN</div>
