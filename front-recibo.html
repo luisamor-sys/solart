@@ -193,6 +193,11 @@
     document.getElementById('f-periodo').value = `${M[h.getMonth()]} - ${M[sig.getMonth()]} ${sig.getFullYear()}`;
   })();
 
+  // Tipo de cambio del día (los equipos se cotizan en USD)
+  fetch('https://open.er-api.com/v6/latest/USD').then(r => r.json()).then(d => {
+    if (d?.rates?.MXN) window._tcHoy = d.rates.MXN;
+  }).catch(() => {});
+
   const v = id => document.getElementById(id).value;
   const n = id => parseFloat(document.getElementById(id).value) || 0;
 
@@ -280,6 +285,7 @@
             ${n('f-kwp') ? `<tr><td class="k">TAMAÑO DEL SISTEMA:</td><td style="font-weight:800">${n('f-kwp').toLocaleString('es-MX')} kW</td></tr>` : ''}
             ${n('f-kwh') ? `<tr><td class="k">ENERGÍA QUE PRODUCES AL MES:</td><td style="font-weight:800">${n('f-kwh').toLocaleString('es-MX')} kWh</td></tr>` : ''}
             <tr><td class="k">IMPUESTOS:</td><td style="font-weight:800;color:#15803d">La inversión se deduce al 100% el 1er año</td></tr>
+            ${window._tcHoy ? `<tr><td class="k">DÓLAR HOY:</td><td style="font-weight:800;color:#0369a1">$${window._tcHoy.toFixed(2)} — con el dólar bajo, tu proyecto cuesta menos pesos</td></tr>` : ''}
           </table>
           <div class="r-vs" style="margin-top:10px">
             <div class="lado rojo">
