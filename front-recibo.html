@@ -133,6 +133,7 @@
       <div class="campo"><label>WhatsApp de contacto (para el flyer, 10 dígitos)</label><input id="f-wa" type="tel" placeholder="Ej. 4461180361"></div>
     </div>
     <button class="btn-gen" onclick="generar()">⚡ Generar recibo</button>
+    <button class="btn-gen" style="background:#006099;margin-top:8px" onclick="mostrarDolar()">💵 Imagen para WhatsApp: "El dólar bajó" (no necesita datos)</button>
   </div>
 
   <div class="recibo" id="recibo"></div>
@@ -285,7 +286,6 @@
             ${n('f-kwp') ? `<tr><td class="k">TAMAÑO DEL SISTEMA:</td><td style="font-weight:800">${n('f-kwp').toLocaleString('es-MX')} kW</td></tr>` : ''}
             ${n('f-kwh') ? `<tr><td class="k">ENERGÍA QUE PRODUCES AL MES:</td><td style="font-weight:800">${n('f-kwh').toLocaleString('es-MX')} kWh</td></tr>` : ''}
             <tr><td class="k">IMPUESTOS:</td><td style="font-weight:800;color:#15803d">La inversión se deduce al 100% el 1er año</td></tr>
-            ${window._tcHoy ? `<tr><td class="k">DÓLAR HOY:</td><td style="font-weight:800;color:#0369a1">$${window._tcHoy.toFixed(2)} — con el dólar bajo, tu proyecto cuesta menos pesos</td></tr>` : ''}
           </table>
           <div class="r-vs" style="margin-top:10px">
             <div class="lado rojo">
@@ -517,6 +517,42 @@
       </div>
 
       </div>`;
+  }
+
+  // ── IMAGEN FLASH: EL DÓLAR BAJÓ (material de cierre) ────────────────────
+  function mostrarDolar() {
+    const tc = window._tcHoy;
+    const az = '#006099', azOsc = '#00344f', dor = '#d8ae3f', ver = '#22c55e';
+    const sombra = 'box-shadow:0 10px 26px rgba(0,0,0,.3)';
+    const r = document.getElementById('recibo');
+    r.innerHTML = `
+      <div class="flyer" style="background:linear-gradient(150deg,#001a29,${azOsc} 55%,${az});color:#fff;padding:26px 22px;text-align:center;position:relative;overflow:hidden">
+        <div style="position:absolute;right:-70px;top:-70px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(216,174,63,.45),transparent 70%)"></div>
+        <div style="position:absolute;left:-60px;bottom:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.25),transparent 70%)"></div>
+        <div style="position:relative">
+          <div style="background:#fff;border-radius:12px;padding:7px 16px;display:inline-block;${sombra}"><img src="logo-color.png" style="height:30px;display:block"></div>
+          <div style="font-size:15px;font-weight:900;letter-spacing:.14em;color:${dor};margin-top:18px">📉 EL DÓLAR BAJÓ</div>
+          <div style="font-size:64px;font-weight:900;font-style:italic;line-height:1;margin:6px 0;text-shadow:0 4px 16px rgba(0,0,0,.4)">${tc ? '$' + tc.toFixed(2) : '$—'}</div>
+          <div style="font-size:13px;font-weight:800;color:#cfe6f3">TIPO DE CAMBIO HOY · ${new Date().toLocaleDateString('es-MX', { day:'numeric', month:'long', year:'numeric' })}</div>
+          <div style="font-size:19px;font-weight:900;font-style:italic;margin:20px auto 6px;max-width:440px;line-height:1.35">Y COMO TU PROYECTO SOLAR SE COTIZA EN DÓLARES…<br><span style="color:${ver}">HOY CUESTA MENOS PESOS.</span></div>
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0">
+            <div style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35);border-radius:12px;padding:10px 14px;font-size:11px;font-weight:900">✅ MISMO AHORRO<br>EN TU RECIBO</div>
+            <div style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35);border-radius:12px;padding:10px 14px;font-size:11px;font-weight:900">💰 MENOR<br>INVERSIÓN</div>
+            <div style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35);border-radius:12px;padding:10px 14px;font-size:11px;font-weight:900">📈 RECUPERAS<br>MÁS RÁPIDO</div>
+          </div>
+          <div style="background:rgba(216,174,63,.15);border:1.5px dashed ${dor};border-radius:12px;padding:10px 14px;font-size:12px;font-weight:800;color:${dor};max-width:440px;margin:0 auto 18px">⏳ El tipo de cambio de tu cotización tiene vigencia de 10 días — esta ventana no espera.</div>
+          <div style="background:${dor};color:#001a29;border-radius:28px;padding:13px 26px;font-size:16px;font-weight:900;display:inline-block;${sombra}">PÍDEME HOY TU PROPUESTA ACTUALIZADA →</div>
+          <div style="font-size:10px;font-weight:700;color:#cfe6f3;margin-top:14px">SOLART · Energía Fotovoltaica · www.solart.mx</div>
+        </div>
+      </div>`;
+    r.style.display = 'block';
+    r.style.padding = '0'; r.style.border = 'none'; r.style.borderRadius = '18px'; r.style.overflow = 'hidden';
+    window._vista = 'dolar';
+    document.getElementById('btn-pdf').style.display = 'block';
+    document.getElementById('btn-wa').style.display = 'block';
+    document.getElementById('form-card').style.display = 'none';
+    document.getElementById('btn-editar').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // Enviar por WhatsApp: convierte el recibo en imagen y abre el menú de compartir
