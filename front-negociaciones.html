@@ -740,7 +740,7 @@
         if (creada < inicioMs - 20000) continue; // solo las recién creadas por el robot
         const resp = String(t.responsibleId);
         if (EQUIPO_FLUJO.includes(resp)) continue; // ya va al equipo correcto
-        const fields = { RESPONSIBLE_ID: 36 };     // → Javier Olmos (supervisor ing.)
+        const fields = { RESPONSIBLE_ID: 36, GROUP_ID: 16 }; // → Javier y DENTRO del grupo del flujo
         if (vendedorId) fields.CREATED_BY = vendedorId;
         await fetch(WEBHOOK + 'tasks.task.update.json', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
