@@ -718,6 +718,38 @@
     }
   }
 
+  // Corrige tareas de robot mal ruteadas: responsable vendedor → Javier (36).
+  // El equipo (ing/ops/supervisor/financiero/visitas) nunca se toca.
+  async function corregirRuteoTareas(dealId, inicioMs) {
+    const EQUIPO_FLUJO = ['8', '34', '36', '86', '344', '40'];
+    let vendedorId = null;
+    try { const u = JSON.parse(localStorage.getItem('solart_user')); vendedorId = u?.id ? String(u.id) : null; } catch {}
+    await new Promise(r => setTimeout(r, 5000)); // dar tiempo al robot
+    try {
+      const res = await fetch(WEBHOOK + 'tasks.task.list.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filter: { UF_CRM_TASK: ['D_' + dealId] },
+          select: ['ID', 'TITLE', 'RESPONSIBLE_ID', 'CREATED_DATE'],
+          order: { ID: 'DESC' }
+        })
+      });
+      const tareas = (await res.json())?.result?.tasks || [];
+      for (const t of tareas) {
+        const creada = new Date(t.createdDate).getTime();
+        if (creada < inicioMs - 20000) continue; // solo las recién creadas por el robot
+        const resp = String(t.responsibleId);
+        if (EQUIPO_FLUJO.includes(resp)) continue; // ya va al equipo correcto
+        const fields = { RESPONSIBLE_ID: 36 };     // → Javier Olmos (supervisor ing.)
+        if (vendedorId) fields.CREATED_BY = vendedorId;
+        await fetch(WEBHOOK + 'tasks.task.update.json', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId: t.id, fields })
+        });
+      }
+    } catch {}
+  }
+
   async function guardarDetalleNeg(btn) {
     if (!negActual) return;
     btn.disabled = true; btn.textContent = 'Guardando…';
@@ -1454,6 +1486,10 @@
         const tData = await tRes.json();
         if (!tData.result) throw new Error(tData.error_description || 'No se pudo crear la tarea de financiamiento');
       }
+
+      // Red de seguridad: si el robot creó la tarea asignada al VENDEDOR
+      // (en vez de ingeniería), reasignarla a Javier Olmos (36) para que entre al flujo.
+      corregirRuteoTareas(negActual.ID, Date.now());
 
       const labels = {
         visita: '¡Visita técnica agendada!',
