@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base consolidada — SOLART</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+  body { background:#f1f5f9; color:#111827; padding:18px 14px 60px; }
+  .wrap { max-width:1200px; margin:0 auto; }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  h1 { font-size:20px; font-weight:900; }
+  .sub { font-size:12px; color:#6b7280; }
+  .volver { background:#f3f4f6; border:1px solid #e5e7eb; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700; color:#374151; text-decoration:none; }
+  .controles { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+  .controles input, .controles select { border:1.5px solid #e5e7eb; border-radius:10px; padding:9px 12px; font-size:13px; background:#fff; }
+  .controles input { flex:1; min-width:200px; }
+  .btn-rifa { background:linear-gradient(100deg,#d8ae3f,#c99a2e); color:#1a1a2e; border:none; border-radius:10px; padding:10px 18px; font-size:14px; font-weight:900; cursor:pointer; }
+  .chips-o { display:flex; gap:6px; }
+  .chip-o { border:1.5px solid #e5e7eb; background:#fff; border-radius:20px; padding:7px 12px; font-size:12px; font-weight:700; color:#6b7280; cursor:pointer; }
+  .chip-o.on { border-color:#006099; background:#eef6fb; color:#006099; }
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  th { background:#006099; color:#fff; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; padding:9px 8px; text-align:left; white-space:nowrap; cursor:pointer; }
+  td { font-size:12px; padding:8px; border-bottom:1px solid #f3f4f6; vertical-align:top; }
+  tr:hover td { background:#f8fafc; cursor:pointer; }
+  .tag { font-size:9.5px; font-weight:800; border-radius:20px; padding:2px 8px; white-space:nowrap; }
+  .t-bx { background:#eef6fb; color:#006099; } .t-pd { background:#fef3c7; color:#92400e; } .t-md { background:#f3e8ff; color:#7c3aed; }
+  .comp { font-weight:800; }
+  .c-alta { color:#15803d; } .c-media { color:#d97706; } .c-baja { color:#dc2626; }
+  .tabla-wrap { overflow-x:auto; border-radius:14px; }
+  .pag { display:flex; gap:8px; justify-content:center; margin-top:14px; align-items:center; font-size:12px; color:#6b7280; }
+  .pag button { border:1px solid #e5e7eb; background:#fff; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; }
+  /* modal */
+  .ov { display:none; position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:100; align-items:flex-start; justify-content:center; padding:24px 12px; overflow-y:auto; }
+  .modal { background:#fff; border-radius:16px; max-width:640px; width:100%; padding:18px 20px; }
+  .m-tit { font-size:16px; font-weight:900; margin-bottom:2px; }
+  .m-cerrar { float:right; background:#f3f4f6; border:none; border-radius:8px; width:30px; height:30px; font-size:15px; cursor:pointer; }
+  .m-fila { display:flex; gap:8px; font-size:12.5px; padding:6px 0; border-bottom:1px solid #f8fafc; }
+  .m-fila b { width:170px; color:#6b7280; flex-shrink:0; }
+  /* rifa */
+  .slot { text-align:center; padding:10px 0; }
+  .carrete { background:#0f172a; border-radius:14px; height:64px; overflow:hidden; position:relative; margin:12px auto; max-width:520px; border:3px solid #d8ae3f; }
+  .cinta { position:absolute; left:0; right:0; transition:top 3.2s cubic-bezier(.15,.85,.25,1); }
+  .cinta div { height:64px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; font-weight:900; padding:0 14px; white-space:nowrap; overflow:hidden; }
+  @media print { .no-print { display:none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>🗃️ Base consolidada SOLART</h1>
+      <div class="sub" id="sub-info">Cargando…</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn-rifa" onclick="abrirRifa()">🎰 Rifa de proyectos</button>
+      <a class="volver" href="front-ingenieria.html">← Volver al panel</a>
+    </div>
+  </div>
+  <div class="controles">
+    <input id="buscar" placeholder="Buscar empresa, proyecto o contacto…" oninput="pinta(1)">
+    <div class="chips-o" id="chips-origen">
+      <div class="chip-o on" data-v="">Todos</div>
+      <div class="chip-o" data-v="bitrix">Bitrix</div>
+      <div class="chip-o" data-v="pipedrive">Pipedrive</div>
+      <div class="chip-o" data-v="monday">Monday</div>
+    </div>
+    <select id="f-estado" onchange="pinta(1)">
+      <option value="">Estado: todos</option>
+      <option value="abierto">Abiertos</option>
+      <option value="ganado">Ganados</option>
+      <option value="perdido">Perdidos</option>
+    </select>
+    <select id="f-orden" onchange="pinta(1)">
+      <option value="completitud">Orden: más completos</option>
+      <option value="usd">Mayor valor USD</option>
+      <option value="reciente">Contacto más reciente</option>
+    </select>
+  </div>
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr>
+        <th>Origen</th><th>Empresa</th><th>Proyecto</th><th>Contacto</th><th>kW</th>
+        <th>Precio</th><th>USD</th><th>Retorno</th><th>% Energía</th><th>Últ. contacto</th><th>Estado</th><th>Datos</th>
+      </tr></thead>
+      <tbody id="cuerpo"></tbody>
+    </table>
+  </div>
+  <div class="pag" id="pag"></div>
+</div>
+
+<!-- modal detalle -->
+<div class="ov" id="ov-det" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" id="m-det"></div>
+</div>
+
+<!-- modal rifa -->
+<div class="ov" id="ov-rifa" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <button class="m-cerrar" onclick="document.getElementById('ov-rifa').style.display='none'">✕</button>
+    <div class="m-tit">🎰 Rifa de proyectos</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:12px">Proyectos abiertos del histórico que hoy no tiene nadie. Gira, y el que salga se asigna al vendedor: se crea en Bitrix a su nombre con todos los datos.</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <label style="font-size:12px;font-weight:800">Vendedor:</label>
+      <select id="rifa-vend" style="flex:1;border:1.5px solid #e5e7eb;border-radius:10px;padding:9px;font-size:13px"></select>
+      <button class="btn-rifa" id="btn-girar" onclick="girar()">🎰 GIRAR</button>
+    </div>
+    <div class="slot">
+      <div class="carrete"><div class="cinta" id="cinta"><div>— gira para descubrir tu proyecto —</div></div></div>
+      <div id="rifa-res" style="display:none">
+        <div id="rifa-info" style="font-size:12.5px;color:#374151;background:#f8fafc;border-radius:12px;padding:10px 14px;text-align:left;margin-bottom:10px"></div>
+        <button id="btn-asignar" onclick="asignar()" style="background:#15803d;color:#fff;border:none;border-radius:10px;padding:11px 22px;font-size:14px;font-weight:900;cursor:pointer">✅ Asignarlo — crear en Bitrix</button>
+        <button onclick="girar()" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer">↻ Girar de nuevo</button>
+      </div>
+    </div>
+    <div id="rifa-msg" style="font-size:12px;text-align:center;margin-top:6px"></div>
+  </div>
+</div>
+
+<script>
+  const WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/';
+  const VENDEDORES = [
+    { id: 44, n: 'Christian González' }, { id: 48, n: 'Samuel Capuano' },
+    { id: 296, n: 'Alberto Atilano Taylor' }, { id: 356, n: 'Moises Jimenez' },
+    { id: 8, n: 'Daniel González' },
+  ];
+  let DATA = [], filtroOrigen = '', pagina = 1, seleccionRifa = null;
+  const POR_PAG = 60;
+  const fUSD = n => n ? '$' + Math.round(n).toLocaleString('es-MX') : '—';
+  const asignados = new Set(JSON.parse(localStorage.getItem('rifa_asignados') || '[]'));
+
+  fetch('consolidado.json?v=' + Date.now()).then(r => r.json()).then(d => {
+    DATA = d.registros;
+    document.getElementById('sub-info').textContent =
+      `${d.total.toLocaleString()} proyectos · Bitrix ${DATA.filter(r=>r.origen==='bitrix').length} · Pipedrive ${DATA.filter(r=>r.origen==='pipedrive').length} · actualizado ${d.generado.replace('T',' ')}`;
+    document.getElementById('rifa-vend').innerHTML = VENDEDORES.map(v => `<option value="${v.id}">${v.n}</option>`).join('');
+    pinta(1);
+  });
+
+  document.getElementById('chips-origen').addEventListener('click', e => {
+    const c = e.target.closest('.chip-o'); if (!c) return;
+    document.querySelectorAll('.chip-o').forEach(x => x.classList.remove('on'));
+    c.classList.add('on'); filtroOrigen = c.dataset.v; pinta(1);
+  });
+
+  function filtrados() {
+    const q = (document.getElementById('buscar').value || '').toLowerCase();
+    const est = document.getElementById('f-estado').value;
+    let arr = DATA.filter(r =>
+      (!filtroOrigen || r.origen === filtroOrigen) &&
+      (!est || r.estado === est) &&
+      (!q || [r.empresa, r.proyecto, r.contacto, r.dueno].join(' ').toLowerCase().includes(q))
+    );
+    const ord = document.getElementById('f-orden').value;
+    if (ord === 'usd') arr.sort((a,b) => (b.precioUSD||0) - (a.precioUSD||0));
+    else if (ord === 'reciente') arr.sort((a,b) => String(b.ultContacto||'').localeCompare(String(a.ultContacto||'')));
+    else arr.sort((a,b) => b.completitud - a.completitud || (b.precioUSD||0) - (a.precioUSD||0));
+    return arr;
+  }
+
+  function pinta(p) {
+    pagina = p || pagina;
+    const arr = filtrados();
+    const ini = (pagina-1) * POR_PAG;
+    document.getElementById('cuerpo').innerHTML = arr.slice(ini, ini + POR_PAG).map((r, i) => {
+      const tag = r.origen === 'bitrix' ? '<span class="tag t-bx">BITRIX</span>' : r.origen === 'monday' ? '<span class="tag t-md">MONDAY</span>' : '<span class="tag t-pd">PIPEDRIVE</span>';
+      const cc = r.completitud >= 7 ? 'c-alta' : r.completitud >= 4 ? 'c-media' : 'c-baja';
+      return `<tr onclick="detalle('${r.id}')">
+        <td>${tag}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
+        <td style="font-weight:700;max-width:200px">${r.empresa || '—'}</td>
+        <td style="max-width:180px">${r.proyecto || '—'}</td>
+        <td>${r.contacto || '—'}</td>
+        <td>${r.kwp ? r.kwp.toLocaleString() : '—'}</td>
+        <td>${r.precio ? '$' + Math.round(r.precio).toLocaleString() + ' ' + (r.moneda||'') : '—'}</td>
+        <td style="font-weight:700;color:#006099">${fUSD(r.precioUSD)}</td>
+        <td>${r.retorno ? r.retorno + ' años' : '—'}</td>
+        <td>${r.energia ? r.energia + '%' : '—'}</td>
+        <td>${r.ultContacto || '—'}</td>
+        <td>${r.estado === 'ganado' ? '🏆' : r.estado === 'perdido' ? '❌' : '🟢'} ${r.estado}</td>
+        <td class="comp ${cc}">${r.completitud}/10</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="12" style="text-align:center;color:#9ca3af;padding:20px">Sin resultados.</td></tr>';
+    const tot = Math.max(1, Math.ceil(arr.length / POR_PAG));
+    document.getElementById('pag').innerHTML = `
+      <button onclick="pinta(${Math.max(1,pagina-1)})">←</button>
+      página ${pagina} de ${tot} · ${arr.length.toLocaleString()} proyectos
+      <button onclick="pinta(${Math.min(tot,pagina+1)})">→</button>`;
+  }
+
+  function detalle(id) {
+    const r = DATA.find(x => x.id === id); if (!r) return;
+    const fila = (k, v) => v ? `<div class="m-fila"><b>${k}</b><span>${v}</span></div>` : `<div class="m-fila"><b>${k}</b><span style="color:#d1d5db">— por poblar</span></div>`;
+    document.getElementById('m-det').innerHTML = `
+      <button class="m-cerrar" onclick="document.getElementById('ov-det').style.display='none'">✕</button>
+      <div class="m-tit">${r.empresa || r.proyecto || r.id}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Origen: ${r.origen.toUpperCase()} · ${r.id}${r.dueno ? ' · Dueño: ' + r.dueno : ''}</div>
+      ${fila('Nombre del proyecto', r.proyecto)}
+      ${fila('Empresa', r.empresa)}
+      ${fila('Contacto', r.contacto ? r.contacto + (r.tel ? ' · 📱 ' + r.tel : '') : null)}
+      ${fila('Situación', r.descripcion)}
+      ${fila('Tamaño (kW)', r.kwp ? r.kwp.toLocaleString() + ' kW' : null)}
+      ${fila('Precio', r.precio ? '$' + Math.round(r.precio).toLocaleString() + ' ' + r.moneda : null)}
+      ${fila('Precio USD', r.precioUSD ? fUSD(r.precioUSD) : null)}
+      ${fila('Retorno', r.retorno ? r.retorno + ' años' : null)}
+      ${fila('% Energía cubierta', r.energia ? r.energia + '%' : null)}
+      ${fila('Último contacto', r.ultContacto)}
+      ${fila('Estado', r.estado)}
+      <div style="font-size:11px;color:#6b7280;margin-top:10px">Completitud: <b>${r.completitud}/10 campos</b>${r.origen !== 'bitrix' && !r.enBitrix && r.estado === 'abierto' ? ' · elegible para la 🎰 rifa' : ''}</div>
+      ${r.bitrixId ? `<a href="https://crm-solart.bitrix24.mx/crm/deal/details/${r.bitrixId}/" target="_blank" style="display:inline-block;margin-top:10px;background:#006099;color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;text-decoration:none">Abrir en Bitrix ↗</a>` : ''}`;
+    document.getElementById('ov-det').style.display = 'flex';
+  }
+
+  // ── RIFA ──
+  function poolRifa() {
+    return DATA.filter(r => r.origen !== 'bitrix' && r.estado === 'abierto' && !r.enBitrix && !asignados.has(r.id) && r.empresa);
+  }
+  function abrirRifa() {
+    document.getElementById('ov-rifa').style.display = 'flex';
+    document.getElementById('rifa-msg').textContent = poolRifa().length.toLocaleString() + ' proyectos en el pozo 🎁';
+  }
+  function girar() {
+    const pool = poolRifa();
+    if (!pool.length) { document.getElementById('rifa-msg').textContent = 'Ya no hay proyectos en el pozo.'; return; }
+    seleccionRifa = pool[Math.floor(Math.random() * pool.length)];
+    document.getElementById('rifa-res').style.display = 'none';
+    const cinta = document.getElementById('cinta');
+    const nombres = [];
+    for (let i = 0; i < 24; i++) nombres.push(pool[Math.floor(Math.random() * pool.length)].empresa);
+    nombres.push(seleccionRifa.empresa);
+    cinta.style.transition = 'none'; cinta.style.top = '0px';
+    cinta.innerHTML = nombres.map(n => `<div>${n}</div>`).join('');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      cinta.style.transition = 'top 3.2s cubic-bezier(.15,.85,.25,1)';
+      cinta.style.top = (-(nombres.length - 1) * 64) + 'px';
+    }));
+    document.getElementById('btn-girar').disabled = true;
+    setTimeout(() => {
+      document.getElementById('btn-girar').disabled = false;
+      const r = seleccionRifa;
+      document.getElementById('rifa-info').innerHTML = `
+        <b style="font-size:14px">🎉 ${r.empresa}</b> ${r.proyecto ? '· ' + r.proyecto : ''}<br>
+        ${r.contacto ? '👤 ' + r.contacto + (r.tel ? ' · 📱 ' + r.tel : '') + '<br>' : ''}
+        ${r.kwp ? '⚡ ' + r.kwp.toLocaleString() + ' kW · ' : ''}${r.precioUSD ? '💵 ' + fUSD(r.precioUSD) + ' USD · ' : ''}${r.energia ? '🔋 ' + r.energia + '% · ' : ''}🕐 últ. contacto: ${r.ultContacto || 'sin registro'}
+        ${r.descripcion ? '<br>📝 ' + r.descripcion.slice(0, 180) : ''}`;
+      document.getElementById('rifa-res').style.display = 'block';
+    }, 3400);
+  }
+  async function asignar() {
+    const r = seleccionRifa; if (!r) return;
+    const vid = document.getElementById('rifa-vend').value;
+    const vn = VENDEDORES.find(v => String(v.id) === String(vid))?.n || '';
+    const btn = document.getElementById('btn-asignar');
+    btn.disabled = true; btn.textContent = 'Creando en Bitrix…';
+    try {
+      const fields = {
+        TITLE: `${r.contacto || 'ND'}_${r.empresa}_${vn}_${r.proyecto || r.empresa}_FOTOVOLTAICO`,
+        CATEGORY_ID: 0, STAGE_ID: 'PREPARATION', CURRENCY_ID: 'MXN',
+        ASSIGNED_BY_ID: vid, CREATED_BY_ID: vid,
+        UF_CRM_1741392978542: r.proyecto || r.empresa,
+        COMMENTS: `Proyecto recuperado del histórico ${r.origen.toUpperCase()} (${r.id}) vía 🎰 rifa.\n` +
+          (r.descripcion ? 'Situación: ' + r.descripcion + '\n' : '') +
+          (r.tel ? 'Tel contacto: ' + r.tel + '\n' : '') +
+          (r.ultContacto ? 'Último contacto registrado: ' + r.ultContacto : '')
+      };
+      if (r.kwp) fields.UF_CRM_1741208352117 = r.kwp;
+      if (r.energia) fields.UF_CRM_1753209254287 = r.energia;
+      if (r.precioUSD) fields.OPPORTUNITY = Math.round(r.precioUSD * 17.22);
+      const res = await fetch(WEBHOOK + 'crm.deal.add.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields })
+      });
+      const data = await res.json();
+      if (!data.result) throw new Error(data.error_description || 'Error');
+      asignados.add(r.id);
+      localStorage.setItem('rifa_asignados', JSON.stringify([...asignados]));
+      document.getElementById('rifa-msg').innerHTML = `✅ <b>${r.empresa}</b> asignado a <b>${vn}</b> — ya está en su Bitrix y en su Mi día. <a href="https://crm-solart.bitrix24.mx/crm/deal/details/${data.result}/" target="_blank">Ver ↗</a>`;
+      document.getElementById('rifa-res').style.display = 'none';
+      pinta();
+    } catch(e) {
+      document.getElementById('rifa-msg').textContent = 'Error al crear: ' + e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = '✅ Asignarlo — crear en Bitrix';
+    }
+  }
+</script>
+</body>
+</html>

@@ -181,6 +181,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <hr class="sidebar-sep">
     <a class="sidebar-link activo" id="sb-propuestas-ing" href="#" onclick="switchVista('ing')"><span class="sb-icon">🔧</span> Propuestas Ing.</a>
     <a class="sidebar-link" id="sb-visitas" href="#" onclick="switchVista('visitas')" style="display:none"><span class="sb-icon">🧭</span> Visitas Técnicas</a>
+    <a class="sidebar-link" id="sb-consolidado" target="_top" href="https://app.solart.mx/front-consolidado.html" style="display:none"><span class="sb-icon">🗃️</span> Base consolidada</a>
     <a class="sidebar-link" id="sb-director" href="#" onclick="switchVista('director')" style="display:none"><span class="sb-icon">📊</span> Tablero Ingeniería</a>
     <a class="sidebar-link" id="sb-propuestas-ent" href="#" onclick="switchVista('entregadas')"><span class="sb-icon">📦</span> Propuestas Entregadas</a>
   </nav>
@@ -503,6 +504,7 @@ async function abrirApp() {
     if (mnIng) mnIng.textContent = '📊 Comercial';
   }
   cargarBacklogPersonal();
+  if (['ceo','comercial'].includes(u.rol)) { const sc = document.getElementById('sb-consolidado'); if (sc) sc.style.display = ''; }
   if (u.rol === 'supervisor') renderSupervisor();
   else if (u.rol === 'ejecutor') renderEjecutor();
   else if (u.rol === 'aprobador') renderAprobador();
