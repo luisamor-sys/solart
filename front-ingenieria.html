@@ -1259,7 +1259,9 @@ async function abrirHistorialDeal(dealId) {
 // Título amigable: "Empresa (Proyecto)" — nomenclatura: Cliente_Empresa_Responsable_Proyecto_Tipo
 function tituloAmigable(titulo, proyecto) {
   const partes = String(titulo || '').split('_').map(x => x.trim()).filter(Boolean);
-  const empresa = partes[1] || partes[0] || titulo || '';
+  // Si el título viene en desorden, la parte que parece razón social gana como empresa
+  const razonSocial = partes.find(p => /\b(S\.?A\.?|CV|SAPI|S DE RL|S\.C\.)\b/i.test(p));
+  const empresa = razonSocial || partes[1] || partes[0] || titulo || '';
   const proy = (proyecto || '').trim();
   return proy ? `${empresa} (${proy})` : empresa;
 }

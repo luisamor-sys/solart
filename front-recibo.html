@@ -164,7 +164,8 @@
       };
       const pon = (id, val) => { if (val === undefined || val === null || val === '') return; document.getElementById(id).value = val; marca(id); };
       const partes = String(d.TITLE||'').split('_').map(x=>x.trim()).filter(Boolean);
-      pon('f-nombre', partes[1] || partes[0] || '');
+      const razonSocial = partes.find(p => /\b(S\.?A\.?|CV|SAPI|S DE RL|S\.C\.)\b/i.test(p));
+      pon('f-nombre', razonSocial || partes[1] || partes[0] || '');
       // Inversión = Total de la negociación (OPPORTUNITY)
       if (parseFloat(d.OPPORTUNITY)) pon('f-inversion', d.OPPORTUNITY);
       if (d.UF_CRM_1741208352117) pon('f-kwp', d.UF_CRM_1741208352117);

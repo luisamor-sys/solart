@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOLART · Acelerador de cierre por tipo de cambio</title>
+<style>
+  :root {
+    --blue: #006796;
+    --blue-deep: #003f5f;
+    --blue-night: #052f45;
+    --gold: #f5b51b;
+    --gold-soft: #ffe6a1;
+    --green: #20a35b;
+    --white: #ffffff;
+    --mist: #e8f3f7;
+    --ink: #12384b;
+    --gray: #5f7180;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+    background: #101820;
+    font-family: Inter, Arial, Helvetica, sans-serif;
+  }
+
+  .poster {
+    width: 1080px;
+    height: 1350px;
+    position: relative;
+    overflow: hidden;
+    color: var(--ink);
+    background: #ffffff;
+  }
+
+  .poster::before {
+    content: none;
+  }
+
+  .content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    padding: 70px 82px 58px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+    margin-bottom: 72px;
+  }
+
+  .logo-card {
+    width: 226px;
+    height: 96px;
+    border-radius: 22px;
+    background: #fff;
+    display: grid;
+    place-items: center;
+    border: 1px solid #dce8ed;
+    box-shadow: 0 10px 28px rgba(0, 74, 105, .10);
+  }
+
+  .logo-card img {
+    width: 168px;
+    height: auto;
+    display: block;
+  }
+
+  .client-pill {
+    flex: 1;
+    min-height: 72px;
+    border: 2px solid #9fc3d2;
+    border-radius: 999px;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--blue-deep);
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    background: #f3f8fa;
+  }
+
+  .kicker {
+    color: #c98b00;
+    font-size: 29px;
+    line-height: 1;
+    font-weight: 950;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    margin: 0 auto 38px;
+    max-width: 900px;
+    font-size: 66px;
+    line-height: .96;
+    font-weight: 950;
+    letter-spacing: 0;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  h1 .gold {
+    color: #d99a00;
+  }
+
+  .rate-wrap {
+    margin: 0 auto 36px;
+    width: 790px;
+    border-radius: 34px;
+    padding: 34px 38px 30px;
+    background: #f2f8fa;
+    border: 2px solid #c5dde7;
+    box-shadow: 0 18px 42px rgba(0, 75, 105, .10);
+    text-align: center;
+  }
+
+  .rate-label {
+    color: var(--mist);
+    font-size: 22px;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+  }
+
+  .rate {
+    color: var(--white);
+    font-size: 142px;
+    line-height: .9;
+    font-weight: 1000;
+    letter-spacing: -2px;
+    margin: 8px 0 12px;
+  }
+
+  .savings-label {
+    color: var(--blue-deep);
+    font-size: 23px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+  }
+
+  .savings {
+    color: var(--ink);
+    font-size: 110px;
+    line-height: .94;
+    font-weight: 1000;
+    margin: 7px 0 10px;
+  }
+
+  .savings span {
+    color: #16884c;
+  }
+
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    align-items: center;
+    gap: 24px;
+    margin-top: 28px;
+  }
+
+  .comparison .divider {
+    width: 1px;
+    height: 64px;
+    background: #b8d2dc;
+  }
+
+  .comparison .caption {
+    color: var(--gray);
+    font-size: 17px;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+
+  .comparison .amount {
+    margin-top: 4px;
+    color: var(--ink);
+    font-size: 31px;
+    font-weight: 950;
+  }
+
+  .comparison .today .amount {
+    color: #16884c;
+  }
+
+  .rate-note {
+    color: var(--blue-deep);
+    font-size: 22px;
+    line-height: 1.3;
+    font-weight: 800;
+  }
+
+  .message {
+    width: 850px;
+    margin: 0 auto 42px;
+    text-align: center;
+    color: var(--ink);
+    font-size: 32px;
+    line-height: 1.16;
+    font-weight: 900;
+  }
+
+  .message strong {
+    color: #16884c;
+  }
+
+  .proof-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin: 0 0 24px;
+  }
+
+  .proof {
+    min-height: 122px;
+    border-radius: 20px;
+    padding: 20px 16px;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.28);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .proof .label {
+    color: var(--gold-soft);
+    font-size: 17px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 7px;
+  }
+
+  .proof .text {
+    color: #fff;
+    font-size: 24px;
+    line-height: 1.08;
+    font-weight: 950;
+  }
+
+  .urgency {
+    width: 860px;
+    margin: 0 auto 36px;
+    border-radius: 24px;
+    padding: 22px 30px;
+    border: 3px solid var(--gold);
+    background: #fff8e6;
+    text-align: center;
+  }
+
+  .urgency .title {
+    color: #b57a00;
+    font-size: 31px;
+    line-height: 1.1;
+    font-weight: 1000;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .urgency .body {
+    color: var(--ink);
+    font-size: 24px;
+    line-height: 1.24;
+    font-weight: 780;
+  }
+
+  .cta {
+    width: 860px;
+    min-height: 94px;
+    margin: auto auto 26px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ffd766 0%, var(--gold) 100%);
+    color: #092b3f;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    font-size: 31px;
+    line-height: 1.05;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    box-shadow: 0 14px 34px rgba(0, 75, 105, .15);
+  }
+
+  .micro {
+    text-align: center;
+    color: var(--gray);
+    font-size: 21px;
+    font-weight: 800;
+  }
+
+  .footer {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: var(--blue-deep);
+    font-size: 20px;
+    font-weight: 850;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+
+  html.export-view,
+  html.export-view body {
+    width: 540px;
+    height: 675px;
+    min-height: 675px;
+    overflow: hidden;
+  }
+
+  html.export-view .poster {
+    transform: scale(.5);
+    transform-origin: top left;
+  }
+</style>
+<script>
+  if (new URLSearchParams(location.search).has('export')) {
+    document.documentElement.classList.add('export-view');
+  }
+</script>
+</head>
+<body>
+  <main class="poster" role="img" aria-label="Promocional Solart de acelerador de cierre por tipo de cambio">
+    <section class="content">
+      <div class="top">
+        <div class="logo-card">
+          <img src="logo-color.png" alt="SOLART">
+        </div>
+        <div class="client-pill">Especial para Envases Plásticos SA de CV</div>
+      </div>
+
+      <div class="kicker">Una oportunidad para ahorrar</div>
+      <h1>Hoy tu proyecto <span class="gold">cuesta menos</span></h1>
+
+      <div class="rate-wrap">
+        <div class="savings-label">Ahorras al actualizar tu propuesta</div>
+        <div class="savings"><span>$4,046</span> PESOS</div>
+        <div class="rate-note">Pagas menos por el mismo proyecto solar</div>
+        <div class="comparison">
+          <div>
+            <div class="caption">Antes</div>
+            <div class="amount">$62,594</div>
+          </div>
+          <div class="divider"></div>
+          <div class="today">
+            <div class="caption">Hoy</div>
+            <div class="amount">$58,548</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="message">
+        El dólar bajó y hoy puedes obtener <strong>el mismo proyecto por menos dinero.</strong>
+      </div>
+
+      <div class="urgency">
+        <div class="title">Este precio es válido por 10 días</div>
+        <div class="body">Después puede subir o bajar según el precio del dólar.</div>
+      </div>
+
+      <div class="cta">Responde “SÍ” para aprovecharlo</div>
+      <div class="micro">Tu asesor SOLART te enviará la propuesta con el precio de hoy.</div>
+
+    </section>
+  </main>
+</body>
+</html>
