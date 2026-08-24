@@ -81,7 +81,7 @@
     <table>
       <thead><tr>
         <th>Origen</th><th>Empresa</th><th>Proyecto</th><th>Contacto</th><th>kW</th>
-        <th>Precio</th><th>USD</th><th>Retorno</th><th>% Energía</th><th>Últ. contacto</th><th>Estado</th><th>Datos</th>
+        <th>Precio</th><th>USD</th><th>Retorno</th><th>% Energía</th><th>Últ. contacto</th><th>Dueño</th><th>Estado</th><th>Datos</th>
       </tr></thead>
       <tbody id="cuerpo"></tbody>
     </table>
@@ -176,10 +176,11 @@
         <td>${r.retorno ? r.retorno + ' años' : '—'}</td>
         <td>${r.energia ? r.energia + '%' : '—'}</td>
         <td>${r.ultContacto || '—'}</td>
+        <td style="max-width:130px;font-size:11px;color:#6b7280">${r.dueno || '—'}</td>
         <td>${r.estado === 'ganado' ? '🏆' : r.estado === 'perdido' ? '❌' : '🟢'} ${r.estado}</td>
         <td class="comp ${cc}">${r.completitud}/10</td>
       </tr>`;
-    }).join('') || '<tr><td colspan="12" style="text-align:center;color:#9ca3af;padding:20px">Sin resultados.</td></tr>';
+    }).join('') || '<tr><td colspan="13" style="text-align:center;color:#9ca3af;padding:20px">Sin resultados.</td></tr>';
     const tot = Math.max(1, Math.ceil(arr.length / POR_PAG));
     document.getElementById('pag').innerHTML = `
       <button onclick="pinta(${Math.max(1,pagina-1)})">←</button>
@@ -240,7 +241,7 @@
       document.getElementById('rifa-info').innerHTML = `
         <b style="font-size:14px">🎉 ${r.empresa}</b> ${r.proyecto ? '· ' + r.proyecto : ''}<br>
         ${r.contacto ? '👤 ' + r.contacto + (r.tel ? ' · 📱 ' + r.tel : '') + '<br>' : ''}
-        ${r.kwp ? '⚡ ' + r.kwp.toLocaleString() + ' kW · ' : ''}${r.precioUSD ? '💵 ' + fUSD(r.precioUSD) + ' USD · ' : ''}${r.energia ? '🔋 ' + r.energia + '% · ' : ''}🕐 últ. contacto: ${r.ultContacto || 'sin registro'}
+        ${r.kwp ? '⚡ ' + r.kwp.toLocaleString() + ' kW · ' : ''}${r.precioUSD ? '💵 ' + fUSD(r.precioUSD) + ' USD · ' : ''}${r.energia ? '🔋 ' + r.energia + '% · ' : ''}🕐 últ. contacto: ${r.ultContacto || 'sin registro'}${r.dueno ? '<br>🧑 Dueño anterior (' + r.origen + '): <b>' + r.dueno + '</b>' : ''}
         ${r.descripcion ? '<br>📝 ' + r.descripcion.slice(0, 180) : ''}`;
       document.getElementById('rifa-res').style.display = 'block';
     }, 3400);
@@ -258,6 +259,7 @@
         ASSIGNED_BY_ID: vid, CREATED_BY_ID: vid,
         UF_CRM_1741392978542: r.proyecto || r.empresa,
         COMMENTS: `Proyecto recuperado del histórico ${r.origen.toUpperCase()} (${r.id}) vía 🎰 rifa.\n` +
+          (r.dueno ? `Dueño anterior en ${r.origen}: ${r.dueno}\n` : '') +
           (r.descripcion ? 'Situación: ' + r.descripcion + '\n' : '') +
           (r.tel ? 'Tel contacto: ' + r.tel + '\n' : '') +
           (r.ultContacto ? 'Último contacto registrado: ' + r.ultContacto : '')
