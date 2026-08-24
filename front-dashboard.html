@@ -994,6 +994,7 @@
 
     mostrarSidebar(u);
     cargarEnumsCampos().then(() => cargarDashboard());
+    setTimeout(cargarBacklogPersonal, 400);
     // Tipo de cambio del día (los equipos se cotizan en USD)
     window.pintarBannerTC = () => {
       const b = document.getElementById('banner-tc');
@@ -1015,6 +1016,65 @@
     if (periodo === 'mes')   { ini.setDate(ini.getDate()-30); ini.setHours(0,0,0,0); }
     const fmt = d => d.toISOString().slice(0,19).replace('T',' ');
     return { ini: fmt(ini), fin: fmt(fin) };
+  }
+
+
+  // ═══ MIS PENDIENTES CON VICTOR (backlog) ═══════════════════════════════
+  const BK_TAG = 'PendVictor';
+  const BK_IDS = ['12', '8', '344'];   // Luis, Daniel, Samantha (usuario de Erick por ahora)
+  const bkFecha = f => f ? new Date(f).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : '';
+  async function cargarBacklogPersonal() {
+    const uid = String(usuarioActual?.id || '');
+    if (!BK_IDS.includes(uid)) return;
+    let el = document.getElementById('bk-mio');
+    if (!el) {
+      const ancla = document.getElementById('dash-contenido');
+      if (!ancla) return;
+      el = document.createElement('div');
+      el.id = 'bk-mio';
+      ancla.parentElement.insertBefore(el, ancla);
+    }
+    try {
+      const r = await bx('tasks.task.list.json', {
+        filter: { TAG: BK_TAG, RESPONSIBLE_ID: uid },
+        select: ['ID','TITLE','STATUS','CREATED_DATE','CLOSED_DATE','DEADLINE'],
+        order: { ID: 'DESC' }
+      });
+      const items = (r?.result?.tasks || []).map(t => ({
+        id: t.id, titulo: (t.title || '').replace(/^📌 /, ''),
+        hecha: String(t.status) === '5', creada: t.createdDate, limite: t.deadline
+      }));
+      const hechas = items.filter(i => i.hecha).length;
+      el.innerHTML = `
+        <div style="background:#fff;border:1.5px solid #c7d2fe;border-radius:14px;padding:14px;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:800;color:#111827">📌 Mis pendientes con Victor <span style="color:#6b7280;font-weight:700">· ${hechas}/${items.length}</span></div>
+          ${items.filter(i => !i.hecha).map(i => `
+          <div style="display:flex;align-items:center;gap:8px;background:#f9fafb;border-radius:10px;padding:7px 10px;margin-top:6px">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600;color:#111827">${i.titulo}</div>
+              <div style="font-size:10px;color:#9ca3af">Encargada ${bkFecha(i.creada)}${i.limite ? ' · para ' + bkFecha(i.limite) : ''}</div>
+            </div>
+            <button onclick="bkCompletar(${i.id})" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer">✓ Ya quedó</button>
+          </div>`).join('') || '<div style="font-size:12px;color:#15803d;font-weight:700;margin-top:6px">Sin pendientes abiertos con Victor 🎉</div>'}
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <input id="bk-mi-que" placeholder="Anotar algo que me encargó Victor…" style="flex:1;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px;font-size:12px">
+            <button onclick="bkAnotarMio(this)" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer">Anotar</button>
+          </div>
+        </div>`;
+    } catch(e) { console.warn('[backlog]', e); }
+  }
+  async function bkCompletar(id) {
+    try { await bx('tasks.task.complete.json', { taskId: id }); cargarBacklogPersonal(); }
+    catch { alert('No se pudo completar.'); }
+  }
+  async function bkAnotarMio(btn) {
+    const que = document.getElementById('bk-mi-que')?.value?.trim();
+    if (!que) return;
+    btn.disabled = true;
+    try {
+      await bx('tasks.task.add.json', { fields: { TITLE: '📌 ' + que, RESPONSIBLE_ID: usuarioActual.id, CREATED_BY: usuarioActual.id, TAGS: [BK_TAG] } });
+      cargarBacklogPersonal();
+    } catch { alert('No se pudo anotar.'); btn.disabled = false; }
   }
 
   async function cargarDashboard() {

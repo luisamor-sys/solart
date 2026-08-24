@@ -502,6 +502,7 @@ async function abrirApp() {
     if (sbIng) sbIng.innerHTML = '<span class="sb-icon">📊</span> Tablero Comercial';
     if (mnIng) mnIng.textContent = '📊 Comercial';
   }
+  cargarBacklogPersonal();
   if (u.rol === 'supervisor') renderSupervisor();
   else if (u.rol === 'ejecutor') renderEjecutor();
   else if (u.rol === 'aprobador') renderAprobador();
@@ -2659,7 +2660,161 @@ async function cargarCEO() {
   }
 }
 
+// ═══ PENDIENTES CON EQUIPO (backlog de Victor) ═══════════════════════════
+// Se guardan como tareas de Bitrix con la etiqueta PendVictor.
+const BK_TAG = 'PendVictor';
+const BK_EQUIPO = [
+  { id: '12',  n: 'Luis Amor' },
+  { id: '8',   n: 'Daniel González' },
+  { id: '344', n: 'Samantha (Financiero)' },   // usuario de Erick mientras dan de alta a Samantha
+];
+async function bkListar() {
+  const r = await bx('tasks.task.list', {
+    filter: { TAG: BK_TAG },
+    select: ['ID','TITLE','STATUS','RESPONSIBLE_ID','CREATED_DATE','CLOSED_DATE','DEADLINE'],
+    order: { ID: 'DESC' }
+  });
+  return (r?.result?.tasks || []).map(t => ({
+    id: t.id, titulo: (t.title || '').replace(/^📌 /, ''), resp: String(t.responsibleId),
+    hecha: String(t.status) === '5', creada: t.createdDate, cerrada: t.closedDate, limite: t.deadline
+  }));
+}
+async function bkCrear(respId, titulo, fecha) {
+  const u = JSON.parse(localStorage.getItem('solart_user') || '{}');
+  const fields = { TITLE: '📌 ' + titulo, RESPONSIBLE_ID: respId, TAGS: [BK_TAG] };
+  if (u?.id) fields.CREATED_BY = u.id;
+  if (fecha) fields.DEADLINE = fecha + 'T18:00:00';
+  return bx('tasks.task.add', { fields });
+}
+const bkFecha = f => f ? new Date(f).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : '';
+
+// Vista de VICTOR: progreso por persona + detalle + encargar nuevo
+async function cargarBacklogVictor() {
+  const el = document.getElementById('bk-victor');
+  if (!el) return;
+  el.innerHTML = '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:14px;font-size:12px;color:#9ca3af">📌 Cargando pendientes con el equipo…</div>';
+  try {
+    const items = await bkListar();
+    window._bkItems = items;
+    el.innerHTML = `
+      <div style="background:#fff;border:1.5px solid #c7d2fe;border-radius:14px;padding:14px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <div style="font-size:13px;font-weight:800;color:#111827">📌 Pendientes con el equipo</div>
+          <button onclick="bkFormVictor()" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer">➕ Encargar pendiente</button>
+        </div>
+        <div id="bk-form-v" style="display:none;margin:8px 0"></div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Lo que encargaste a cada quien. Toca a la persona para ver el detalle.</div>
+        ${BK_EQUIPO.map(p => {
+          const suyos = items.filter(i => i.resp === p.id);
+          const hechas = suyos.filter(i => i.hecha).length;
+          const pct = suyos.length ? Math.round(hechas / suyos.length * 100) : 0;
+          return `
+          <div onclick="bkDetalle('${p.id}')" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer">
+            <div style="width:150px;font-size:12px;font-weight:700;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.n}</div>
+            <div style="flex:1;background:#f3f4f6;border-radius:20px;height:16px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#34d399,#059669);border-radius:20px"></div>
+            </div>
+            <div style="width:120px;text-align:right;font-size:12px;font-weight:800;color:${suyos.length && hechas === suyos.length ? '#15803d' : '#374151'}">${hechas}/${suyos.length} hecha${hechas === 1 ? '' : 's'}${suyos.length && hechas === suyos.length ? ' ✅' : ''}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } catch(e) {
+    el.innerHTML = '';
+    console.warn('[backlog]', e);
+  }
+}
+function bkFormVictor() {
+  const f = document.getElementById('bk-form-v');
+  if (!f) return;
+  if (f.style.display === 'block') { f.style.display = 'none'; return; }
+  f.innerHTML = `
+    <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select id="bk-quien" style="border:1.5px solid #e5e7eb;border-radius:8px;padding:8px;font-size:12px;font-weight:700">
+        ${BK_EQUIPO.map(p => `<option value="${p.id}">${p.n}</option>`).join('')}
+      </select>
+      <input id="bk-que" placeholder="¿Qué le encargas?" style="flex:1;min-width:180px;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px;font-size:12px">
+      <input id="bk-cuando" type="date" style="border:1.5px solid #e5e7eb;border-radius:8px;padding:7px;font-size:12px">
+      <button onclick="bkGuardarVictor(this)" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer">Encargar</button>
+    </div>`;
+  f.style.display = 'block';
+}
+async function bkGuardarVictor(btn) {
+  const que = document.getElementById('bk-que')?.value?.trim();
+  if (!que) { alert('Escribe qué le encargas.'); return; }
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    await bkCrear(document.getElementById('bk-quien').value, que, document.getElementById('bk-cuando')?.value || '');
+    cargarBacklogVictor();
+  } catch(e) { alert('No se pudo guardar.'); btn.disabled = false; btn.textContent = 'Encargar'; }
+}
+function bkDetalle(pid) {
+  const p = BK_EQUIPO.find(x => x.id === pid);
+  const suyos = (window._bkItems || []).filter(i => i.resp === pid);
+  document.getElementById('hist-tit').textContent = `📌 Pendientes de ${p?.n || ''} · ${suyos.filter(i=>i.hecha).length}/${suyos.length}`;
+  document.getElementById('hist-body').innerHTML = suyos.length ? suyos.map(i => `
+    <div style="display:flex;align-items:flex-start;gap:8px;background:${i.hecha ? '#f0fdf4' : '#f9fafb'};border-radius:10px;padding:8px 10px;margin-bottom:6px">
+      <div style="font-size:15px">${i.hecha ? '✅' : '⬜'}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:${i.hecha ? '#6b7280' : '#111827'};${i.hecha ? 'text-decoration:line-through' : ''}">${i.titulo}</div>
+        <div style="font-size:10px;color:#9ca3af">Encargada ${bkFecha(i.creada)}${i.limite ? ' · para ' + bkFecha(i.limite) : ''}${i.hecha && i.cerrada ? ' · ✅ terminada ' + bkFecha(i.cerrada) : ''}</div>
+      </div>
+    </div>`).join('') : '<div style="font-size:12px;color:#9ca3af">Sin pendientes registrados.</div>';
+  document.getElementById('hist-ov').style.display = 'flex';
+}
+
+// Vista PERSONAL (Luis / Daniel / Samantha): mis pendientes con Victor
+async function cargarBacklogPersonal() {
+  const u = JSON.parse(localStorage.getItem('solart_user') || '{}');
+  const uid = String(u?.id || '');
+  if (!BK_EQUIPO.some(p => p.id === uid)) return;
+  let el = document.getElementById('bk-mio');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'bk-mio';
+    el.style.cssText = 'max-width:980px;margin:0 auto;padding:12px 16px 0';
+    const pw = document.querySelector('.page-wrap');
+    const login = document.getElementById('screen-login');
+    if (pw) pw.insertBefore(el, login ? login.nextSibling : pw.firstChild);
+    else document.body.prepend(el);
+  }
+  try {
+    const items = (await bkListar()).filter(i => i.resp === uid);
+    const hechas = items.filter(i => i.hecha).length;
+    el.innerHTML = `
+      <div style="background:#fff;border:1.5px solid #c7d2fe;border-radius:14px;padding:14px;margin-bottom:4px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="font-size:13px;font-weight:800;color:#111827">📌 Mis pendientes con Victor <span style="color:#6b7280;font-weight:700">· ${hechas}/${items.length}</span></div>
+        </div>
+        ${items.filter(i => !i.hecha).map(i => `
+        <div style="display:flex;align-items:center;gap:8px;background:#f9fafb;border-radius:10px;padding:7px 10px;margin-top:6px">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:#111827">${i.titulo}</div>
+            <div style="font-size:10px;color:#9ca3af">Encargada ${bkFecha(i.creada)}${i.limite ? ' · para ' + bkFecha(i.limite) : ''}</div>
+          </div>
+          <button onclick="bkCompletar(${i.id})" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer">✓ Ya quedó</button>
+        </div>`).join('') || '<div style="font-size:12px;color:#15803d;font-weight:700;margin-top:6px">Sin pendientes abiertos con Victor 🎉</div>'}
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <input id="bk-mi-que" placeholder="Anotar algo que me encargó Victor…" style="flex:1;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px;font-size:12px">
+          <button onclick="bkAnotarMio(this)" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer">Anotar</button>
+        </div>
+      </div>`;
+  } catch(e) { console.warn('[backlog-mio]', e); }
+}
+async function bkCompletar(id) {
+  try { await bx('tasks.task.complete', { taskId: id }); cargarBacklogPersonal(); if (document.getElementById('bk-victor')) cargarBacklogVictor(); }
+  catch { alert('No se pudo completar.'); }
+}
+async function bkAnotarMio(btn) {
+  const que = document.getElementById('bk-mi-que')?.value?.trim();
+  if (!que) return;
+  const u = JSON.parse(localStorage.getItem('solart_user') || '{}');
+  btn.disabled = true;
+  try { await bkCrear(String(u.id), que, ''); cargarBacklogPersonal(); }
+  catch { alert('No se pudo anotar.'); btn.disabled = false; }
+}
+
 function pintarCEO() {
+  setTimeout(() => { if (document.getElementById('bk-victor')) cargarBacklogVictor(); }, 0);
   const cont = document.getElementById('cont-ceo');
   const anioVal = document.getElementById('ceo-anio')?.value || 'todo';
   const esTodo = anioVal === 'todo';
@@ -3067,6 +3222,7 @@ function pintarCEO() {
     </div>`;
 
   cont.innerHTML = `
+    ${esCEOrol ? '<div id="bk-victor"></div>' : ''}
     <div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap">
       <div style="font-size:13px;font-weight:800;color:#111827">💵 Facturación${vendSel!=='todos' ? ` · <span style="color:#7c3aed">${vendSet[vendSel]||''}</span>` : ''}${etapaSel!=='todas' ? ` · <span style="color:#1d4ed8">${(FUNNEL_NIVELES.find(f=>String(f.d)===etapaSel)||{}).label||''}</span>` : ''}</div>
