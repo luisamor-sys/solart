@@ -2894,6 +2894,24 @@ function pintarCEO() {
     );
     if ((mov && (ahora - mov) <= 30*DIA) || d.actIds.has(String(x.ID))) usoPorVend[id].tocados++;
   });
+  // ── Avance del mes: negociaciones que cambiaron de etapa este mes (MOVED_TIME) ──
+  const iniMes = new Date(); iniMes.setDate(1); iniMes.setHours(0,0,0,0);
+  const avanceVend = {};
+  d.dealsAll.forEach(x => {
+    if (!x.MOVED_TIME) return;
+    const f = new Date(x.MOVED_TIME);
+    if (f < iniMes) return;
+    const id = String(x.ASSIGNED_BY_ID);
+    if (!id || id === '0' || NO_VENDEDORES.includes(id)) return;
+    (avanceVend[id] = avanceVend[id] || []).push(x);
+  });
+  const avanceLista = Object.entries(avanceVend).map(([id, arr]) => ({
+    id, nombre: USER_NAMES[id] || 'Usuario ' + id,
+    arr: arr.sort((a, b) => new Date(b.MOVED_TIME) - new Date(a.MOVED_TIME))
+  })).sort((a, b) => b.arr.length - a.arr.length);
+  const fCortaAv = f => new Date(f).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+  const etapaNivel = x => (FUNNEL_NIVELES.find(f => !f.leads && f.d === depthDeal(x))?.label || '').replace(/^[^ ]+ /, '');
+
   const usoCRM = Object.entries(usoPorVend).map(([id, v]) => {
     const login = USER_LAST_LOGIN[id];
     const diasLogin = login ? (ahora - new Date(login).getTime()) / DIA : Infinity;
@@ -2927,9 +2945,18 @@ function pintarCEO() {
       estPorVend[id].push(x);
     });
     const diasSin = x => Math.floor((ahora - ultimoMov(x)) / 86400000);
-    const estLista = Object.entries(estPorVend)
-      .map(([id, arr]) => ({ nombre: USER_NAMES[id] || `Usuario ${id}`, arr, monto: suma(arr), peorDias: Math.max(...arr.map(diasSin)) }))
-      .sort((a,b) => b.arr.length - a.arr.length);
+    // Mostrar a TODOS los vendedores con negociaciones abiertas — los que van al día salen en 0 ✅
+    const vendConAbiertas = {};
+    d.abiertos.forEach(x => {
+      const id = String(x.ASSIGNED_BY_ID);
+      if (id && id !== '0') vendConAbiertas[id] = (vendConAbiertas[id] || 0) + 1;
+    });
+    const estLista = Object.keys(vendConAbiertas)
+      .map(id => {
+        const arr = estPorVend[id] || [];
+        return { nombre: USER_NAMES[id] || `Usuario ${id}`, arr, abiertas: vendConAbiertas[id], monto: suma(arr), peorDias: arr.length ? Math.max(...arr.map(diasSin)) : 0 };
+      })
+      .sort((a,b) => (b.arr.length - a.arr.length) || (b.abiertas - a.abiertas));
     // Severidad por antigüedad: +90 días = crítico, +60 = alto, resto = medio
     const colorDias = dd => dd >= 90 ? '#991b1b' : dd >= 60 ? '#dc2626' : '#ea580c';
     // Prioridades: lo más grande en cierre + casi cerradas
@@ -2968,7 +2995,7 @@ function pintarCEO() {
     <div>
     <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:10px">🚨 Estancadas — sin actividad, tareas ni cambios en +30 días</div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:20px">
-      ${estLista.length ? estLista.map(v => `
+      ${estLista.length ? estLista.map(v => v.arr.length ? `
       <div ${tipRef(v.arr.map(x => `${tituloAmigable(x.TITLE, x.UF_CRM_1741392978542)} — ${fmtMXN(parseFloat(x.OPPORTUNITY)||0)} — ${Math.floor((ahora - ultimoMov(x)) / 86400000)} días sin movimiento`))} style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:zoom-in">
         <div style="width:110px;font-size:12px;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.nombre}</div>
         <div style="flex:1;background:#f3f4f6;border-radius:20px;height:18px;overflow:hidden">
@@ -2977,6 +3004,11 @@ function pintarCEO() {
         <div style="width:30px;text-align:right;font-size:13px;font-weight:800;color:#dc2626">${v.arr.length}</div>
         <div style="width:74px;text-align:right;font-size:11px;font-weight:700;color:${colorDias(v.peorDias)}">${v.peorDias} días</div>
         <div style="width:64px;text-align:right;font-size:11px;color:#6b7280">${fmtMXN(v.monto)}</div>
+      </div>` : `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:110px;font-size:12px;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.nombre}</div>
+        <div style="flex:1;font-size:11px;color:#9ca3af">${v.abiertas} abierta${v.abiertas === 1 ? '' : 's'}, todas con movimiento reciente</div>
+        <div style="width:170px;text-align:right;font-size:12px;font-weight:800;color:#16a34a">0 · al día ✅</div>
       </div>`).join('') : '<div style="font-size:12px;color:#9ca3af">Sin negociaciones estancadas 🎉</div>'}
       <div style="font-size:10px;color:#9ca3af;margin-top:6px">El número es cuántas negociaciones · "días" es la más antigua sin tocar (naranja +30, rojo +60, vino +90)</div>
     </div>
@@ -3154,6 +3186,20 @@ function pintarCEO() {
     </div>
 
     ${esCEOrol ? `
+    <!-- Avance del mes: quién movió negociaciones y cuándo -->
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:#111827;margin-bottom:2px">🚀 Avance del mes — ¿quién movió sus negociaciones?</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Negociaciones que cambiaron de etapa desde el día 1 del mes. Toca un vendedor para ver cuáles y en qué fecha.</div>
+      ${avanceLista.length ? avanceLista.map(a => `
+        <div ${tipRef(a.arr.map(x => `${fCortaAv(x.MOVED_TIME)} — ${tituloAmigable(x.TITLE, x.UF_CRM_1741392978542)} → ahora en ${etapaNivel(x) || 'su etapa actual'}${parseFloat(x.OPPORTUNITY) ? ' · ' + fmtMXN(parseFloat(x.OPPORTUNITY)) : ''}`))} style="display:flex;align-items:center;gap:10px;margin-bottom:7px;cursor:pointer">
+          <div style="width:130px;font-size:12px;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.nombre}</div>
+          <div style="flex:1;background:#f3f4f6;border-radius:20px;height:16px;overflow:hidden">
+            <div style="width:${Math.max(a.arr.length / avanceLista[0].arr.length * 100, 6)}%;height:100%;background:linear-gradient(90deg,#60a5fa,#2563eb);border-radius:20px"></div>
+          </div>
+          <div style="width:110px;font-size:11px;font-weight:800;color:#1e3a8a;text-align:right">${a.arr.length} avance${a.arr.length === 1 ? '' : 's'} · últ. ${fCortaAv(a.arr[0].MOVED_TIME)}</div>
+        </div>`).join('') : '<div style="font-size:12px;color:#9ca3af">Nadie ha movido negociaciones de etapa este mes todavía.</div>'}
+    </div>
+
     <!-- Dónde van las ganadas -->
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:14px">
       <div style="font-size:12px;font-weight:700;color:#111827;margin-bottom:8px">🎉 Las ganadas, ¿en qué van?</div>
