@@ -82,10 +82,12 @@ for n in notas:
         nota_por_deal[did] = n
 
 _, gente = leer('people-13728019-114.xlsx')
-tel_por_persona = {}
+tel_por_persona, mail_por_persona = {}, {}
 for p in gente:
     tel = p.get('Teléfono - Móvil') or p.get('Teléfono - Trabajo') or p.get('Teléfono - Personal') or p.get('Teléfono - Otro')
     if tel: tel_por_persona[p['ID']] = str(tel)
+    mail = p.get('Correo electrónico - Trabajo') or p.get('Correo electrónico - Personal') or p.get('Correo electrónico - Otro')
+    if mail: mail_por_persona[p['ID']] = str(mail)
 
 _, deals_pd = leer('deals-13728019-112.xlsx')
 for d in deals_pd:
@@ -100,6 +102,7 @@ for d in deals_pd:
         'empresa': emp or None,
         'contacto': d.get('Persona de contacto') or None,
         'tel': tel_por_persona.get(d.get('ID de la persona de contacto')),
+        'email': mail_por_persona.get(d.get('ID de la persona de contacto')),
         'descripcion': desc,
         'kwp': float(d['Potencia instalada (kW)']) if d.get('Potencia instalada (kW)') else None,
         'precio': float(d['Valor']) if d.get('Valor') else None,

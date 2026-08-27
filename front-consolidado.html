@@ -53,6 +53,7 @@
       <div class="sub" id="sub-info">Cargando…</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="vistaVendedores()" style="background:#006099;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer">👥 Por vendedor</button>
       <button class="btn-rifa" onclick="abrirRifa()">🎰 Rifa de proyectos</button>
       <a class="volver" href="front-ingenieria.html">← Volver al panel</a>
     </div>
@@ -197,7 +198,7 @@
       <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Origen: ${r.origen.toUpperCase()} · ${r.id}${r.dueno ? ' · Dueño: ' + r.dueno : ''}</div>
       ${fila('Nombre del proyecto', r.proyecto)}
       ${fila('Empresa', r.empresa)}
-      ${fila('Contacto', r.contacto ? r.contacto + (r.tel ? ' · 📱 ' + r.tel : '') : null)}
+      ${fila('Contacto', r.contacto ? r.contacto + (r.tel ? ' · 📱 ' + r.tel : '') + (r.email ? ' · ✉️ ' + r.email : '') : null)}
       ${fila('Situación', r.descripcion)}
       ${fila('Tamaño (kW)', r.kwp ? r.kwp.toLocaleString() + ' kW' : null)}
       ${fila('Precio', r.precio ? '$' + Math.round(r.precio).toLocaleString() + ' ' + r.moneda : null)}
@@ -209,6 +210,66 @@
       <div style="font-size:11px;color:#6b7280;margin-top:10px">Completitud: <b>${r.completitud}/10 campos</b>${r.origen !== 'bitrix' && !r.enBitrix && r.estado === 'abierto' ? ' · elegible para la 🎰 rifa' : ''}</div>
       ${r.bitrixId ? `<a href="https://crm-solart.bitrix24.mx/crm/deal/details/${r.bitrixId}/" target="_blank" style="display:inline-block;margin-top:10px;background:#006099;color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;text-decoration:none">Abrir en Bitrix ↗</a>` : ''}`;
     document.getElementById('ov-det').style.display = 'flex';
+  }
+
+  // ── VISTA POR VENDEDOR ──
+  // Roster del excel de RH: quién sigue y quién no
+  const ASESORES = {
+    vigente: ['SAMUEL CAPUANO','CHRISTIAN GONZALEZ','CHIRISTIAN GONZALEZ','ALBERTO ATILANO','MOISES JIMENEZ','ARTURO LOPEZ','VICENTE ARTURO LOPEZ'],
+    externo: ['MIGUEL GARCIA','RODRIGO LUNA','JAVIER CANSECO'],
+  };
+  const normN = x => String(x||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  function estatusAsesor(nombre) {
+    const n = normN(nombre);
+    if (!n) return '—';
+    const toks = n.split(/\s+/).filter(Boolean);
+    const hit = lista => lista.some(a => { const t = a.split(/\s+/); return t.every(x => n.includes(x)) || toks.slice(0,2).every(x => a.includes(x)); });
+    if (hit(ASESORES.vigente)) return 'vigente';
+    if (hit(ASESORES.externo)) return 'externo';
+    return 'no vigente';
+  }
+  function vistaVendedores() {
+    const por = {};
+    DATA.forEach(r => {
+      const d = r.dueno || 'Sin dueño';
+      por[d] = por[d] || { total: 0, abiertos: 0, ganados: 0, perdidos: 0, comp: 0, tel: 0, mail: 0 };
+      const p = por[d];
+      p.total++; p.comp += r.completitud;
+      p[r.estado === 'ganado' ? 'ganados' : r.estado === 'perdido' ? 'perdidos' : 'abiertos']++;
+      if (r.tel) p.tel++;
+      if (r.email) p.mail++;
+    });
+    const lista = Object.entries(por).map(([n, p]) => ({ n, ...p, prom: p.comp / p.total, estatus: estatusAsesor(n) }))
+      .sort((a, b) => b.total - a.total);
+    const tagE = e => e === 'vigente' ? '<span class="tag" style="background:#dcfce7;color:#15803d">VIGENTE</span>'
+      : e === 'externo' ? '<span class="tag" style="background:#fef3c7;color:#92400e">EXTERNO</span>'
+      : e === '—' ? '' : '<span class="tag" style="background:#fee2e2;color:#991b1b">NO VIGENTE</span>';
+    const cComp = x => x >= 7 ? 'c-alta' : x >= 4 ? 'c-media' : 'c-baja';
+    document.getElementById('m-det').innerHTML = `
+      <button class="m-cerrar" onclick="document.getElementById('ov-det').style.display='none'">✕</button>
+      <div class="m-tit">👥 Proyectos por vendedor</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Cuántos proyectos tiene cada quien (histórico + vivo) y qué tan calificados están sus datos (promedio de los 10 atributos). Toca un vendedor para ver sus proyectos.</div>
+      <div style="overflow-x:auto"><table style="box-shadow:none">
+        <thead><tr><th>Vendedor</th><th>Estatus</th><th>Total</th><th>🟢</th><th>🏆</th><th>❌</th><th>Calif.</th><th>📱 tel</th><th>✉️ email</th></tr></thead>
+        <tbody>
+        ${lista.map(v => `<tr onclick="filtrarPorDueno('${v.n.replace(/'/g, '')}')">
+          <td style="font-weight:700">${v.n}</td>
+          <td>${tagE(v.estatus)}</td>
+          <td style="font-weight:800">${v.total}</td>
+          <td>${v.abiertos}</td><td>${v.ganados}</td><td>${v.perdidos}</td>
+          <td class="comp ${cComp(v.prom)}">${v.prom.toFixed(1)}/10</td>
+          <td>${Math.round(v.tel / v.total * 100)}%</td>
+          <td>${Math.round(v.mail / v.total * 100)}%</td>
+        </tr>`).join('')}
+        </tbody>
+      </table></div>`;
+    document.getElementById('ov-det').style.display = 'flex';
+  }
+  function filtrarPorDueno(n) {
+    document.getElementById('ov-det').style.display = 'none';
+    document.getElementById('buscar').value = n;
+    pinta(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // ── RIFA ──
