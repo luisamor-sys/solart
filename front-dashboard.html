@@ -249,7 +249,7 @@
         <option value="282">Ulises Navarro</option>
         <option value="296">Alberto Atilano Taylor</option>
         <option value="314">Javier Reyes</option>
-        <option value="344">Erick Hernandez</option>
+        <option value="390">Samantha Miranda</option>
         <option value="356">Moises Jimenez</option>
       </select>
     </div>
@@ -363,7 +363,7 @@
 
   // ── PINs por usuario (ID Bitrix → PIN) ──────────────────────────────
   // Cambia los PINs aquí antes de publicar
-  const USER_NOMBRES = { '8':'Daniel González','12':'Luis Amor','34':'Arturo Chávez','36':'Javier Olmos','40':'Carlos Mariscal','86':'Gerardo Vite','344':'Erick Hernandez','188':'Arturo López','158':'Victor Linaldi','44':'Christian González','46':'Rafael De la cuadra','48':'Samuel Capuano','282':'Ulises Navarro','356':'Moises Jimenez','296':'Alberto Atilano','126':'Adriana Madrid' };
+  const USER_NOMBRES = { '8':'Daniel González','12':'Luis Amor','34':'Arturo Chávez','36':'Javier Olmos','40':'Carlos Mariscal','86':'Gerardo Vite','344':'Erick Hernandez','390':'Samantha Miranda','188':'Arturo López','158':'Victor Linaldi','44':'Christian González','46':'Rafael De la cuadra','48':'Samuel Capuano','282':'Ulises Navarro','356':'Moises Jimenez','296':'Alberto Atilano','126':'Adriana Madrid' };
   const PINES = {
     '8':   '1234', // Daniel González
     '10':  '1234', // Eduardo Lozada
@@ -383,6 +383,7 @@
     '296': '1234', // Alberto Atilano Taylor
     '314': '1234', // Javier Reyes
     '344': '1234', // Erick Hernandez
+    '390': '1234', // Samantha Miranda
     '356': '1234', // Moises Jimenez
   };
 
@@ -1021,7 +1022,7 @@
 
   // ═══ MIS PENDIENTES CON VICTOR (backlog) ═══════════════════════════════
   const BK_TAG = 'PendVictor';
-  const BK_IDS = ['12', '8', '344'];   // Luis, Daniel, Samantha (usuario de Erick por ahora)
+  const BK_IDS = ['12', '8', '390'];   // Luis, Daniel, Samantha Miranda
   const bkFecha = f => f ? new Date(f).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : '';
   async function cargarBacklogPersonal() {
     const uid = String(usuarioActual?.id || '');
@@ -1876,13 +1877,13 @@
     if (nm) nm.textContent = u.nombre;
     const ing = document.getElementById('sb-link-ing');
     if (ing) {
-      const EQUIPO_ING = ['8','34','36','86','40','344','158','188'];
+      const EQUIPO_ING = ['8','34','36','86','40','344','390','158','188'];
       if (!EQUIPO_ING.includes(String(u.id))) { ing.style.display = 'none'; }   // vendedor normal: no ve el link
       else if (String(u.id) === '158') ing.innerHTML = '<span class="sb-icon">📊</span> Resultados Anuales SOLART';
       else if (String(u.id) === '188') ing.innerHTML = '<span class="sb-icon">📊</span> Tablero Comercial';
       else if (String(u.id) === '8')   ing.innerHTML = '<span class="sb-icon">📊</span> Tablero Ingeniería';
       else if (String(u.id) === '40')  ing.innerHTML = '<span class="sb-icon">🧭</span> Visitas Técnicas';
-      else if (String(u.id) === '344') ing.innerHTML = '<span class="sb-icon">💰</span> Propuestas Financieras';
+      else if (['344','390'].includes(String(u.id))) ing.innerHTML = '<span class="sb-icon">💰</span> Propuestas Financieras';
     }
   }
 </script>

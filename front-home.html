@@ -287,7 +287,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <option value="282">Ulises Navarro</option>
         <option value="296">Alberto Atilano Taylor</option>
         <option value="314">Javier Reyes</option>
-        <option value="344">Erick Hernandez</option>
+        <option value="390">Samantha Miranda</option>
         <option value="356">Moises Jimenez</option>
       </select>
     </div>
@@ -572,7 +572,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     '8':'1234','10':'1234','12':'1234','34':'1234','36':'1234',
     '40':'1234','44':'1234','46':'1234','48':'1234','86':'1234',
     '90':'1234','126':'1234','158':'1234','188':'1234','282':'1234',
-    '296':'1234','314':'1234','344':'1234','356':'1234',
+    '296':'1234','314':'1234','344':'1234','356':'1234','390':'1234',
   };
 
   let pinActual = '';
@@ -642,7 +642,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     if (nm) nm.textContent = u.nombre;
 
     // Tarjeta y link de ingeniería: solo para el equipo técnico/directivo
-    const EQUIPO_ING = ['8','34','36','86','40','344','158','188'];
+    const EQUIPO_ING = ['8','34','36','86','40','344','390','158','188'];
     const esEquipo = EQUIPO_ING.includes(String(u.id));
     const cardIng = document.getElementById('card-ingenieria');
     if (cardIng) cardIng.style.display = esEquipo ? 'block' : 'none';

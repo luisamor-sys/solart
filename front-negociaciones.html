@@ -472,7 +472,7 @@
     <div class="tarea-card" id="card-financiera" onclick="seleccionarTarea('financiera')" style="display:none">
       <div class="tarea-icono">💰</div>
       <div class="tarea-nombre">Iniciar propuesta financiera</div>
-      <div class="tarea-desc">Solicita a Erick el plan de financiamiento para tu cliente.</div>
+      <div class="tarea-desc">Solicita a Samantha el plan de financiamiento para tu cliente.</div>
       <div class="form-contextual" id="form-financiera">
         <div class="campo">
           <label>Proceso de crédito <span class="req">*</span></label>
@@ -495,7 +495,7 @@
           </div>
         </div>
         <div class="campo">
-          <label>Comentarios para Erick</label>
+          <label>Comentarios para Samantha</label>
           <textarea id="f-comentarios-fin" placeholder="Contexto del cliente, urgencia, montos…" onclick="stopProp(event)"></textarea>
         </div>
         <button class="btn" onclick="ejecutarTarea(event,'financiera')">Iniciar propuesta financiera →</button>
@@ -721,7 +721,7 @@
   // Corrige tareas de robot mal ruteadas: responsable vendedor → Javier (36).
   // El equipo (ing/ops/supervisor/financiero/visitas) nunca se toca.
   async function corregirRuteoTareas(dealId, inicioMs) {
-    const EQUIPO_FLUJO = ['8', '34', '36', '86', '344', '40'];
+    const EQUIPO_FLUJO = ['8', '34', '36', '86', '344', '390', '40'];
     let vendedorId = null;
     try { const u = JSON.parse(localStorage.getItem('solart_user')); vendedorId = u?.id ? String(u.id) : null; } catch {}
     await new Promise(r => setTimeout(r, 5000)); // dar tiempo al robot
@@ -1003,7 +1003,7 @@
           <div style="display:flex;align-items:center;gap:10px;background:${done?'#f0fdf4':'#fffbeb'};border:1.5px solid ${done?'#bbf7d0':'#fde68a'};border-radius:12px;padding:12px 14px;margin-bottom:6px">
             <span style="font-size:20px">💰</span>
             <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:800;color:${done?'#15803d':'#92400e'}">${done ? `Propuesta financiera entregada${fCierre ? ' · ' + new Date(fCierre).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : ''}` : 'Propuesta financiera en curso con Erick'}</div>
+              <div style="font-size:12px;font-weight:800;color:${done?'#15803d':'#92400e'}">${done ? `Propuesta financiera entregada${fCierre ? ' · ' + new Date(fCierre).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : ''}` : 'Propuesta financiera en curso con Samantha'}</div>
               <div style="font-size:12px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tf.title}</div>
             </div>
           </div>`;
@@ -1454,7 +1454,7 @@
         }
       }
 
-      // Propuesta financiera: crear la tarea para Erick directamente
+      // Propuesta financiera: crear la tarea para Samantha directamente
       // (no hay robot en Bitrix para esta etapa)
       if (tipo === 'financiera') {
         const OPTS_PROCESO = { '1484':'Entrega de documentos','1486':'Armado de expediente','1488':'Estudio','1490':'Autorizado o Rechazado' };
@@ -1476,7 +1476,7 @@
           body: JSON.stringify({ fields: {
             TITLE: `Financiamiento_${negActual.TITLE}`,
             DESCRIPTION: descTarea,
-            RESPONSIBLE_ID: 344,
+            RESPONSIBLE_ID: 390,
             CREATED_BY: vendedorId,
             GROUP_ID: 30,
             DEADLINE: deadline,
@@ -1499,7 +1499,7 @@
       };
       document.getElementById('exito-titulo').textContent = labels[tipo];
       document.getElementById('exito-detalle').textContent = tipo === 'financiera'
-        ? 'La tarea le llegó a Erick Hernandez. Te avisaremos aquí cuando entregue el plan financiero.'
+        ? 'La tarea le llegó a Samantha Miranda. Te avisaremos aquí cuando entregue el plan financiero.'
         : 'Bitrix generará la tarea para el equipo automáticamente.';
       mostrarEstado('vista-exito');
     } catch (err) {
@@ -1621,13 +1621,13 @@
       // El link a /ingenieria/ cambia de nombre según el rol de quien entra
       const ing = document.getElementById('sb-link-ing');
       if (ing) {
-        const EQUIPO_ING = ['8','34','36','86','40','344','158','188'];
+        const EQUIPO_ING = ['8','34','36','86','40','344','390','158','188'];
         if (!EQUIPO_ING.includes(String(u.id))) { ing.style.display = 'none'; }   // vendedor normal: no ve el link
         else if (String(u.id) === '158') ing.innerHTML = '<span class="sb-icon">📊</span> Resultados Anuales SOLART';
         else if (String(u.id) === '188') ing.innerHTML = '<span class="sb-icon">📊</span> Tablero Comercial';
         else if (String(u.id) === '8')   ing.innerHTML = '<span class="sb-icon">📊</span> Tablero Ingeniería';
         else if (String(u.id) === '40')  ing.innerHTML = '<span class="sb-icon">🧭</span> Visitas Técnicas';
-        else if (String(u.id) === '344') ing.innerHTML = '<span class="sb-icon">💰</span> Propuestas Financieras';
+        else if (['344','390'].includes(String(u.id))) ing.innerHTML = '<span class="sb-icon">💰</span> Propuestas Financieras';
       }
     }
   } catch {}
