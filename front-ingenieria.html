@@ -504,7 +504,7 @@ async function abrirApp() {
     if (mnIng) mnIng.textContent = '📊 Comercial';
   }
   cargarBacklogPersonal();
-  if (['ceo','comercial'].includes(u.rol)) { const sc = document.getElementById('sb-consolidado'); if (sc) sc.style.display = ''; }
+  if (['ceo','comercial'].includes(u.rol) || String(u.id) === '390') { const sc = document.getElementById('sb-consolidado'); if (sc) sc.style.display = ''; }
   if (u.rol === 'supervisor') renderSupervisor();
   else if (u.rol === 'ejecutor') renderEjecutor();
   else if (u.rol === 'aprobador') renderAprobador();
