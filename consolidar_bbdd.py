@@ -31,7 +31,7 @@ def norm(s):
 # ── BITRIX ──
 users = {u['ID']: (u.get('NAME','') + ' ' + (u.get('LAST_NAME') or '')).strip()
          for u in bx('user.get', {'ADMIN_MODE': 'True'}).get('result', [])}
-sel = ['ID','TITLE','CATEGORY_ID','STAGE_ID','ASSIGNED_BY_ID','OPPORTUNITY','CURRENCY_ID',
+sel = ['ID','TITLE','CATEGORY_ID','STAGE_ID','ASSIGNED_BY_ID','OPPORTUNITY','CURRENCY_ID','CONTACT_ID',
        'DATE_CREATE','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_TITLE',
        'UF_CRM_1741392978542','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1758676152864']
 bit = []
@@ -43,11 +43,25 @@ def empresa_bitrix(title):
     razon = next((p for p in partes if re.search(r'\b(SA|S\.A\.|CV|SAPI|S DE RL)\b', p, re.I)), None)
     return razon or (partes[1] if len(partes) > 1 else (partes[0] if partes else ''))
 
+# Contactos de Bitrix (teléfono/email) en lotes
+contact_ids = sorted({d['CONTACT_ID'] for d in bit if d.get('CONTACT_ID') and str(d['CONTACT_ID']) != '0'})
+contactos = {}
+for i in range(0, len(contact_ids), 50):
+    lote = contact_ids[i:i+50]
+    for c in bx('crm.contact.list', {'filter': {'@ID': lote}, 'select': ['ID','NAME','LAST_NAME','PHONE','EMAIL']}).get('result', []):
+        tel = (c.get('PHONE') or [{}])[0].get('VALUE')
+        mail = (c.get('EMAIL') or [{}])[0].get('VALUE')
+        contactos[str(c['ID'])] = {
+            'nombre': (c.get('NAME','') + ' ' + (c.get('LAST_NAME') or '')).strip(),
+            'tel': tel, 'email': mail
+        }
+print('contactos Bitrix resueltos:', len(contactos), 'de', len(contact_ids))
+
 registros, emp_bitrix = [], set()
 for d in bit:
     emp = d.get('COMPANY_TITLE') or empresa_bitrix(d.get('TITLE'))
     partes = [p.strip() for p in str(d.get('TITLE') or '').split('_') if p.strip()]
-    contacto = partes[0] if partes else ''
+    contacto = contactos.get(str(d.get('CONTACT_ID')), {}).get('nombre') or (partes[0] if partes else '')
     monto = float(d.get('OPPORTUNITY') or 0)
     usd = round(monto if d.get('CURRENCY_ID') == 'USD' else monto / TC, 2) if monto else None
     emp_bitrix.add(norm(emp))
@@ -59,6 +73,8 @@ for d in bit:
         'precio': monto or None, 'moneda': d.get('CURRENCY_ID') or 'MXN', 'precioUSD': usd,
         'retorno': float(d['UF_CRM_1758676152864']) if d.get('UF_CRM_1758676152864') else None,
         'energia': str(d['UF_CRM_1753209254287']).replace('%','').strip() if d.get('UF_CRM_1753209254287') else None,
+        'tel': contactos.get(str(d.get('CONTACT_ID')), {}).get('tel'),
+        'email': contactos.get(str(d.get('CONTACT_ID')), {}).get('email'),
         'ultContacto': (d.get('LAST_ACTIVITY_TIME') or d.get('DATE_MODIFY') or '')[:10] or None,
         'estado': 'ganado' if str(d.get('STAGE_ID','')).endswith('WON') or str(d.get('CATEGORY_ID')) in ('4','6')
                   else ('perdido' if str(d.get('STAGE_ID','')).endswith('LOSE') else 'abierto'),
