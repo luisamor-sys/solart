@@ -588,9 +588,14 @@
         const autor = usuarioActual?.nombre || 'Portal';
         await bx('tasks.task.commentadd.json', { TASK_ID: tareaId, fields: { POST_MESSAGE: `📎 ${autor} adjuntó: ${f.name}${url ? '\nDescargar: ' + url : ''}` } });
       }
-      prog.textContent = '✅ Archivo(s) adjuntado(s)';
       input.value = '';
-      abrirTareaModal(tareaId);
+      prog.textContent = 'Actualizando la tarea…';
+      await abrirTareaModal(tareaId);   // recargar para que el archivo aparezca en 📎 Adjuntos
+      const p2 = document.getElementById('modal-adj-prog');
+      if (p2) {
+        p2.style.color = '#16a34a'; p2.style.fontWeight = '800';
+        p2.textContent = `✅ Subido y adjuntado: ${files.map(f => f.name).join(', ')} — ya está arriba en 📎 Adjuntos y en el chat`;
+      }
     } catch(e) {
       prog.textContent = '⚠️ ' + (e?.message || 'Error al adjuntar');
     }
