@@ -542,6 +542,9 @@
       document.getElementById('modal-body').innerHTML = '<div style="color:#ef4444;font-size:13px">Error al cargar el detalle.</div>';
     }
   }
+  // El webhook principal no tiene scope "disk"; para archivos usamos el del panel técnico
+  const WEBHOOK_DISK = 'https://crm-solart.bitrix24.mx/rest/12/1hh732gngri1wfwt/';
+  const bxD = (m, p) => fetch(WEBHOOK_DISK + m, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }).then(r => r.json());
   const _fileB64 = f => new Promise((ok, err) => {
     const r = new FileReader();
     r.onload = () => ok(String(r.result).split(',')[1]);
@@ -557,11 +560,11 @@
       const groupId = tInfo.result?.task?.groupId || tInfo.result?.task?.GROUP_ID;
       let folderId = null;
       if (groupId && String(groupId) !== '0') {
-        const sg = (await bx('disk.storage.getlist.json', { filter: { ENTITY_TYPE: 'group', ENTITY_ID: groupId } }))?.result?.find(x => x.ROOT_OBJECT_ID);
+        const sg = (await bxD('disk.storage.getlist.json', { filter: { ENTITY_TYPE: 'group', ENTITY_ID: groupId } }))?.result?.find(x => x.ROOT_OBJECT_ID);
         if (sg) folderId = sg.ROOT_OBJECT_ID;
       }
       if (!folderId) {
-        const su = (await bx('disk.storage.getlist.json', { filter: { ENTITY_TYPE: 'user', ENTITY_ID: 12 } }))?.result?.find(x => x.ROOT_OBJECT_ID);
+        const su = (await bxD('disk.storage.getlist.json', { filter: { ENTITY_TYPE: 'user', ENTITY_ID: 12 } }))?.result?.find(x => x.ROOT_OBJECT_ID);
         if (su) folderId = su.ROOT_OBJECT_ID;
       }
       if (!folderId) throw new Error('Sin acceso a Disk');
@@ -572,7 +575,7 @@
         const ts = new Date().toISOString().replace(/[T:.]/g, '-').slice(0, 19);
         const parts = f.name.split('.');
         const ext = parts.pop();
-        const up = await bx('disk.folder.uploadfile.json', {
+        const up = await bxD('disk.folder.uploadfile.json', {
           id: folderId, data: { NAME: `${parts.join('.')}_${ts}.${ext}` }, fileContent: b64
         });
         if (!up.result?.ID) throw new Error(up.error_description || 'No se pudo subir');
