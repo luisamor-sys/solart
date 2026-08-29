@@ -456,9 +456,9 @@
       let archivos = [];
       for (const fid of ufIds) {
         try {
-          const ao = await bx('disk.attachedObject.get.json', { id: fid });
+          const ao = await bxD('disk.attachedObject.get.json', { id: fid });
           const oid = ao.result?.OBJECT_ID || fid;
-          const fr = await bx('disk.file.get.json', { id: oid });
+          const fr = await bxD('disk.file.get.json', { id: oid });
           if (fr.result) archivos.push({ n: fr.result.NAME, u: fr.result.DOWNLOAD_URL || fr.result.DETAIL_URL || '' });
         } catch {}
       }
