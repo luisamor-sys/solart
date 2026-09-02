@@ -412,9 +412,15 @@
     { k:'UF_CRM_1753209254287', lbl:'🔋 % de energía que cubrimos', tipo:'text' },
     { k:'UF_CRM_1765995370491', lbl:'🏠 Inmueble', tipo:'enum', mapa:'INMUEBLE_MAP' },
     { k:'UF_CRM_1777320644093', lbl:'⚙️ Proveedor energético', tipo:'enum', mapa:'PROVEEDOR_MAP' },
-    { k:'OPPORTUNITY', lbl:'💰 Monto de la propuesta (MXN)', tipo:'num' },
-    { k:'UF_CRM_1758675881434', lbl:'📉 Ahorro mensual CON SOLART (MXN)', tipo:'num' },
+    { k:'OPPORTUNITY', lbl:'💰 Monto de la propuesta (MXN)', tipo:'money' },
+    { k:'UF_CRM_1758675881434', lbl:'📉 Ahorro mensual CON SOLART (MXN)', tipo:'money' },
   ];
+  // Formato de dinero en vivo: $1,234,567 (al guardar se limpia solo)
+  window.fmtDinero = el => {
+    const d = String(el.value).replace(/[^\d]/g, '');
+    el.value = d ? '$' + Number(d).toLocaleString('es-MX') : '';
+  };
+  window.soloNumero = v => String(v).replace(/[^\d.]/g, '');
 
   // Mapas de enums UF — se actualizan dinámicamente con crm.deal.fields
   let INMUEBLE_MAP = {};
@@ -637,7 +643,12 @@
           const ops = ['<option value="">—</option>'].concat(Object.entries(m).map(([id,nom]) => `<option value="${id}" ${String(val)===String(id)?'selected':''}>${nom}</option>`)).join('');
           return `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#6b7280">${c.lbl}</label><select data-campo="${c.k}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;margin-top:3px">${ops}</select></div>`;
         }
-        const raw = c.k === 'UF_CRM_1758675881434' && typeof val === 'string' ? val.split('|')[0] : val;
+        let raw = c.k === 'UF_CRM_1758675881434' && typeof val === 'string' ? val.split('|')[0] : val;
+        if (c.tipo === 'money') {
+          const d = String(raw).replace(/[^\d]/g, '').replace(/\.\d+$/, '');
+          const fmt = raw ? '$' + Math.round(parseFloat(soloNumero(raw)) || 0).toLocaleString('es-MX') : '';
+          return `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#6b7280">${c.lbl}</label><input data-campo="${c.k}" data-money="1" type="text" inputmode="numeric" oninput="fmtDinero(this)" value="${fmt}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;margin-top:3px;box-sizing:border-box"></div>`;
+        }
         return `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#6b7280">${c.lbl}</label><input data-campo="${c.k}" type="${c.tipo==='num'?'number':'text'}" value="${raw}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px;font-size:13px;margin-top:3px;box-sizing:border-box"></div>`;
       }).join('');
       // Tareas de la negociación
@@ -967,7 +978,7 @@
     const fields = {};
     document.querySelectorAll('#deal-campos [data-campo]').forEach(el => {
       const k = el.dataset.campo;
-      let v = el.value;
+      let v = el.dataset.money ? soloNumero(el.value) : el.value;
       if (k === 'UF_CRM_1758675881434' && v) v = v + '|MXN';
       fields[k] = v;
     });

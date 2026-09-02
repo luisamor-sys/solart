@@ -120,12 +120,12 @@
       <div class="campo" style="grid-column:1/-1"><label>Nombre / Empresa</label><input id="f-nombre" placeholder="Ej. DISTRIBUIDORA RODIN"></div>
       <div class="campo" style="grid-column:1/-1"><label>Dirección (una línea por renglón)</label><input id="f-dir" placeholder="Ej. Buena Suerte 51, Los Olivos, Tláhuac, CDMX"></div>
       <div class="seccion-form">Datos del recibo CFE</div>
-      <div class="campo"><label>Total del recibo CFE ($/mes) — el "TOTAL A PAGAR" que viene en el recibo</label><input id="f-total" type="number" step="0.01" placeholder="Ej. 222,970"></div>
+      <div class="campo"><label>Total del recibo CFE ($/mes) — el "TOTAL A PAGAR" que viene en el recibo</label><input id="f-total" type="text" inputmode="numeric" oninput="fmtDinero(this)" placeholder="Ej. 222,970"></div>
       <div class="campo"><label>% de energía que cubrimos</label><input id="f-pctenergia" placeholder="Ej. 100%"></div>
       <div class="campo"><label>Periodo (se llena solo, puedes ajustarlo)</label><input id="f-periodo"></div>
       <div class="seccion-form">De la propuesta de ingeniería</div>
-      <div class="campo"><label>Pago mensual CON SOLART ($)</label><input id="f-consolart" type="number" step="0.01" placeholder="Ej. 20,329"></div>
-      <div class="campo"><label>Inversión del proyecto ($)</label><input id="f-inversion" type="number" step="0.01" placeholder="Ej. 10,986,788"></div>
+      <div class="campo"><label>Pago mensual CON SOLART ($)</label><input id="f-consolart" type="text" inputmode="numeric" oninput="fmtDinero(this)" placeholder="Ej. 20,329"></div>
+      <div class="campo"><label>Inversión del proyecto ($)</label><input id="f-inversion" type="text" inputmode="numeric" oninput="fmtDinero(this)" placeholder="Ej. 10,986,788"></div>
       <div class="campo"><label>Capacidad instalada (kWp)</label><input id="f-kwp" type="number" step="0.01" placeholder="Ej. 625"></div>
       <div class="campo"><label>Generación mensual (kWh)</label><input id="f-kwh" type="number" step="1" placeholder="Ej. 81,035"></div>
       <div class="campo"><label>Retorno de inversión (años) — si lo dejas vacío se calcula solo</label><input id="f-roi" type="number" step="0.1" placeholder="Ej. 2.5"></div>
@@ -162,7 +162,13 @@
         const lbl = document.getElementById(id)?.closest('.campo')?.querySelector('label');
         if (lbl && !lbl.querySelector('.de-bx')) lbl.insertAdjacentHTML('beforeend', ' <span class="de-bx" style="color:#16a34a;font-weight:800">✓ de Bitrix</span>');
       };
-      const pon = (id, val) => { if (val === undefined || val === null || val === '') return; document.getElementById(id).value = val; marca(id); };
+      const pon = (id, val) => {
+        if (val === undefined || val === null || val === '') return;
+        const el = document.getElementById(id);
+        el.value = val;
+        if (el.getAttribute('oninput')) fmtDinero(el);
+        marca(id);
+      };
       const partes = String(d.TITLE||'').split('_').map(x=>x.trim()).filter(Boolean);
       const razonSocial = partes.find(p => /\b(S\.?A\.?|CV|SAPI|S DE RL|S\.C\.)\b/i.test(p));
       pon('f-nombre', razonSocial || partes[1] || partes[0] || '');
@@ -200,8 +206,9 @@
     if (d?.rates?.MXN) window._tcHoy = d.rates.MXN;
   }).catch(() => {});
 
+  window.fmtDinero = el => { const d = String(el.value).replace(/[^\d]/g, ''); el.value = d ? '$' + Number(d).toLocaleString('es-MX') : ''; };
   const v = id => document.getElementById(id).value;
-  const n = id => parseFloat(document.getElementById(id).value) || 0;
+  const n = id => parseFloat(String(document.getElementById(id).value).replace(/[^\d.]/g, '')) || 0;
 
   // Monto en letras (pesos m.n.) — estilo recibo CFE
   function enLetras(num) {
