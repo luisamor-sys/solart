@@ -1197,12 +1197,11 @@
         select: ['ID','TITLE','STATUS','DEADLINE','RESPONSIBLE_ID'],
         order: { DEADLINE: 'ASC' }
       }),
-      // Actividades de hoy: pendientes, soy responsable
+      // Actividades: pendientes (incluidas vencidas) — las de hoy hechas se agregan aparte
       bx('crm.activity.list.json', {
         filter: {
           RESPONSIBLE_ID: uid,
           COMPLETED: 'N',
-          '>=DEADLINE': fmtAct(hoyIni),
           '<=DEADLINE': fmtAct(hoyFin)
         },
         select: ['ID','SUBJECT','DESCRIPTION','TYPE_ID','DEADLINE','OWNER_TYPE_ID','OWNER_ID'],
@@ -1259,7 +1258,15 @@
     const todosDeals    = dealsRes.result || [];
     const misTareas     = (misTargetRes.result?.tasks) || [];
     const tareasClien   = (tareasClienteRes.result?.tasks) || [];
-    const actividadesHoy = actividadesRes.result || [];
+    let actividadesHoy = actividadesRes.result || [];
+    try {
+      const hechasHoy = await bx('crm.activity.list.json', {
+        filter: { RESPONSIBLE_ID: uid, COMPLETED: 'Y', '>=CREATED': fmtAct(hoyIni) },
+        select: ['ID','SUBJECT','DESCRIPTION','TYPE_ID','DEADLINE','OWNER_TYPE_ID','OWNER_ID','COMPLETED'],
+        order: { CREATED: 'DESC' }
+      });
+      actividadesHoy = [...actividadesHoy, ...(hechasHoy.result || [])];
+    } catch {}
 
     // Filtrar client-side
     const leadsAct = todosLeads.filter(l => l.STATUS_ID !== 'JUNK' && l.STATUS_ID !== 'CONVERTED');
@@ -1560,7 +1567,7 @@
 
       const tieneDetalle = camposDeal.length > 0;
 
-      return `<div class="deal-card">
+      return `<div class="deal-card" style="cursor:pointer" onclick="if(event.target.closest('button'))return; abrirDealModal(${d.ID})">
         <div class="deal-top">
           <div class="deal-info">
             <div class="deal-nombre">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}</div>
@@ -1600,16 +1607,19 @@
       ? actividadesHoy.map(a => {
           const hora  = a.DEADLINE ? new Date(a.DEADLINE).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) : '';
           const tipo  = TIPO_ACT_LABEL[a.TYPE_ID] || '📌 Actividad';
-          return `<div class="tarea-item" id="act-hoy-${a.ID}">
-            <div class="item-dot" style="background:#7c3aed"></div>
+          const hecha = a.COMPLETED === 'Y';
+          const vencida = !hecha && a.DEADLINE && new Date(a.DEADLINE) < new Date(new Date().setHours(0,0,0,0));
+          const desc = (a.DESCRIPTION || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+          return `<div class="tarea-item" id="act-hoy-${a.ID}" style="${hecha ? 'opacity:.7' : ''}">
+            <div class="item-dot" style="background:${hecha ? '#16a34a' : vencida ? '#dc2626' : '#7c3aed'}"></div>
             <div class="tarea-texto">
-              <div class="tarea-nombre">${a.SUBJECT || 'Sin título'}</div>
-              <div class="tarea-status">${tipo}${hora ? ' · ' + hora : ''}${a.DESCRIPTION ? ' · ' + a.DESCRIPTION.substring(0,60) : ''}</div>
+              <div class="tarea-nombre" style="${hecha ? 'text-decoration:line-through;color:#6b7280' : ''}">${a.SUBJECT || 'Sin título'}</div>
+              <div class="tarea-status">${hecha ? '✅ hecha hoy · ' : vencida ? '<b style="color:#dc2626">vencida</b> · ' : ''}${tipo}${hora ? ' · ' + hora : ''}${desc ? ' · ' + desc.substring(0,60) : ''}</div>
             </div>
-            <button class="btn-completar-dash" id="btn-act-${a.ID}" onclick="pedirConfActividad(event,${a.ID})">✓</button>
+            ${hecha ? '' : `<button class="btn-completar-dash" id="btn-act-${a.ID}" onclick="pedirConfActividad(event,${a.ID})">✓</button>`}
           </div>`;
         }).join('')
-      : '<div class="empty-msg">Sin actividades para hoy 🎉</div>';
+      : '<div class="empty-msg">Sin actividades pendientes ni registradas hoy — usa "+ Actividad" en tus negociaciones 📞</div>';
 
     document.getElementById('dash-contenido').innerHTML = `
       ${bannerTcHtml}${periodoHtml}
@@ -1618,8 +1628,8 @@
       ${finHtml}
       ${prioHtml}
       <div class="dash-tabs" id="dash-tabs">
-        <button class="dtab-btn" data-t="tareas" onclick="switchDashTab('tareas')">⚡ Mis tareas <span>${misTareas.length}</span></button>
-        <button class="dtab-btn" data-t="clientes" onclick="switchDashTab('clientes')">⏳ Mis clientes <span>${tareasCliente.length}</span></button>
+        <button class="dtab-btn" data-t="tareas" onclick="switchDashTab('tareas')">⚡ Tareas internas <span>${misTareas.length}</span></button>
+        <button class="dtab-btn" data-t="clientes" onclick="switchDashTab('clientes')">⏳ Tareas de clientes <span>${tareasCliente.length}</span></button>
         <button class="dtab-btn" data-t="ventas" onclick="switchDashTab('ventas')">💼 En venta <span>${deals.length}</span></button>
         <button class="dtab-btn" data-t="cierre" onclick="switchDashTab('cierre')">🔒 En cierre <span>${dealsCierre.length}</span></button>
         <button class="dtab-btn" data-t="prospectos" onclick="switchDashTab('prospectos')">👤 Prospectos <span>${leads.length}</span></button>
