@@ -1188,7 +1188,7 @@
       // Mis tareas: yo soy responsable, pendientes
       bx('tasks.task.list.json', {
         filter: { RESPONSIBLE_ID: uid, '!STATUS': '5' },
-        select: ['ID','TITLE','STATUS','DEADLINE','CREATED_BY'],
+        select: ['ID','TITLE','STATUS','DEADLINE','CREATED_BY','UF_CRM_TASK'],
         order: { DEADLINE: 'ASC' }
       }),
       // Tareas de mis clientes: yo las creé, otro es responsable, pendientes
@@ -1259,6 +1259,19 @@
     const misTareas     = (misTargetRes.result?.tasks) || [];
     const tareasClien   = (tareasClienteRes.result?.tasks) || [];
     let actividadesHoy = actividadesRes.result || [];
+    // Siguiente paso por negociación: primera actividad pendiente (cualquier fecha)
+    window._sigPaso = {};
+    try {
+      const pend = await bx('crm.activity.list.json', {
+        filter: { RESPONSIBLE_ID: uid, COMPLETED: 'N', OWNER_TYPE_ID: 2 },
+        select: ['ID','SUBJECT','DEADLINE','OWNER_ID'],
+        order: { DEADLINE: 'ASC' }
+      });
+      (pend.result || []).forEach(a => {
+        const k = String(a.OWNER_ID);
+        if (!window._sigPaso[k]) window._sigPaso[k] = { txt: a.SUBJECT || 'Actividad', fecha: a.DEADLINE ? a.DEADLINE.substring(0,10) : '' };
+      });
+    } catch {}
     try {
       const hechasHoy = await bx('crm.activity.list.json', {
         filter: { RESPONSIBLE_ID: uid, COMPLETED: 'Y', '>=CREATED': fmtAct(hoyIni) },
@@ -1430,12 +1443,19 @@
         if (kw) partes.push(`⚡ ${kw.toLocaleString()} kW`);
         if (en) partes.push(`🔋 ${en}%`);
         if (parseFloat(d.OPPORTUNITY)) partes.push(fMXN(parseFloat(d.OPPORTUNITY)));
+        const sig = window._sigPaso?.[String(d.ID)];
+        const tareaDeal = misTareas.find(t => (t.ufCrmTask || []).includes('D_' + d.ID));
+        const siguiente = sig ? `${sig.txt}${sig.fecha ? ' (' + sig.fecha + ')' : ''}`
+          : tareaDeal ? `Tarea: ${tareaDeal.title}`
+          : null;
         prioridades.push({
           icono: grande ? '⚡' : '🔋',
           color: grande ? '#dc2626' : '#7c3aed',
           bg: grande ? '#fef2f2' : '#faf5ff',
           accion: grande ? 'Proyecto grande' : 'Alta cobertura',
+          tipo: grande ? 'grande' : 'cobertura',
           titulo: tituloAmigable(d.TITLE, d.UF_CRM_1741392978542),
+          siguiente,
           extra: partes.join(' · '), dealId: d.ID
         });
       });
@@ -1443,18 +1463,33 @@
     misTareas.filter(t => t.deadline && new Date(t.deadline) < new Date()).slice(0,3).forEach(t => {
       prioridades.push({ icono:'⏰', color:'#6b7280', bg:'#f9fafb', accion:'Tarea vencida', titulo:t.title, extra:`venció ${t.deadline.substring(0,10)}` });
     });
+    window.filtrarPrio = tipo => {
+      document.querySelectorAll('.prio-card').forEach(c => { c.style.display = (!tipo || c.dataset.tipo === tipo) ? 'flex' : 'none'; });
+      document.querySelectorAll('.prio-chip').forEach(c => {
+        const on = c.dataset.v === (tipo || '');
+        c.style.background = on ? '#1a1a2e' : '#fff';
+        c.style.color = on ? '#fff' : '#6b7280';
+      });
+    };
     const prioHtml = `
       <div class="seccion">
         <div class="seccion-header">
           <span class="seccion-titulo">🎯 Prioridades del mes</span>
           <span class="seccion-count">${prioridades.length}</span>
         </div>
+        ${prioridades.length ? `
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="prio-chip" data-v="" onclick="filtrarPrio('')" style="background:#1a1a2e;color:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">Todas</button>
+          <button class="prio-chip" data-v="grande" onclick="filtrarPrio('grande')" style="background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">⚡ 150+ kW</button>
+          <button class="prio-chip" data-v="cobertura" onclick="filtrarPrio('cobertura')" style="background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">🔋 50%+ energía</button>
+        </div>` : ''}
         ${prioridades.length ? prioridades.slice(0,9).map((p,i) => `
-        <div ${p.dealId ? `onclick="abrirDealModal(${p.dealId})"` : ''} style="display:flex;align-items:center;gap:10px;background:${p.bg};border:1px solid ${p.color}22;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
+        <div class="prio-card" data-tipo="${p.tipo || ''}" ${p.dealId ? `onclick="abrirDealModal(${p.dealId})"` : ''} style="display:flex;align-items:center;gap:10px;background:${p.bg};border:1px solid ${p.color}22;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
           <div style="font-size:18px">${p.icono}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:11px;font-weight:800;color:${p.color};text-transform:uppercase;letter-spacing:.03em">${i+1}. ${p.accion}</div>
             <div style="font-size:13px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.titulo}</div>
+            ${p.siguiente ? `<div style="font-size:11px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">👉 ${p.siguiente}</div>` : p.dealId ? '<div style="font-size:11px;color:#dc2626;font-weight:700">👉 Sin siguiente paso — agenda una actividad</div>' : ''}
           </div>
           <div style="font-size:12px;font-weight:700;color:${p.color};flex-shrink:0">${p.extra}</div>
         </div>`).join('') : '<div class="empty-msg">Sin prioridades pendientes — todo al corriente 🎉</div>'}
@@ -1642,8 +1677,8 @@
       ${finHtml}
       ${prioHtml}
       <div class="dash-tabs" id="dash-tabs">
-        <button class="dtab-btn" data-t="tareas" onclick="switchDashTab('tareas')">⚡ Tareas internas <span>${misTareas.length}</span></button>
-        <button class="dtab-btn" data-t="clientes" onclick="switchDashTab('clientes')">⏳ Tareas de clientes <span>${tareasCliente.length}</span></button>
+        <button class="dtab-btn" data-t="tareas" onclick="switchDashTab('tareas')">⚡ Seguimientos <span>${misTareas.length}</span></button>
+        <button class="dtab-btn" data-t="clientes" onclick="switchDashTab('clientes')">⏳ Tareas <span>${tareasCliente.length}</span></button>
         <button class="dtab-btn" data-t="ventas" onclick="switchDashTab('ventas')">💼 En venta <span>${deals.length}</span></button>
         <button class="dtab-btn" data-t="cierre" onclick="switchDashTab('cierre')">🔒 En cierre <span>${dealsCierre.length}</span></button>
         <button class="dtab-btn" data-t="prospectos" onclick="switchDashTab('prospectos')">👤 Prospectos <span>${leads.length}</span></button>
