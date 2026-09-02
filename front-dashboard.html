@@ -1407,24 +1407,38 @@
     // ── 🎯 Prioridades del mes ──
     const DIA_MS = 86400000;
     const prioridades = [];
-    // 1. En cierre: lo más cerca del dinero
-    dealsCierre.slice().sort((a,b) => (parseFloat(b.OPPORTUNITY)||0) - (parseFloat(a.OPPORTUNITY)||0)).slice(0,3).forEach(d => {
-      prioridades.push({ icono:'🔥', color:'#dc2626', bg:'#fef2f2', accion:'Ciérrala', titulo:tituloAmigable(d.TITLE, d.UF_CRM_1741392978542), extra:fMXN(parseFloat(d.OPPORTUNITY)||0), dealId:d.ID });
-    });
-    // 2. Casi cerradas o en evaluación: empujar el sí
-    deals.filter(d => ['UC_Y3LUYS','FINAL_INVOICE'].includes(d.STAGE_ID)).slice(0,3).forEach(d => {
-      prioridades.push({ icono:'🎯', color:'#7c3aed', bg:'#faf5ff', accion:'Empuja el sí', titulo:tituloAmigable(d.TITLE, d.UF_CRM_1741392978542), extra:fMXN(parseFloat(d.OPPORTUNITY)||0), dealId:d.ID });
-    });
-    // 3. Estancadas: sin movimiento en 30+ días (ficha editada O actividad en timeline)
     const ultimoMovD = d => Math.max(
       d.DATE_MODIFY ? new Date(d.DATE_MODIFY).getTime() : 0,
       d.LAST_ACTIVITY_TIME ? new Date(d.LAST_ACTIVITY_TIME).getTime() : 0,
       window._ultimaActDeal?.[String(d.ID)] || 0
     );
-    deals.filter(d => (Date.now() - ultimoMovD(d)) > 30*DIA_MS && !dealsConAct.has(String(d.ID))).slice(0,3).forEach(d => {
-      const dias = Math.floor((Date.now() - ultimoMovD(d)) / DIA_MS);
-      prioridades.push({ icono:'🕐', color:'#d97706', bg:'#fffbeb', accion:'Retómala', titulo:tituloAmigable(d.TITLE, d.UF_CRM_1741392978542), extra:`${dias} días sin movimiento`, dealId:d.ID });
-    });
+    // Regla de prioridad: proyectos de 150 kW o más (mientras más grandes, más arriba)
+    // y proyectos que cubren al menos 50% de la energía (mientras más cubran, más arriba)
+    const kwDe = d => parseFloat(d.UF_CRM_1741208352117) || 0;
+    const enDe = d => parseFloat(String(d.UF_CRM_1753209254287 || '').replace('%','')) || 0;
+    [...deals, ...dealsCierre]
+      .map(d => ({ d, kw: kwDe(d), en: enDe(d) }))
+      .filter(x => x.kw >= 150 || x.en >= 50)
+      .sort((a, b) => {
+        const nivel = x => (x.kw >= 150 ? 2 : 0) + (x.en >= 50 ? 1 : 0);
+        return nivel(b) - nivel(a) || b.kw - a.kw || b.en - a.en;
+      })
+      .slice(0, 8)
+      .forEach(({ d, kw, en }) => {
+        const grande = kw >= 150;
+        const partes = [];
+        if (kw) partes.push(`⚡ ${kw.toLocaleString()} kW`);
+        if (en) partes.push(`🔋 ${en}%`);
+        if (parseFloat(d.OPPORTUNITY)) partes.push(fMXN(parseFloat(d.OPPORTUNITY)));
+        prioridades.push({
+          icono: grande ? '⚡' : '🔋',
+          color: grande ? '#dc2626' : '#7c3aed',
+          bg: grande ? '#fef2f2' : '#faf5ff',
+          accion: grande ? 'Proyecto grande' : 'Alta cobertura',
+          titulo: tituloAmigable(d.TITLE, d.UF_CRM_1741392978542),
+          extra: partes.join(' · '), dealId: d.ID
+        });
+      });
     // 4. Tareas vencidas
     misTareas.filter(t => t.deadline && new Date(t.deadline) < new Date()).slice(0,3).forEach(t => {
       prioridades.push({ icono:'⏰', color:'#6b7280', bg:'#f9fafb', accion:'Tarea vencida', titulo:t.title, extra:`venció ${t.deadline.substring(0,10)}` });
