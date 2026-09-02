@@ -837,6 +837,11 @@
     }
   }
 
+  // Formateador de pesos disponible para los modales
+  const fMXNg = n => {
+    n = parseFloat(n) || 0;
+    return n >= 1e6 ? '$' + (n/1e6).toFixed(1) + ' M' : '$' + Math.round(n).toLocaleString('es-MX');
+  };
   // Modal de cohorte de la tira de hitos (mismo patrón que el tablero de Victor)
   function abrirCohorteModal(key) {
     const c = window._cohortes?.[key];
@@ -849,13 +854,13 @@
           <div style="font-size:13px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}</div>
           <div style="font-size:11px;color:#6b7280">${d.STAGE_ID && d.STAGE_ID.endsWith('LOSE') ? '❌ perdida' : d.STAGE_ID === 'C2:WON' || ['4','6'].includes(String(d.CATEGORY_ID)) ? '🏆 ganada' : '🟢 activa'}${d.UF_CRM_1741208352117 ? ' · ⚡ ' + d.UF_CRM_1741208352117 + ' kW' : ''}</div>
         </div>
-        <div style="font-size:13px;font-weight:800;color:#374151;white-space:nowrap">${parseFloat(d.OPPORTUNITY) ? fMXN(parseFloat(d.OPPORTUNITY)) : '—'}</div>
+        <div style="font-size:13px;font-weight:800;color:#374151;white-space:nowrap">${parseFloat(d.OPPORTUNITY) ? fMXNg(d.OPPORTUNITY) : '—'}</div>
       </div>`).join('')
     : c.leads.map(l => `
       <div style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin-bottom:8px">
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;color:#111827">${l.TITLE || [l.NAME, l.LAST_NAME].filter(Boolean).join(' ') || 'Sin nombre'}</div>
-          <div style="font-size:11px;color:#6b7280">${(ETAPAS_LEAD && ETAPAS_LEAD[l.STATUS_ID]) || l.STATUS_ID || ''}</div>
+          <div style="font-size:11px;color:#6b7280">${(typeof ETAPAS_LEAD !== 'undefined' && ETAPAS_LEAD[l.STATUS_ID]) || l.STATUS_ID || ''}</div>
         </div>
       </div>`).join('');
     document.getElementById('modal-body').innerHTML = cuerpo || '<div style="font-size:12px;color:#9ca3af">Sin registros en este hito.</div>';
@@ -874,7 +879,7 @@
           <div style="font-size:13px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}</div>
           <div style="font-size:11px;color:#6b7280">${fL(d.MOVED_TIME || d.CLOSEDATE || d.DATE_CREATE)}${d.UF_CRM_1741208352117 ? ' · ⚡ ' + d.UF_CRM_1741208352117 + ' kW' : ''}</div>
         </div>
-        <div style="font-size:13px;font-weight:800;color:#15803d;white-space:nowrap">${fMXN(parseFloat(d.OPPORTUNITY) || 0)}</div>
+        <div style="font-size:13px;font-weight:800;color:#15803d;white-space:nowrap">${fMXNg(d.OPPORTUNITY)}</div>
       </div>`).join('') : '<div style="font-size:12px;color:#9ca3af">Aún no hay ganadas registradas — ¡la primera está cerca! 💪</div>';
   }
 
