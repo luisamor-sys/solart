@@ -837,6 +837,23 @@
     }
   }
 
+  // Modal con la lista de ganadas del vendedor (clic en cualquiera abre su detalle)
+  function abrirGanadasModal() {
+    const gs = (window._misGanadas || []).slice().sort((a, b) =>
+      new Date(b.MOVED_TIME || b.CLOSEDATE || b.DATE_CREATE) - new Date(a.MOVED_TIME || a.CLOSEDATE || a.DATE_CREATE));
+    abrirModal(`🏆 Mis ganadas · ${gs.length}`);
+    const fL = f => f ? new Date(f).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+    document.getElementById('modal-body').innerHTML = gs.length ? gs.map(d => `
+      <div onclick="abrirDealModal(${d.ID})" style="display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
+        <div style="font-size:18px">🏆</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}</div>
+          <div style="font-size:11px;color:#6b7280">${fL(d.MOVED_TIME || d.CLOSEDATE || d.DATE_CREATE)}${d.UF_CRM_1741208352117 ? ' · ⚡ ' + d.UF_CRM_1741208352117 + ' kW' : ''}</div>
+        </div>
+        <div style="font-size:13px;font-weight:800;color:#15803d;white-space:nowrap">${fMXN(parseFloat(d.OPPORTUNITY) || 0)}</div>
+      </div>`).join('') : '<div style="font-size:12px;color:#9ca3af">Aún no hay ganadas registradas — ¡la primera está cerca! 💪</div>';
+  }
+
   // Datos del contacto del deal, con botones de WhatsApp y llamada
   async function cargarContactoModal(dl) {
     const cont = document.getElementById('modal-contacto');
@@ -1255,9 +1272,9 @@
 
     // Mis ganadas (anticipo pagado o ya en instalación/entrega) — para la sección financiera
     const [wonC2Res, cat4Res, cat6Res] = await Promise.all([
-      bx('crm.deal.list.json', { filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 2, STAGE_ID: 'C2:WON' }, select: ['ID','TITLE','OPPORTUNITY','MOVED_TIME','CLOSEDATE','DATE_CREATE','UF_CRM_1741208352117'] }),
-      bx('crm.deal.list.json', { filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 4 }, select: ['ID','TITLE','OPPORTUNITY','STAGE_ID','MOVED_TIME','CLOSEDATE','DATE_CREATE','UF_CRM_1741208352117'] }),
-      bx('crm.deal.list.json', { filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 6 }, select: ['ID','TITLE','OPPORTUNITY','STAGE_ID','MOVED_TIME','CLOSEDATE','DATE_CREATE','UF_CRM_1741208352117'] }),
+      bx('crm.deal.list.json', { filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 2, STAGE_ID: 'C2:WON' }, select: ['ID','TITLE','OPPORTUNITY','MOVED_TIME','CLOSEDATE','DATE_CREATE','UF_CRM_1741208352117','UF_CRM_1741392978542'] }),
+      bx('crm.deal.list.json', { filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 4 }, select: ['ID','TITLE','OPPORTUNITY','STAGE_ID','MOVED_TIME','CLOSEDATE','DATE_CREATE','UF_CRM_1741208352117','UF_CRM_1741392978542'] }),
+      bx('crm.deal.list.json', { filter: { ASSIGNED_BY_ID: uid, CATEGORY_ID: 6 }, select: ['ID','TITLE','OPPORTUNITY','STAGE_ID','MOVED_TIME','CLOSEDATE','DATE_CREATE','UF_CRM_1741208352117','UF_CRM_1741392978542'] }),
     ]);
     const misGanadas = [
       ...(wonC2Res.result || []),
@@ -1336,6 +1353,7 @@
   }
 
   function renderDashboard(kpis, leads, deals, dealsCierre, misTareas, tareasCliente, actividadesHoy = [], misGanadas = [], dealsConAct = new Set(), hitos = null) {
+    window._misGanadas = misGanadas;
     const labels = { hoy: 'hoy', semana: 'esta semana', mes: 'este mes' };
     const lbl = labels[periodoActual];
 
@@ -1401,7 +1419,7 @@
         ${flechaH(H.cvNegCie,'#1d4ed8')}
         ${cajaH('#eff6ff','#bfdbfe','#1d4ed8','#1e3a8a','EN CIERRE',H.cierre,'contrato/anticipo')}
         ${flechaH(H.cvCieGan,'#15803d')}
-        ${cajaH('#f0fdf4','#bbf7d0','#15803d','#14532d','GANADAS 🎉',H.ganadas,fMXNd(H.montoGan)+(H.ganadasChicas?` +${H.ganadasChicas} chica${H.ganadasChicas>1?'s':''}`:''))}
+        <div onclick="abrirGanadasModal()" style="cursor:pointer">${cajaH('#f0fdf4','#bbf7d0','#15803d','#14532d','GANADAS 🎉',H.ganadas,fMXNd(H.montoGan)+(H.ganadasChicas?` +${H.ganadasChicas} chica${H.ganadasChicas>1?'s':''}`:''))}</div>
       </div>
       </div>
       ${H.perdidas ? `<div style="text-align:right;margin-bottom:16px"><span style="font-size:11px;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:20px;padding:3px 10px">🔻 Tasa de pérdida: ${H.tasaPerdida}% · ${H.perdidas} perdidas</span></div>` : '<div style="margin-bottom:16px"></div>'}
@@ -1421,7 +1439,7 @@
           <div style="font-size:19px;font-weight:800;color:#1e3a8a">${fMXN(sumaOp(dealsCierre))}</div>
           <div style="font-size:10px;color:#3b82f6">${dealsCierre.length} por cerrar</div>
         </div>
-        <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:14px;padding:12px;text-align:center">
+        <div onclick="abrirGanadasModal()" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:14px;padding:12px;text-align:center;cursor:pointer">
           <div style="font-size:10px;font-weight:700;color:#15803d">GANADO ${anioHoy}</div>
           <div style="font-size:19px;font-weight:800;color:#14532d">${fMXN(sumaOp(ganadasAnio))}</div>
           <div style="font-size:10px;color:#16a34a">${ganadasAnio.length} ganadas 🎉</div>
