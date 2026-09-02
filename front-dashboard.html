@@ -837,6 +837,30 @@
     }
   }
 
+  // Modal de cohorte de la tira de hitos (mismo patrón que el tablero de Victor)
+  function abrirCohorteModal(key) {
+    const c = window._cohortes?.[key];
+    if (!c) return;
+    const arr = c.deals || c.leads || [];
+    abrirModal(`${c.titulo} · ${arr.length}`);
+    const cuerpo = c.deals ? c.deals.slice().sort((a,b) => (parseFloat(b.OPPORTUNITY)||0) - (parseFloat(a.OPPORTUNITY)||0)).map(d => `
+      <div onclick="abrirDealModal(${d.ID})" style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}</div>
+          <div style="font-size:11px;color:#6b7280">${d.STAGE_ID && d.STAGE_ID.endsWith('LOSE') ? '❌ perdida' : d.STAGE_ID === 'C2:WON' || ['4','6'].includes(String(d.CATEGORY_ID)) ? '🏆 ganada' : '🟢 activa'}${d.UF_CRM_1741208352117 ? ' · ⚡ ' + d.UF_CRM_1741208352117 + ' kW' : ''}</div>
+        </div>
+        <div style="font-size:13px;font-weight:800;color:#374151;white-space:nowrap">${parseFloat(d.OPPORTUNITY) ? fMXN(parseFloat(d.OPPORTUNITY)) : '—'}</div>
+      </div>`).join('')
+    : c.leads.map(l => `
+      <div style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin-bottom:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:#111827">${l.TITLE || [l.NAME, l.LAST_NAME].filter(Boolean).join(' ') || 'Sin nombre'}</div>
+          <div style="font-size:11px;color:#6b7280">${(ETAPAS_LEAD && ETAPAS_LEAD[l.STATUS_ID]) || l.STATUS_ID || ''}</div>
+        </div>
+      </div>`).join('');
+    document.getElementById('modal-body').innerHTML = cuerpo || '<div style="font-size:12px;color:#9ca3af">Sin registros en este hito.</div>';
+  }
+
   // Modal con la lista de ganadas del vendedor (clic en cualquiera abre su detalle)
   function abrirGanadasModal() {
     const gs = (window._misGanadas || []).slice().sort((a, b) =>
@@ -1335,6 +1359,12 @@
     const ganadasG    = misGanadas.filter(d => !esChicaDeal(d));
     const ganadasC    = misGanadas.filter(esChicaDeal);
     const totalProsH  = leadsAct.length + conReciboAll.length;
+    window._cohortes = {
+      prospectos: { titulo: '👤 Mis prospectos (sin recibo)', leads: leadsAct },
+      recibo: { titulo: '🧾 Con recibo (todo lo que entró)', deals: conReciboAll },
+      negociacion: { titulo: '💬 En negociación (post-visita)', deals: negociacion },
+      cierre: { titulo: '📄 En cierre', deals: enCierreH },
+    };
     const hitos = {
       prospectos: leadsAct.length,
       conRecibo: conReciboAll.length, montoRecibo: sumOp(conReciboAll),
@@ -1411,13 +1441,13 @@
       <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Tu recorrido de venta · las flechas son la conversión de un hito al siguiente</div>
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:8px">
       <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr;gap:3px;align-items:stretch;min-width:620px">
-        ${cajaH('#fff7ed','#fed7aa','#c2410c','#7c2d12','PROSPECTOS',H.prospectos,'sin recibo')}
+        <div onclick="abrirCohorteModal('prospectos')" style="cursor:pointer">${cajaH('#fff7ed','#fed7aa','#c2410c','#7c2d12','PROSPECTOS',H.prospectos,'sin recibo')}</div>
         ${flechaH(H.cvProsp,'#d97706')}
-        ${cajaH('#fefce8','#fde68a','#a16207','#713f12','CON RECIBO',H.conRecibo,fMXNd(H.montoRecibo))}
+        <div onclick="abrirCohorteModal('recibo')" style="cursor:pointer">${cajaH('#fefce8','#fde68a','#a16207','#713f12','CON RECIBO',H.conRecibo,fMXNd(H.montoRecibo))}</div>
         ${flechaH(H.cvRecNeg,'#7c3aed')}
-        ${cajaH('#faf5ff','#e9d5ff','#7c3aed','#4c1d95','NEGOCIACIÓN',H.negociacion,'post-visita')}
+        <div onclick="abrirCohorteModal('negociacion')" style="cursor:pointer">${cajaH('#faf5ff','#e9d5ff','#7c3aed','#4c1d95','NEGOCIACIÓN',H.negociacion,'post-visita')}</div>
         ${flechaH(H.cvNegCie,'#1d4ed8')}
-        ${cajaH('#eff6ff','#bfdbfe','#1d4ed8','#1e3a8a','EN CIERRE',H.cierre,'contrato/anticipo')}
+        <div onclick="abrirCohorteModal('cierre')" style="cursor:pointer">${cajaH('#eff6ff','#bfdbfe','#1d4ed8','#1e3a8a','EN CIERRE',H.cierre,'contrato/anticipo')}</div>
         ${flechaH(H.cvCieGan,'#15803d')}
         <div onclick="abrirGanadasModal()" style="cursor:pointer">${cajaH('#f0fdf4','#bbf7d0','#15803d','#14532d','GANADAS 🎉',H.ganadas,fMXNd(H.montoGan)+(H.ganadasChicas?` +${H.ganadasChicas} chica${H.ganadasChicas>1?'s':''}`:''))}</div>
       </div>
