@@ -861,7 +861,7 @@
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}</div>
           <div style="font-size:11px;color:#6b7280">${d.STAGE_ID && d.STAGE_ID.endsWith('LOSE') ? '❌ perdida' : d.STAGE_ID === 'C2:WON' || ['4','6'].includes(String(d.CATEGORY_ID)) ? '🏆 ganada' : '🟢 activa'}${d.UF_CRM_1741208352117 ? ' · ⚡ ' + d.UF_CRM_1741208352117 + ' kW' : ''}${d.UF_CRM_1753209254287 ? ' · 🔋 ' + String(d.UF_CRM_1753209254287).replace('%','') + '%' : ''}</div>
-          ${(() => { const sg = window.sigPasoDe ? window.sigPasoDe(d.ID) : null; return sg ? `<div style="font-size:11px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">👉 ${sg}</div>` : '<div style="font-size:11px;color:#dc2626;font-weight:700">👉 Sin siguiente paso</div>'; })()}
+          ${(() => { const sg = window.sigPasoDe ? window.sigPasoDe(d.ID) : null; return sg ? sg.map(l => `<div style="font-size:11px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">👉 ${l}</div>`).join('') : '<div style="font-size:11px;color:#dc2626;font-weight:700">👉 Sin siguiente paso</div>'; })()}
         </div>
         <div style="font-size:13px;font-weight:800;color:#374151;white-space:nowrap">${parseFloat(d.OPPORTUNITY) ? fMXNg(d.OPPORTUNITY) : '—'}</div>
       </div>`).join('') + (key === 'clientes' && c.leads?.length ? `<div style="font-size:11px;font-weight:800;color:#6b7280;text-transform:uppercase;margin:12px 0 8px">👤 Prospectos (${c.leads.length})</div>` + listaLeads(c.leads) : '')
@@ -1337,12 +1337,12 @@
     try {
       const pend = await bx('crm.activity.list.json', {
         filter: { RESPONSIBLE_ID: uid, COMPLETED: 'N', OWNER_TYPE_ID: 2 },
-        select: ['ID','SUBJECT','DEADLINE','OWNER_ID'],
+        select: ['ID','SUBJECT','DEADLINE','OWNER_ID','TYPE_ID'],
         order: { DEADLINE: 'ASC' }
       });
       (pend.result || []).forEach(a => {
         const k = String(a.OWNER_ID);
-        if (!window._sigPaso[k]) window._sigPaso[k] = { txt: a.SUBJECT || 'Actividad', fecha: a.DEADLINE ? a.DEADLINE.substring(0,10) : '' };
+        if (!window._sigPaso[k]) window._sigPaso[k] = { txt: a.SUBJECT || 'Actividad', fecha: a.DEADLINE ? a.DEADLINE.substring(0,10) : '', tipo: String(a.TYPE_ID) };
       });
     } catch {}
     try {
@@ -1417,12 +1417,19 @@
   function renderDashboard(kpis, leads, deals, dealsCierre, misTareas, tareasCliente, actividadesHoy = [], misGanadas = [], dealsConAct = new Set(), hitos = null) {
     window._misGanadas = misGanadas;
     window._misTareas = misTareas;
+    // Devuelve las líneas de "qué sigue" con este cliente: la actividad Y la tarea, cada una con su fecha
     window.sigPasoDe = dealId => {
+      const hoy = new Date().toISOString().substring(0, 10);
+      const venceTxt = f => !f ? '' : f < hoy ? ` · <b style="color:#dc2626">venció ${f}</b>` : f === hoy ? ' · <b style="color:#d97706">vence HOY</b>' : ` · vence ${f}`;
+      const lineas = [];
       const sig = window._sigPaso?.[String(dealId)];
-      if (sig) return `${sig.txt}${sig.fecha ? ' · vence ' + sig.fecha : ''}`;
+      if (sig) {
+        const icono = sig.tipo === '1' ? '🤝' : sig.tipo === '4' ? '✉️' : '📞';
+        lineas.push(`${icono} ${sig.txt}${venceTxt(sig.fecha)}`);
+      }
       const t = (window._misTareas || []).find(x => (x.ufCrmTask || []).includes('D_' + dealId));
-      if (t) return `Tarea: ${t.title}${t.deadline ? ' · vence ' + t.deadline.substring(0, 10) : ''}`;
-      return null;
+      if (t) lineas.push(`📋 ${t.title.length > 55 ? t.title.slice(0, 55) + '…' : t.title}${venceTxt(t.deadline ? t.deadline.substring(0, 10) : '')}`);
+      return lineas.length ? lineas : null;
     };
     const labels = { hoy: 'hoy', semana: 'esta semana', mes: 'este mes' };
     const lbl = labels[periodoActual];
@@ -1558,7 +1565,7 @@
               <span style="font-size:13.5px;font-weight:700;color:#111827">${p.titulo}</span>
               <span style="font-size:9.5px;font-weight:800;color:${p.color};background:${p.color}14;border-radius:20px;padding:2px 8px;letter-spacing:.03em">${p.etapa.toUpperCase()}</span>
             </div>
-            <div style="font-size:11.5px;color:${p.siguiente ? '#374151' : '#dc2626'};margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${p.siguiente ? '' : 'font-weight:700'}">👉 ${p.siguiente || 'Sin siguiente paso — agenda una actividad'}</div>
+            ${p.siguiente ? p.siguiente.map(l => `<div style="font-size:11.5px;color:#374151;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">👉 ${l}</div>`).join('') : '<div style="font-size:11.5px;color:#dc2626;margin-top:2px;font-weight:700">👉 Sin siguiente paso — agenda una actividad</div>'}
           </div>
           <div style="text-align:right;flex-shrink:0;font-size:11px;color:#6b7280;line-height:1.6">
             <div style="font-size:12.5px;font-weight:800;color:#111827">⚡ ${p.kw ? p.kw.toLocaleString() + ' kW' : '—'}</div>
