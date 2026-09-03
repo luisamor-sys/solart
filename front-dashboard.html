@@ -1420,7 +1420,15 @@
     // Devuelve las líneas de "qué sigue" con este cliente: la actividad Y la tarea, cada una con su fecha
     window.sigPasoDe = dealId => {
       const hoy = new Date().toISOString().substring(0, 10);
-      const venceTxt = f => !f ? '' : f < hoy ? ` · <b style="color:#dc2626">venció ${f}</b>` : f === hoy ? ' · <b style="color:#d97706">vence HOY</b>' : ` · vence ${f}`;
+      const diasA = f => Math.round((new Date(f) - new Date(hoy)) / 86400000);
+      const venceTxt = f => {
+        if (!f) return '';
+        const d = diasA(f);
+        if (d < 0)  return ` · <b style="color:#dc2626">venció ${f} · hace ${Math.abs(d)} día${Math.abs(d)===1?'':'s'}</b>`;
+        if (d === 0) return ' · <b style="color:#d97706">vence HOY</b>';
+        if (d === 1) return ` · <b style="color:#d97706">vence mañana (${f})</b>`;
+        return ` · vence ${f} <b style="color:#0369a1">(en ${d} días)</b>`;
+      };
       const lineas = [];
       const sig = window._sigPaso?.[String(dealId)];
       if (sig) {
