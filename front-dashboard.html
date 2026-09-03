@@ -1357,8 +1357,8 @@
     // Filtrar client-side
     const leadsAct = todosLeads.filter(l => l.STATUS_ID !== 'JUNK' && l.STATUS_ID !== 'CONVERTED');
     const leadsNew = todosLeads.filter(l => l.STATUS_ID !== 'JUNK' && l.DATE_CREATE >= ini && l.DATE_CREATE <= fin);
-    const dealsAct    = todosDeals.filter(d => d.STAGE_ID !== 'WON' && d.STAGE_ID !== 'LOSE');
-    const dealsCierre = (dealsCierreRes.result || []).filter(d => d.STAGE_ID !== 'WON' && d.STAGE_ID !== 'LOSE');
+    const dealsAct    = todosDeals.filter(d => !String(d.STAGE_ID).endsWith('WON') && !String(d.STAGE_ID).endsWith('LOSE'));
+    const dealsCierre = (dealsCierreRes.result || []).filter(d => !String(d.STAGE_ID).endsWith('WON') && !String(d.STAGE_ID).endsWith('LOSE'));
 
     // ── Pipeline heredado vs propio (global): el título trae el nombre de otro vendedor ──
     const _miNombre = (usuarioActual?.nombre || '').toLowerCase();
