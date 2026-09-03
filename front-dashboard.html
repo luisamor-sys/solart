@@ -634,7 +634,8 @@
       const mapa = cat === '2' ? ETAPAS_CIERRE_G : ETAPAS_DEAL;
       document.getElementById('modal-tit').textContent = tituloAmigable(dl.TITLE, dl.UF_CRM_1741392978542) || 'Negociación';
       // Selector de etapa
-      const opciones = Object.entries(mapa).map(([id,nom]) => `<option value="${id}" ${dl.STAGE_ID===id?'selected':''}>${nom}</option>`).join('');
+      const opciones = Object.entries(mapa).map(([id,nom]) => `<option value="${id}" ${dl.STAGE_ID===id?'selected':''}>${nom}</option>`).join('')
+        + `<option value="__PERDIDA__">❌ Perdida (pide justificación)</option>`;
       // Campos editables
       const campos = CAMPOS_EDIT.map(c => {
         const val = c.k === 'OPPORTUNITY' ? (dl.OPPORTUNITY||'') : (dl[c.k]||'');
@@ -1017,9 +1018,22 @@
 
   async function guardarEtapaDeal(dealId) {
     const sel = document.getElementById('deal-stage-sel');
-    const stage = sel?.value; if (!stage) return;
+    let stage = sel?.value; if (!stage) return;
+    let justificacion = null;
+    if (stage === '__PERDIDA__') {
+      justificacion = (prompt('¿Por qué se pierde esta negociación? (obligatorio)\nEj: precio, eligió a la competencia, pausó el proyecto, no contesta…') || '').trim();
+      if (!justificacion) { alert('Sin justificación no se puede marcar como perdida.'); return; }
+      stage = String(window._dealModal?.CATEGORY_ID) === '2' ? 'C2:LOSE' : 'LOSE';
+    }
     sel.disabled = true;
-    try { await bx('crm.deal.update.json', { id: dealId, fields: { STAGE_ID: stage } }); cerrarModal(); cargarDashboard(); }
+    try {
+      await bx('crm.deal.update.json', { id: dealId, fields: { STAGE_ID: stage } });
+      if (justificacion) {
+        const autor = usuarioActual?.nombre || 'Portal';
+        await bx('crm.timeline.comment.add.json', { fields: { ENTITY_TYPE: 'deal', ENTITY_ID: dealId, COMMENT: `❌ Marcada como PERDIDA por ${autor}.\nJustificación: ${justificacion}` } });
+      }
+      cerrarModal(); cargarDashboard();
+    }
     catch { sel.disabled = false; alert('No se pudo cambiar la etapa.'); }
   }
   async function guardarCamposDeal(dealId) {
