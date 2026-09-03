@@ -1471,7 +1471,7 @@
       const hoy = new Date().toISOString().substring(0, 10);
       const diasA = f => Math.round((new Date(f) - new Date(hoy)) / 86400000);
       const venceTxt = f => {
-        if (!f) return '';
+        if (!f || parseInt(f) > 2100) return ' · <span style="color:#9ca3af">sin fecha límite</span>';
         const d = diasA(f);
         if (d < 0)  return ` · <b style="color:#dc2626">venció ${f} · hace ${Math.abs(d)} día${Math.abs(d)===1?'':'s'}</b>`;
         if (d === 0) return ' · <b style="color:#d97706">vence HOY</b>';
@@ -1587,7 +1587,6 @@
       .map(d => ({ d, kw: kwDe(d), en: enDe(d), nivel: Math.min(depthDeal(d), 5) }))
       .filter(x => x.kw >= 150 || x.en >= 50)
       .sort((a, b) => b.nivel - a.nivel || b.kw - a.kw || b.en - a.en)
-      .slice(0, 8)
       .forEach(({ d, kw, en, nivel }) => {
         const siguiente = window.sigPasoDe ? window.sigPasoDe(d.ID) : null;
         const monto = parseFloat(d.OPPORTUNITY) || 0;
@@ -1627,7 +1626,7 @@
           <button class="prio-chip" data-v="grande" onclick="filtrarPrio('grande')" style="background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">⚡ 150+ kW</button>
           <button class="prio-chip" data-v="cobertura" onclick="filtrarPrio('cobertura')" style="background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">🔋 50%+ energía</button>
         </div>` : ''}
-        ${prioridades.length ? prioridades.map((p, i) => `
+        ${prioridades.length ? `<div style="max-height:740px;overflow-y:auto;overscroll-behavior:contain">` + prioridades.map((p, i) => `
         <div class="prio-card" data-g="${p.esGrande ? 1 : 0}" data-c="${p.esCobertura ? 1 : 0}" onclick="abrirDealModal(${p.dealId})" style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e5e7eb;border-left:4px solid ${p.color};border-radius:12px;padding:10px 14px;margin-bottom:8px;cursor:pointer">
           <div style="font-size:15px;font-weight:900;color:#d1d5db;width:18px;text-align:center">${i + 1}</div>
           <div style="flex:1;min-width:0">
@@ -1641,7 +1640,7 @@
             <div style="font-size:12.5px;font-weight:800;color:#111827">⚡ ${p.kw ? p.kw.toLocaleString() + ' kW' : '—'}</div>
             <div>${p.en ? '🔋 ' + p.en + '%' : ''}${p.en && (p.monto || p.roi) ? ' · ' : ''}${p.monto ? fMXN(p.monto) : ''}${p.roi ? ' · 📈 ' + p.roi + ' años' : ''}</div>
           </div>
-        </div>`).join('') : '<div class="empty-msg">Sin prioridades que califiquen (150+ kW o 50%+ energía) 🎉</div>'}
+        </div>`).join('') + `</div>${prioridades.length > 8 ? '<div style="font-size:10.5px;color:#9ca3af;text-align:center;margin-top:6px">⬇ desliza para ver las ' + prioridades.length + '</div>' : ''}` : '<div class="empty-msg">Sin prioridades que califiquen (150+ kW o 50%+ energía) 🎉</div>'}
       </div>`;
 
         function renderTareaItem(t, conCompletar = false) {
