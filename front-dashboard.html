@@ -846,22 +846,21 @@
     const mov = d.MOVED_TIME ? new Date(d.MOVED_TIME) : null;
     const hoy = new Date();
     const dias = (a, b) => Math.max(0, Math.round((b - a) / 86400000));
-    const fC = f => f.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: '2-digit' });
-    const total = Math.max(dias(crea, hoy), 1);
-    const tramo1 = mov ? dias(crea, mov) : total;      // lo que tardó en llegar a su etapa actual
-    const tramo2 = mov ? dias(mov, hoy) : 0;           // lo que lleva en la etapa actual
-    const cEtapa = tramo2 > 30 ? '#dc2626' : tramo2 > 14 ? '#d97706' : '#16a34a';
-    return `
-      <div style="margin-top:5px">
-        <div style="display:flex;height:6px;border-radius:6px;overflow:hidden;background:#f3f4f6">
-          <div style="width:${Math.round(tramo1 / total * 100)}%;background:#cbd5e1"></div>
-          <div style="width:${Math.round(tramo2 / total * 100)}%;background:${cEtapa}"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#9ca3af;margin-top:2px">
-          <span>🟢 nació ${fC(crea)}</span>
-          ${mov ? `<span>cambió de etapa ${fC(mov)} · tardó ${tramo1} día${tramo1===1?'':'s'}</span><span style="color:${cEtapa};font-weight:800">${tramo2} día${tramo2===1?'':'s'} en etapa actual</span>` : `<span style="font-weight:700">${total} días en proceso</span>`}
-        </div>
-      </div>`;
+    const fC = f => f.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+    if (!mov) {
+      const t = dias(crea, hoy);
+      return `<div style="font-size:10.5px;color:#9ca3af;margin-top:3px">📅 llegó el ${fC(crea)} · lleva ${t} día${t===1?'':'s'} como prospecto</div>`;
+    }
+    const enEtapa = dias(mov, hoy);
+    const cD = enEtapa > 30 ? '#dc2626' : enEtapa > 14 ? '#d97706' : '#9ca3af';
+    return `<div style="font-size:10.5px;color:#9ca3af;margin-top:3px">📅 llegó el ${fC(crea)} · últ. avance ${fC(mov)} · <b style="color:${cD}">${enEtapa} día${enEtapa===1?'':'s'} en su etapa</b></div>`;
+  };
+  // Nombre de la etapa del deal (para los emergentes)
+  window.etapaDeal = d => {
+    if (d.STAGE_ID && String(d.STAGE_ID).endsWith('LOSE')) return '❌ Perdida';
+    if (d.STAGE_ID === 'C2:WON' || ['4','6'].includes(String(d.CATEGORY_ID))) return '🏆 Ganada';
+    const dp = typeof depthDeal === 'function' ? depthDeal(d) : 0;
+    return ({1:'📄 Recibo validado',2:'📋 Propuesta presentada',3:'🔍 Visita técnica',4:'🤝 Negociación',5:'🎯 En cierre'})[dp] || '🟢 En proceso';
   };
   const fMXNg = n => {
     n = parseFloat(n) || 0;
@@ -885,7 +884,7 @@
       <div onclick="abrirDealModal(${d.ID})" style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}</div>
-          <div style="font-size:11px;color:#6b7280">${d.STAGE_ID && d.STAGE_ID.endsWith('LOSE') ? '❌ perdida' : d.STAGE_ID === 'C2:WON' || ['4','6'].includes(String(d.CATEGORY_ID)) ? '🏆 ganada' : '🟢 activa'}${d.UF_CRM_1741208352117 ? ' · ⚡ ' + d.UF_CRM_1741208352117 + ' kW' : ''}${d.UF_CRM_1753209254287 ? ' · 🔋 ' + String(d.UF_CRM_1753209254287).replace('%','') + '%' : ''}</div>
+          <div style="font-size:11px;color:#6b7280"><b style="color:#0369a1">${etapaDeal(d)}</b>${d.UF_CRM_1741208352117 ? ' · ⚡ ' + d.UF_CRM_1741208352117 + ' kW' : ''}${d.UF_CRM_1753209254287 ? ' · 🔋 ' + String(d.UF_CRM_1753209254287).replace('%','') + '%' : ''}</div>
           ${(() => { const sg = window.sigPasoDe ? window.sigPasoDe(d.ID) : null; return sg ? sg.map(l => `<div style="font-size:11px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">👉 ${l}</div>`).join('') : '<div style="font-size:11px;color:#dc2626;font-weight:700">👉 Sin siguiente paso</div>'; })()}
           ${miniTiempos(d)}
         </div>
