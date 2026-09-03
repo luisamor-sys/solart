@@ -1854,21 +1854,23 @@
       ${embudoHtml}
       ${prioHtml}
       <div class="dash-tabs" id="dash-tabs">
-        <button class="dtab-btn" data-t="tareas" onclick="switchDashTab('tareas')">⚡ Seguimientos <span>${misTareas.length}</span></button>
-        <button class="dtab-btn" data-t="clientes" onclick="switchDashTab('clientes')">⏳ Tareas <span>${tareasCliente.length}</span></button>
-        <button class="dtab-btn" data-t="ventas" onclick="switchDashTab('ventas')">💼 En venta <span>${deals.length}</span></button>
-        <button class="dtab-btn" data-t="cierre" onclick="switchDashTab('cierre')">🔒 En cierre <span>${dealsCierre.length}</span></button>
         <button class="dtab-btn" data-t="prospectos" onclick="switchDashTab('prospectos')">👤 Prospectos <span>${leads.length}</span></button>
-        <button class="dtab-btn" data-t="actividades" onclick="switchDashTab('actividades')">📋 Hoy <span>${actividadesHoy.length}</span></button>
+        <button class="dtab-btn" data-t="ventas" onclick="switchDashTab('ventas')">💼 Clientes esperando cierre <span>${deals.length}</span></button>
+        <button class="dtab-btn" data-t="cierre" onclick="switchDashTab('cierre')">🎯 Clientes en cierre <span>${dealsCierre.length}</span></button>
+        <button class="dtab-btn" data-t="tareas" onclick="switchDashTab('tareas')">⚡ Seguimientos con cliente <span>${actividadesHoy.length + misTareas.length}</span></button>
+        <button class="dtab-btn" data-t="clientes" onclick="switchDashTab('clientes')">🛠️ Seguimientos internos <span>${tareasCliente.length}</span></button>
       </div>
-      <div class="dtab-panel" id="dtab-tareas">${misTareasHtml}</div>
-      <div class="dtab-panel" id="dtab-clientes"><div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Tareas que solicitaste y están resolviendo otros.</div>${tareasClienteHtml}</div>
+      <div class="dtab-panel" id="dtab-prospectos">${leadsHtml}</div>
       <div class="dtab-panel" id="dtab-ventas">${dealsHtml}</div>
       <div class="dtab-panel" id="dtab-cierre">${dealsCierreHtml}</div>
-      <div class="dtab-panel" id="dtab-prospectos">${leadsHtml}</div>
-      <div class="dtab-panel" id="dtab-actividades">${actHtml}</div>`;
+      <div class="dtab-panel" id="dtab-tareas">
+        <div style="font-size:11px;font-weight:800;color:#6b7280;text-transform:uppercase;margin-bottom:8px">📞 Actividades con cliente</div>${actHtml}
+        <div style="font-size:11px;font-weight:800;color:#6b7280;text-transform:uppercase;margin:14px 0 8px">📋 Mis tareas</div>${misTareasHtml}
+      </div>
+      <div class="dtab-panel" id="dtab-clientes"><div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Pendientes de cada cliente que está resolviendo ingeniería.</div>${tareasClienteHtml}</div>`;
     if (window.pintarBannerTC) pintarBannerTC();
-    setTimeout(() => switchDashTab(window._dashTab || 'tareas'), 0);
+    const tabIni = document.querySelector('#dash-tabs [data-t="' + (window._dashTab || '') + '"]') ? window._dashTab : 'prospectos';
+    setTimeout(() => switchDashTab(tabIni), 0);
   }
 
   function switchDashTab(name) {
