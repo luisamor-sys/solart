@@ -1436,14 +1436,17 @@
     const sumaOp = arr => arr.reduce((s,x) => s + (parseFloat(x.OPPORTUNITY)||0), 0);
     const H = hitos || {};
     // ── Mi embudo: 6 niveles, de lo general a lo particular ──
-    const totClientes = leadsAct.length + vivas.length;
+    // Los datos vienen de las cohortes calculadas en cargarDashboard
+    const CO = window._cohortes || {};
+    const nCo = k => (CO[k]?.deals?.length || 0) + (k === 'clientes' ? (CO[k]?.leads?.length || 0) : 0);
+    const totClientes = nCo('clientes');
     const nivelesEmb = [
       { k: 'clientes',   t: 'Clientes',              n: totClientes,        c: '#64748b' },
-      { k: 'recibo',     t: 'Con recibo de luz',     n: vivas.length,       c: '#0369a1' },
-      { k: 'propuesta',  t: 'Propuesta presentada',  n: conPropuesta.length, c: '#006099' },
-      { k: 'visita',     t: 'Visita técnica',        n: conVisita.length,   c: '#7c3aed' },
-      { k: 'cierre',     t: 'En cierre',             n: enCierreH.length,   c: '#1d4ed8' },
-      { k: 'ganadas',    t: 'Ganados 🎉',            n: ganadasG.length,    c: '#15803d' },
+      { k: 'recibo',     t: 'Con recibo de luz',     n: nCo('recibo'),      c: '#0369a1' },
+      { k: 'propuesta',  t: 'Propuesta presentada',  n: nCo('propuesta'),   c: '#006099' },
+      { k: 'visita',     t: 'Visita técnica',        n: nCo('visita'),      c: '#7c3aed' },
+      { k: 'cierre',     t: 'En cierre',             n: nCo('cierre'),      c: '#1d4ed8' },
+      { k: 'ganadas',    t: 'Ganados 🎉',            n: H.ganadas || 0,     c: '#15803d' },
     ];
     const maxEmb = Math.max(totClientes, 1);
     const embudoHtml = `
