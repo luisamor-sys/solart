@@ -1386,8 +1386,8 @@
     const dealsCierre = (dealsCierreRes.result || []).filter(d => !String(d.STAGE_ID).endsWith('WON') && !String(d.STAGE_ID).endsWith('LOSE'));
 
     // ── Pipeline heredado vs propio (global): el título trae el nombre de otro vendedor ──
-    const _miNombre = (usuarioActual?.nombre || '').toLowerCase();
-    const _otros = Object.values(USER_NOMBRES).filter(x => x && x.toLowerCase() !== _miNombre);
+    const _miId = String(usuarioActual?.id || '');
+    const _otros = Object.entries(USER_NOMBRES).filter(([id, x]) => x && id !== _miId).map(([, x]) => x);
     window.esHeredadaG = d => {
       const t = String(d.TITLE || '').toLowerCase();
       return _otros.some(nm => {
@@ -1784,8 +1784,8 @@
     }
 
     // Heredadas: el título trae el nombre de OTRO vendedor (ej. pasadas de Rafael a Moises)
-    const miNombre = (usuarioActual?.nombre || '').toLowerCase();
-    const nombresOtros = Object.values(USER_NOMBRES).filter(n => n && n.toLowerCase() !== miNombre);
+    const miIdH = String(usuarioActual?.id || '');
+    const nombresOtros = Object.entries(USER_NOMBRES).filter(([id, n]) => n && id !== miIdH).map(([, n]) => n);
     const esHeredada = d => {
       const t = String(d.TITLE || '').toLowerCase();
       return nombresOtros.some(n => {
