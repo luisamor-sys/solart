@@ -1409,9 +1409,6 @@
       visita: { titulo: '🧭 Con visita técnica', deals: conVisita },
       negociacion: { titulo: '💬 En negociación (post-visita)', deals: negociacion },
       cierre: { titulo: '📄 En cierre', deals: enCierreH },
-      kpiLeads: { titulo: '📥 Contactos nuevos del periodo', leads: leadsNew },
-      kpiPropuesta: { titulo: '🤝 Llegaron a propuesta este periodo', deals: kpiPropuesta },
-      kpiCierres: { titulo: '🏆 Cierres del periodo', deals: kpiCierres },
     };
     // KPIs del periodo con la definición de Victor:
     // "pasó a negociación" = llegó a presentación de propuesta o más allá
@@ -1420,6 +1417,9 @@
     const kpiCierres = misGanadasF.filter(d => enPeriodo(String(d.MOVED_TIME || d.CLOSEDATE || '').substring(0, 10)));
     kpis.convertidos = kpiPropuesta.length;
     kpis.ganados = kpiCierres.length;
+    window._cohortes.kpiLeads = { titulo: '📥 Contactos nuevos del periodo', leads: leadsNew };
+    window._cohortes.kpiPropuesta = { titulo: '🤝 Llegaron a propuesta este periodo', deals: kpiPropuesta };
+    window._cohortes.kpiCierres = { titulo: '🏆 Cierres del periodo', deals: kpiCierres };
 
     const hitos = {
       prospectos: leadsActF.length,
