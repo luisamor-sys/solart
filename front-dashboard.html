@@ -1360,6 +1360,23 @@
     const dealsAct    = todosDeals.filter(d => d.STAGE_ID !== 'WON' && d.STAGE_ID !== 'LOSE');
     const dealsCierre = (dealsCierreRes.result || []).filter(d => d.STAGE_ID !== 'WON' && d.STAGE_ID !== 'LOSE');
 
+    // ── Pipeline heredado vs propio (global): el título trae el nombre de otro vendedor ──
+    const _miNombre = (usuarioActual?.nombre || '').toLowerCase();
+    const _otros = Object.values(USER_NOMBRES).filter(x => x && x.toLowerCase() !== _miNombre);
+    window.esHeredadaG = d => {
+      const t = String(d.TITLE || '').toLowerCase();
+      return _otros.some(nm => {
+        const toks = nm.toLowerCase().split(/\s+/).filter(x => x.length > 2);
+        return toks.length >= 2 && toks.every(x => t.includes(x));
+      });
+    };
+    window._hayHeredadas = [...dealsAct, ...dealsCierre].some(esHeredadaG);
+    const FH = window._filtroHer || '';
+    const filtraHer = arr => !FH ? arr : arr.filter(d => FH === 'heredadas' ? esHeredadaG(d) : !esHeredadaG(d));
+
+    const dealsActF = filtraHer(dealsAct);
+    const dealsCierreF = filtraHer(dealsCierre);
+
     const kpis = {
       leadsCreados: leadsNew.length,
       convertidos:  leadsConvRes.total ?? (leadsConvRes.result?.length ?? 0),
@@ -1372,19 +1389,21 @@
       ...todosDeals.filter(d => d.STAGE_ID === 'LOSE'),
       ...((dealsCierreRes.result || []).filter(d => d.STAGE_ID === 'C2:LOSE'))
     ];
-    const vivas = [...dealsAct, ...dealsCierre, ...misGanadas];
+    const misGanadasF = filtraHer(misGanadas);
+    const leadsActF = (window._filtroHer === 'heredadas') ? [] : leadsAct;
+    const vivas = [...dealsActF, ...dealsCierreF, ...misGanadasF];
     const conReciboAll = [...vivas, ...perdidas];
     const sumOp = arr => arr.reduce((s,x) => s + (parseFloat(x.OPPORTUNITY)||0), 0);
     const negociacion = vivas.filter(d => depthDeal(d) >= 4);
     const enCierreH   = vivas.filter(d => depthDeal(d) >= 5);
-    const ganadasG    = misGanadas.filter(d => !esChicaDeal(d));
-    const ganadasC    = misGanadas.filter(esChicaDeal);
-    const totalProsH  = leadsAct.length + conReciboAll.length;
+    const ganadasG    = misGanadasF.filter(d => !esChicaDeal(d));
+    const ganadasC    = misGanadasF.filter(esChicaDeal);
+    const totalProsH  = leadsActF.length + conReciboAll.length;
     const conPropuesta = vivas.filter(d => depthDeal(d) >= 2);
     const conVisita = vivas.filter(d => depthDeal(d) >= 3);
     window._cohortes = {
-      prospectos: { titulo: '👤 Mis prospectos (sin recibo)', leads: leadsAct },
-      clientes: { titulo: '👥 Todos mis clientes', leads: leadsAct, deals: vivas },
+      prospectos: { titulo: '👤 Mis prospectos (sin recibo)', leads: leadsActF },
+      clientes: { titulo: '👥 Todos mis clientes', leads: leadsActF, deals: vivas },
       recibo: { titulo: '🧾 Con recibo de luz', deals: vivas },
       propuesta: { titulo: '🤝 Con propuesta presentada', deals: conPropuesta },
       visita: { titulo: '🧭 Con visita técnica', deals: conVisita },
@@ -1395,10 +1414,10 @@
     // "pasó a negociación" = llegó a presentación de propuesta o más allá
     const enPeriodo = f => f && f >= ini && f <= fin;
     kpis.convertidos = vivas.filter(d => depthDeal(d) >= 2 && enPeriodo(String(d.MOVED_TIME || '').substring(0, 10))).length;
-    kpis.ganados = misGanadas.filter(d => enPeriodo(String(d.MOVED_TIME || d.CLOSEDATE || '').substring(0, 10))).length;
+    kpis.ganados = misGanadasF.filter(d => enPeriodo(String(d.MOVED_TIME || d.CLOSEDATE || '').substring(0, 10))).length;
 
     const hitos = {
-      prospectos: leadsAct.length,
+      prospectos: leadsActF.length,
       conRecibo: conReciboAll.length, montoRecibo: sumOp(conReciboAll),
       negociacion: negociacion.length,
       cierre: enCierreH.length,
@@ -1411,7 +1430,7 @@
       tasaPerdida: conReciboAll.length ? Math.round(perdidas.length / conReciboAll.length * 100) : 0,
     };
 
-    renderDashboard(kpis, leadsAct, dealsAct, dealsCierre, misTareas, tareasClien, actividadesHoy, misGanadas, dealsConAct, hitos);
+    renderDashboard(kpis, FH === 'heredadas' ? [] : leadsAct, dealsActF, dealsCierreF, misTareas, tareasClien, actividadesHoy, filtraHer(misGanadas), dealsConAct, hitos);
   }
 
   function renderDashboard(kpis, leads, deals, dealsCierre, misTareas, tareasCliente, actividadesHoy = [], misGanadas = [], dealsConAct = new Set(), hitos = null) {
@@ -1443,7 +1462,16 @@
     const lbl = labels[periodoActual];
 
     const bannerTcHtml = `<div id="banner-tc" style="display:none;align-items:center;gap:10px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;color:#374151"></div>`;
+    window.setFiltroHer = v => { window._filtroHer = v; cargarDashboard(); };
+    const FHv = window._filtroHer || '';
+    const chipHerG = (v, txt) => `<button onclick="setFiltroHer('${v}')" style="background:${FHv === v ? '#1a1a2e' : '#fff'};color:${FHv === v ? '#fff' : '#6b7280'};border:1px solid #e5e7eb;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer">${txt}</button>`;
+    const pipelineHerHtml = window._hayHeredadas ? `
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">
+        <span style="font-size:11px;font-weight:800;color:#6b7280">PIPELINE:</span>
+        ${chipHerG('', 'Todo')}${chipHerG('mias', 'Mío')}${chipHerG('heredadas', '🔁 Heredado')}
+      </div>` : '';
     const periodoHtml = `
+      ${pipelineHerHtml}
       <div class="periodo-wrap">
         <button class="periodo-btn ${periodoActual==='hoy'?'activo':''}" onclick="cambiarPeriodo('hoy')">Hoy</button>
         <button class="periodo-btn ${periodoActual==='semana'?'activo':''}" onclick="cambiarPeriodo('semana')">Semana</button>
