@@ -1664,7 +1664,7 @@
       return `hace ${dias} días`;
     }
 
-    function renderDealItem(d, etapasMap) {
+    function renderDealItem(d, etapasMap, heredada = false) {
       const etapa    = etapasMap[d.STAGE_ID] || d.STAGE_ID;
       const ultimo   = diasDesde(new Date(ultimoMovD(d)).toISOString());
       const urlBitrix = `https://crm-solart.bitrix24.mx/crm/deal/details/${d.ID}/`;
@@ -1695,10 +1695,10 @@
 
       const tieneDetalle = camposDeal.length > 0;
 
-      return `<div class="deal-card" style="cursor:pointer" onclick="if(event.target.closest('button'))return; abrirDealModal(${d.ID})">
+      return `<div class="deal-card" data-heredada="${heredada ? 1 : 0}" style="cursor:pointer" onclick="if(event.target.closest('button'))return; abrirDealModal(${d.ID})">
         <div class="deal-top">
           <div class="deal-info">
-            <div class="deal-nombre">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}</div>
+            <div class="deal-nombre">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}${heredada ? ' <span style="font-size:9px;font-weight:800;background:#fef3c7;color:#92400e;border-radius:20px;padding:2px 7px;vertical-align:middle">🔁 HEREDADA</span>' : ''}</div>
             <div style="font-size:11px;color:#9ca3af;margin-top:1px">${subtituloAmigable(d.TITLE)}</div>
             <div class="deal-seguimiento ${antiguedad}">
               🕐 Último seguimiento: <strong>${ultimo}</strong>
@@ -1714,8 +1714,36 @@
       </div>`;
     }
 
+    // Heredadas: el título trae el nombre de OTRO vendedor (ej. pasadas de Rafael a Moises)
+    const miNombre = (usuarioActual?.nombre || '').toLowerCase();
+    const nombresOtros = Object.values(USER_NOMBRES).filter(n => n && n.toLowerCase() !== miNombre);
+    const esHeredada = d => {
+      const t = String(d.TITLE || '').toLowerCase();
+      return nombresOtros.some(n => {
+        const toks = n.toLowerCase().split(/\s+/).filter(x => x.length > 2);
+        return toks.length >= 2 && toks.every(x => t.includes(x));
+      });
+    };
+    const heredadasN = deals.filter(esHeredada).length;
+    window.filtrarVentas = tipo => {
+      document.querySelectorAll('#dtab-ventas .deal-card').forEach(c => {
+        const h = c.dataset.heredada === '1';
+        c.style.display = (tipo === 'mias' && h) || (tipo === 'heredadas' && !h) ? 'none' : '';
+      });
+      document.querySelectorAll('.venta-chip').forEach(c => {
+        const on = c.dataset.v === tipo;
+        c.style.background = on ? '#1a1a2e' : '#fff';
+        c.style.color = on ? '#fff' : '#6b7280';
+      });
+    };
+    const chipsVentas = heredadasN ? `
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="venta-chip" data-v="" onclick="filtrarVentas('')" style="background:#1a1a2e;color:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">Todas ${deals.length}</button>
+        <button class="venta-chip" data-v="mias" onclick="filtrarVentas('mias')" style="background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">Mías ${deals.length - heredadasN}</button>
+        <button class="venta-chip" data-v="heredadas" onclick="filtrarVentas('heredadas')" style="background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">🔁 Heredadas ${heredadasN}</button>
+      </div>` : '';
     const dealsHtml = deals.length
-      ? deals.map(d => renderDealItem(d, ETAPAS_DEAL)).join('')
+      ? chipsVentas + deals.map(d => renderDealItem(d, ETAPAS_DEAL, esHeredada(d))).join('')
       : '<div class="empty-msg">Sin negociaciones activas.</div>';
 
     const ETAPAS_CIERRE = {
