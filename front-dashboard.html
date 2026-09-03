@@ -1509,6 +1509,7 @@
       </div>`;
 
     const kpisHtml = `
+      <div style="font-size:11px;color:#9ca3af;margin:2px 0 8px 2px">ℹ️ Cuentan solo los del periodo elegido (hoy, semana o mes): contactos que llegaron, los que alcanzaron propuesta o más allá, y los cierres ganados. Toca un número para ver la lista.</div>
       <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
         <div class="kpi-card amarillo" onclick="abrirCohorteModal('kpiLeads')" style="cursor:pointer">
           <div class="kpi-icono">📥</div>
@@ -1548,7 +1549,7 @@
     const embudoHtml = `
       <div class="seccion" style="margin-bottom:16px">
         <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:2px">🎯 Mi embudo</div>
-        <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Cada nivel incluye a los que ya lo pasaron. Toca una barra para ver quiénes son.</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">ℹ️ Cada nivel incluye a los que ya lo pasaron (ej. uno en cierre también cuenta en visita). El % de la derecha dice cuántos del nivel anterior avanzaron a ese paso. Toca una barra para ver quiénes son.</div>
         ${nivelesEmb.map((nv, ix) => {
           const prev = ix > 0 ? nivelesEmb[ix - 1].n : 0;
           const pct = ix > 0 && prev > 0 ? Math.round(nv.n / prev * 100) : null;
@@ -1620,6 +1621,7 @@
           <span class="seccion-titulo">🎯 Prioridades del mes</span>
           <span class="seccion-count">${prioridades.length}</span>
         </div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">ℹ️ Entran los proyectos de 150+ kW o que cubren 50%+ de la energía del cliente. Se ordenan por etapa (más avanzada primero), luego por tamaño y % de energía. Toca una tarjeta para ver el detalle.</div>
         ${prioridades.length ? `
         <div style="display:flex;gap:6px;margin-bottom:10px">
           <button class="prio-chip" data-v="" onclick="filtrarPrio('')" style="background:#1a1a2e;color:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">Todas</button>
@@ -1859,14 +1861,15 @@
         <button class="dtab-btn" data-t="tareas" onclick="switchDashTab('tareas')">⚡ Seguimientos con cliente <span>${actividadesHoy.length + misTareas.length}</span></button>
         <button class="dtab-btn" data-t="clientes" onclick="switchDashTab('clientes')">🛠️ Seguimientos internos <span>${tareasCliente.length}</span></button>
       </div>
-      <div class="dtab-panel" id="dtab-prospectos">${leadsHtml}</div>
-      <div class="dtab-panel" id="dtab-ventas">${dealsHtml}</div>
-      <div class="dtab-panel" id="dtab-cierre">${dealsCierreHtml}</div>
+      <div class="dtab-panel" id="dtab-prospectos"><div style="font-size:11px;color:#9ca3af;margin-bottom:8px">ℹ️ Contactos que aún no tienen una negociación abierta. El siguiente paso: conseguir su recibo de luz.</div>${leadsHtml}</div>
+      <div class="dtab-panel" id="dtab-ventas"><div style="font-size:11px;color:#9ca3af;margin-bottom:8px">ℹ️ Negociaciones activas del pipeline de venta: desde recibo validado hasta negociación. Aquí se trabaja para llevarlas a cierre.</div>${dealsHtml}</div>
+      <div class="dtab-panel" id="dtab-cierre"><div style="font-size:11px;color:#9ca3af;margin-bottom:8px">ℹ️ Negociaciones que ya pasaron al pipeline de cierre: están a un paso de ganarse, no las dejes enfriar.</div>${dealsCierreHtml}</div>
       <div class="dtab-panel" id="dtab-tareas">
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">ℹ️ Lo que te toca hacer tú: tus actividades agendadas con clientes (llamadas, visitas, correos) y tus tareas personales.</div>
         <div style="font-size:11px;font-weight:800;color:#6b7280;text-transform:uppercase;margin-bottom:8px">📞 Actividades con cliente</div>${actHtml}
         <div style="font-size:11px;font-weight:800;color:#6b7280;text-transform:uppercase;margin:14px 0 8px">📋 Mis tareas</div>${misTareasHtml}
       </div>
-      <div class="dtab-panel" id="dtab-clientes"><div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Pendientes de cada cliente que está resolviendo ingeniería.</div>${tareasClienteHtml}</div>`;
+      <div class="dtab-panel" id="dtab-clientes"><div style="font-size:11px;color:#9ca3af;margin-bottom:8px">ℹ️ Pendientes de tus clientes que está resolviendo ingeniería (propuestas, BESS, actualizaciones). Tú los pediste, otros los trabajan.</div>${tareasClienteHtml}</div>`;
     if (window.pintarBannerTC) pintarBannerTC();
     const tabIni = document.querySelector('#dash-tabs [data-t="' + (window._dashTab || '') + '"]') ? window._dashTab : 'prospectos';
     setTimeout(() => switchDashTab(tabIni), 0);
