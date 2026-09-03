@@ -846,8 +846,15 @@
   function abrirCohorteModal(key) {
     const c = window._cohortes?.[key];
     if (!c) return;
-    const arr = c.deals || c.leads || [];
-    abrirModal(`${c.titulo} · ${arr.length}`);
+    const total = (c.deals?.length || 0) + (key === 'clientes' ? (c.leads?.length || 0) : (c.deals ? 0 : (c.leads?.length || 0)));
+    abrirModal(`${c.titulo} · ${total}`);
+    const listaLeads = arr => arr.map(l => `
+      <div style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin-bottom:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:#111827">${l.TITLE || [l.NAME, l.LAST_NAME].filter(Boolean).join(' ') || 'Sin nombre'}</div>
+          <div style="font-size:11px;color:#6b7280">${(typeof ETAPAS_LEAD !== 'undefined' && ETAPAS_LEAD[l.STATUS_ID]) || l.STATUS_ID || ''}</div>
+        </div>
+      </div>`).join('');
     const cuerpo = c.deals ? c.deals.slice().sort((a,b) => (parseFloat(b.OPPORTUNITY)||0) - (parseFloat(a.OPPORTUNITY)||0)).map(d => `
       <div onclick="abrirDealModal(${d.ID})" style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
         <div style="flex:1;min-width:0">
@@ -855,14 +862,8 @@
           <div style="font-size:11px;color:#6b7280">${d.STAGE_ID && d.STAGE_ID.endsWith('LOSE') ? '❌ perdida' : d.STAGE_ID === 'C2:WON' || ['4','6'].includes(String(d.CATEGORY_ID)) ? '🏆 ganada' : '🟢 activa'}${d.UF_CRM_1741208352117 ? ' · ⚡ ' + d.UF_CRM_1741208352117 + ' kW' : ''}</div>
         </div>
         <div style="font-size:13px;font-weight:800;color:#374151;white-space:nowrap">${parseFloat(d.OPPORTUNITY) ? fMXNg(d.OPPORTUNITY) : '—'}</div>
-      </div>`).join('')
-    : c.leads.map(l => `
-      <div style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin-bottom:8px">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:700;color:#111827">${l.TITLE || [l.NAME, l.LAST_NAME].filter(Boolean).join(' ') || 'Sin nombre'}</div>
-          <div style="font-size:11px;color:#6b7280">${(typeof ETAPAS_LEAD !== 'undefined' && ETAPAS_LEAD[l.STATUS_ID]) || l.STATUS_ID || ''}</div>
-        </div>
-      </div>`).join('');
+      </div>`).join('') + (key === 'clientes' && c.leads?.length ? `<div style="font-size:11px;font-weight:800;color:#6b7280;text-transform:uppercase;margin:12px 0 8px">👤 Prospectos (${c.leads.length})</div>` + listaLeads(c.leads) : '')
+    : listaLeads(c.leads || []);
     document.getElementById('modal-body').innerHTML = cuerpo || '<div style="font-size:12px;color:#9ca3af">Sin registros en este hito.</div>';
   }
 
@@ -1211,7 +1212,7 @@
     // Trae TODAS las páginas de deals (Bitrix regresa máx. 50 por consulta)
     async function bxTodosDeals(filter) {
       const todos = [];
-      const select = ['ID','TITLE','STAGE_ID','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_ID','CONTACT_ID','OPPORTUNITY','CURRENCY_ID','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1777320644093','UF_CRM_1758675881434','UF_CRM_1741392978542'];
+      const select = ['ID','TITLE','STAGE_ID','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_ID','CONTACT_ID','OPPORTUNITY','CURRENCY_ID','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1765995370491','UF_CRM_1777320644093','UF_CRM_1758675881434','UF_CRM_1741392978542','UF_CRM_1758676152864'];
       for (let start = 0, pag = 0; pag < 20; pag++) {
         const r = await bx('crm.deal.list.json', { filter, select, order: { DATE_MODIFY: 'DESC' }, start });
         todos.push(...(r.result || []));
@@ -1364,12 +1365,23 @@
     const ganadasG    = misGanadas.filter(d => !esChicaDeal(d));
     const ganadasC    = misGanadas.filter(esChicaDeal);
     const totalProsH  = leadsAct.length + conReciboAll.length;
+    const conPropuesta = vivas.filter(d => depthDeal(d) >= 2);
+    const conVisita = vivas.filter(d => depthDeal(d) >= 3);
     window._cohortes = {
       prospectos: { titulo: '👤 Mis prospectos (sin recibo)', leads: leadsAct },
-      recibo: { titulo: '🧾 Con recibo (todo lo que entró)', deals: conReciboAll },
+      clientes: { titulo: '👥 Todos mis clientes', leads: leadsAct, deals: vivas },
+      recibo: { titulo: '🧾 Con recibo de luz', deals: vivas },
+      propuesta: { titulo: '🤝 Con propuesta presentada', deals: conPropuesta },
+      visita: { titulo: '🧭 Con visita técnica', deals: conVisita },
       negociacion: { titulo: '💬 En negociación (post-visita)', deals: negociacion },
       cierre: { titulo: '📄 En cierre', deals: enCierreH },
     };
+    // KPIs del periodo con la definición de Victor:
+    // "pasó a negociación" = llegó a presentación de propuesta o más allá
+    const enPeriodo = f => f && f >= ini && f <= fin;
+    kpis.convertidos = vivas.filter(d => depthDeal(d) >= 2 && enPeriodo(String(d.MOVED_TIME || '').substring(0, 10))).length;
+    kpis.ganados = misGanadas.filter(d => enPeriodo(String(d.MOVED_TIME || d.CLOSEDATE || '').substring(0, 10))).length;
+
     const hitos = {
       prospectos: leadsAct.length,
       conRecibo: conReciboAll.length, montoRecibo: sumOp(conReciboAll),
@@ -1401,23 +1413,18 @@
       </div>`;
 
     const kpisHtml = `
-      <div class="kpis">
+      <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
         <div class="kpi-card amarillo">
           <div class="kpi-icono">📥</div>
           <div class="kpi-valor">${kpis.leadsCreados}</div>
-          <div class="kpi-label">Contactos nuevos captados ${lbl}</div>
+          <div class="kpi-label">Contactos nuevos ${lbl}</div>
         </div>
         <div class="kpi-card azul">
-          <div class="kpi-icono">📋</div>
+          <div class="kpi-icono">🤝</div>
           <div class="kpi-valor">${kpis.convertidos}</div>
-          <div class="kpi-label">Pasaron a negociación real ${lbl}</div>
+          <div class="kpi-label">Llegaron a propuesta ${lbl}</div>
         </div>
         <div class="kpi-card verde">
-          <div class="kpi-icono">💼</div>
-          <div class="kpi-valor">${kpis.dealsActivos}</div>
-          <div class="kpi-label">Clientes en proceso activo</div>
-        </div>
-        <div class="kpi-card rojo">
           <div class="kpi-icono">🏆</div>
           <div class="kpi-valor">${kpis.ganados}</div>
           <div class="kpi-label">Cierres logrados ${lbl}</div>
@@ -1427,60 +1434,37 @@
     // ── 💵 Mi dinero ──
     const fMXN = n => n >= 1000000 ? '$' + (n/1000000).toFixed(1) + ' M' : n >= 1000 ? '$' + Math.round(n/1000) + ' mil' : '$' + Math.round(n).toLocaleString('es-MX');
     const sumaOp = arr => arr.reduce((s,x) => s + (parseFloat(x.OPPORTUNITY)||0), 0);
-    // ── Mi embudo (tira de hitos, igual que el tablero directivo) ──
     const H = hitos || {};
-    const cajaH = (bg,bd,c1,c2,tit,num,sub) => `
-      <div style="background:${bg};border:1.5px solid ${bd};border-radius:12px;padding:10px 4px;text-align:center">
-        <div style="font-size:9px;font-weight:700;color:${c1}">${tit}</div>
-        <div style="font-size:19px;font-weight:800;color:${c2}">${num}</div>
-        <div style="font-size:9px;color:${c1}">${sub}</div>
-      </div>`;
-    const flechaH = (pct,color) => `
-      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center">
-        <div style="font-size:12px;font-weight:800;color:${color}">${pct}%</div>
-        <div style="font-size:12px;color:#9ca3af">→</div>
-        <div style="font-size:8px;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em">conversión</div>
-      </div>`;
-    const embudoHtml = hitos ? `
-      <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:2px">🎯 Mi embudo</div>
-      <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Tu recorrido de venta · las flechas son la conversión de un hito al siguiente</div>
-      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:8px">
-      <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr;gap:3px;align-items:stretch;min-width:620px">
-        <div onclick="abrirCohorteModal('prospectos')" style="cursor:pointer">${cajaH('#fff7ed','#fed7aa','#c2410c','#7c2d12','PROSPECTOS',H.prospectos,'sin recibo')}</div>
-        ${flechaH(H.cvProsp,'#d97706')}
-        <div onclick="abrirCohorteModal('recibo')" style="cursor:pointer">${cajaH('#fefce8','#fde68a','#a16207','#713f12','CON RECIBO',H.conRecibo,fMXNd(H.montoRecibo))}</div>
-        ${flechaH(H.cvRecNeg,'#7c3aed')}
-        <div onclick="abrirCohorteModal('negociacion')" style="cursor:pointer">${cajaH('#faf5ff','#e9d5ff','#7c3aed','#4c1d95','NEGOCIACIÓN',H.negociacion,'post-visita')}</div>
-        ${flechaH(H.cvNegCie,'#1d4ed8')}
-        <div onclick="abrirCohorteModal('cierre')" style="cursor:pointer">${cajaH('#eff6ff','#bfdbfe','#1d4ed8','#1e3a8a','EN CIERRE',H.cierre,'contrato/anticipo')}</div>
-        ${flechaH(H.cvCieGan,'#15803d')}
-        <div onclick="abrirGanadasModal()" style="cursor:pointer">${cajaH('#f0fdf4','#bbf7d0','#15803d','#14532d','GANADAS 🎉',H.ganadas,fMXNd(H.montoGan)+(H.ganadasChicas?` +${H.ganadasChicas} chica${H.ganadasChicas>1?'s':''}`:''))}</div>
+    // ── Mi embudo: 6 niveles, de lo general a lo particular ──
+    const totClientes = leadsAct.length + vivas.length;
+    const nivelesEmb = [
+      { k: 'clientes',   t: 'Clientes',              n: totClientes,        c: '#64748b' },
+      { k: 'recibo',     t: 'Con recibo de luz',     n: vivas.length,       c: '#0369a1' },
+      { k: 'propuesta',  t: 'Propuesta presentada',  n: conPropuesta.length, c: '#006099' },
+      { k: 'visita',     t: 'Visita técnica',        n: conVisita.length,   c: '#7c3aed' },
+      { k: 'cierre',     t: 'En cierre',             n: enCierreH.length,   c: '#1d4ed8' },
+      { k: 'ganadas',    t: 'Ganados 🎉',            n: ganadasG.length,    c: '#15803d' },
+    ];
+    const maxEmb = Math.max(totClientes, 1);
+    const embudoHtml = `
+      <div class="seccion" style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:2px">🎯 Mi embudo</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Cada nivel incluye a los que ya lo pasaron. Toca una barra para ver quiénes son.</div>
+        ${nivelesEmb.map(nv => `
+        <div onclick="${nv.k === 'ganadas' ? 'abrirGanadasModal()' : `abrirCohorteModal('${nv.k}')`}" style="display:flex;align-items:center;gap:10px;margin-bottom:6px;cursor:pointer">
+          <div style="width:150px;font-size:11.5px;font-weight:700;color:#374151;text-align:right">${nv.t}</div>
+          <div style="flex:1;background:#f3f4f6;border-radius:20px;height:22px;overflow:hidden">
+            <div style="width:${Math.max(nv.n / maxEmb * 100, 4)}%;height:100%;background:${nv.c};border-radius:20px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px">
+              <span style="font-size:12px;font-weight:800;color:#fff">${nv.n}</span>
+            </div>
+          </div>
+        </div>`).join('')}
+        ${H.perdidas ? `<div style="text-align:right;margin-top:6px"><span style="font-size:11px;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:20px;padding:3px 10px">🔻 ${H.perdidas} perdidas (${H.tasaPerdida}%)</span></div>` : ''}
       </div>
-      </div>
-      ${H.perdidas ? `<div style="text-align:right;margin-bottom:16px"><span style="font-size:11px;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:20px;padding:3px 10px">🔻 Tasa de pérdida: ${H.tasaPerdida}% · ${H.perdidas} perdidas</span></div>` : '<div style="margin-bottom:16px"></div>'}
-    ` : '';
+    `;
 
-    const anioHoy = new Date().getFullYear();
+        const anioHoy = new Date().getFullYear();
     const ganadasAnio = misGanadas.filter(d => new Date(d.MOVED_TIME || d.CLOSEDATE || d.DATE_CREATE).getFullYear() === anioHoy);
-    const finHtml = `
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px">
-        <div style="background:#faf5ff;border:1.5px solid #e9d5ff;border-radius:14px;padding:12px;text-align:center">
-          <div style="font-size:10px;font-weight:700;color:#7c3aed">EN JUEGO</div>
-          <div style="font-size:19px;font-weight:800;color:#4c1d95">${fMXN(sumaOp(deals))}</div>
-          <div style="font-size:10px;color:#8b5cf6">${deals.length} negociaciones</div>
-        </div>
-        <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:14px;padding:12px;text-align:center">
-          <div style="font-size:10px;font-weight:700;color:#1d4ed8">EN CIERRE</div>
-          <div style="font-size:19px;font-weight:800;color:#1e3a8a">${fMXN(sumaOp(dealsCierre))}</div>
-          <div style="font-size:10px;color:#3b82f6">${dealsCierre.length} por cerrar</div>
-        </div>
-        <div onclick="abrirGanadasModal()" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:14px;padding:12px;text-align:center;cursor:pointer">
-          <div style="font-size:10px;font-weight:700;color:#15803d">GANADO ${anioHoy}</div>
-          <div style="font-size:19px;font-weight:800;color:#14532d">${fMXN(sumaOp(ganadasAnio))}</div>
-          <div style="font-size:10px;color:#16a34a">${ganadasAnio.length} ganadas 🎉</div>
-        </div>
-      </div>`;
-
     // ── 🎯 Prioridades del mes ──
     const DIA_MS = 86400000;
     const prioridades = [];
@@ -1489,44 +1473,38 @@
       d.LAST_ACTIVITY_TIME ? new Date(d.LAST_ACTIVITY_TIME).getTime() : 0,
       window._ultimaActDeal?.[String(d.ID)] || 0
     );
-    // Regla de prioridad: proyectos de 150 kW o más (mientras más grandes, más arriba)
-    // y proyectos que cubren al menos 50% de la energía (mientras más cubran, más arriba)
+    // Regla de prioridad: primero la etapa (más avanzada = más importante),
+    // luego el tamaño (150+ kW) y el % de energía (50%+). Menos es más: solo lo que califica.
     const kwDe = d => parseFloat(d.UF_CRM_1741208352117) || 0;
     const enDe = d => parseFloat(String(d.UF_CRM_1753209254287 || '').replace('%','')) || 0;
+    const roiDe = d => parseFloat(d.UF_CRM_1758676152864) || 0;
+    const NIVEL_NOMBRE = { 1:'Recibo validado', 2:'Propuesta presentada', 3:'Visita técnica', 4:'Negociación', 5:'En cierre' };
+    const NIVEL_COLOR  = { 1:'#94a3b8', 2:'#d97706', 3:'#0369a1', 4:'#7c3aed', 5:'#15803d' };
     [...deals, ...dealsCierre]
-      .map(d => ({ d, kw: kwDe(d), en: enDe(d) }))
+      .map(d => ({ d, kw: kwDe(d), en: enDe(d), nivel: Math.min(depthDeal(d), 5) }))
       .filter(x => x.kw >= 150 || x.en >= 50)
-      .sort((a, b) => {
-        const nivel = x => (x.kw >= 150 ? 2 : 0) + (x.en >= 50 ? 1 : 0);
-        return nivel(b) - nivel(a) || b.kw - a.kw || b.en - a.en;
-      })
+      .sort((a, b) => b.nivel - a.nivel || b.kw - a.kw || b.en - a.en)
       .slice(0, 8)
-      .forEach(({ d, kw, en }) => {
-        const grande = kw >= 150;
-        const partes = [];
-        if (kw) partes.push(`⚡ ${kw.toLocaleString()} kW`);
-        if (en) partes.push(`🔋 ${en}%`);
-        if (parseFloat(d.OPPORTUNITY)) partes.push(fMXN(parseFloat(d.OPPORTUNITY)));
+      .forEach(({ d, kw, en, nivel }) => {
         const sig = window._sigPaso?.[String(d.ID)];
         const tareaDeal = misTareas.find(t => (t.ufCrmTask || []).includes('D_' + d.ID));
         const siguiente = sig ? `${sig.txt}${sig.fecha ? ' (' + sig.fecha + ')' : ''}`
           : tareaDeal ? `Tarea: ${tareaDeal.title}`
           : null;
+        const monto = parseFloat(d.OPPORTUNITY) || 0;
+        const roi = roiDe(d);
         prioridades.push({
-          icono: grande ? '⚡' : '🔋',
-          color: grande ? '#dc2626' : '#7c3aed',
-          bg: grande ? '#fef2f2' : '#faf5ff',
-          accion: grande ? 'Proyecto grande' : 'Alta cobertura',
-          tipo: grande ? 'grande' : 'cobertura',
+          nivel,
+          etapa: NIVEL_NOMBRE[nivel] || 'En proceso',
+          color: NIVEL_COLOR[nivel] || '#94a3b8',
+          tipo: kw >= 150 ? 'grande' : 'cobertura',
           titulo: tituloAmigable(d.TITLE, d.UF_CRM_1741392978542),
           siguiente,
-          extra: partes.join(' · '), dealId: d.ID
+          kw, en, monto, roi,
+          dealId: d.ID
         });
       });
-    // 4. Tareas vencidas
-    misTareas.filter(t => t.deadline && new Date(t.deadline) < new Date()).slice(0,3).forEach(t => {
-      prioridades.push({ icono:'⏰', color:'#6b7280', bg:'#f9fafb', accion:'Tarea vencida', titulo:t.title, extra:`venció ${t.deadline.substring(0,10)}` });
-    });
+
     window.filtrarPrio = tipo => {
       document.querySelectorAll('.prio-card').forEach(c => { c.style.display = (!tipo || c.dataset.tipo === tipo) ? 'flex' : 'none'; });
       document.querySelectorAll('.prio-chip').forEach(c => {
@@ -1547,19 +1525,24 @@
           <button class="prio-chip" data-v="grande" onclick="filtrarPrio('grande')" style="background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">⚡ 150+ kW</button>
           <button class="prio-chip" data-v="cobertura" onclick="filtrarPrio('cobertura')" style="background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">🔋 50%+ energía</button>
         </div>` : ''}
-        ${prioridades.length ? prioridades.slice(0,9).map((p,i) => `
-        <div class="prio-card" data-tipo="${p.tipo || ''}" ${p.dealId ? `onclick="abrirDealModal(${p.dealId})"` : ''} style="display:flex;align-items:center;gap:10px;background:${p.bg};border:1px solid ${p.color}22;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
-          <div style="font-size:18px">${p.icono}</div>
+        ${prioridades.length ? prioridades.map((p, i) => `
+        <div class="prio-card" data-tipo="${p.tipo}" onclick="abrirDealModal(${p.dealId})" style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e5e7eb;border-left:4px solid ${p.color};border-radius:12px;padding:10px 14px;margin-bottom:8px;cursor:pointer">
+          <div style="font-size:15px;font-weight:900;color:#d1d5db;width:18px;text-align:center">${i + 1}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:11px;font-weight:800;color:${p.color};text-transform:uppercase;letter-spacing:.03em">${i+1}. ${p.accion}</div>
-            <div style="font-size:13px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.titulo}</div>
-            ${p.siguiente ? `<div style="font-size:11px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">👉 ${p.siguiente}</div>` : p.dealId ? '<div style="font-size:11px;color:#dc2626;font-weight:700">👉 Sin siguiente paso — agenda una actividad</div>' : ''}
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-size:13.5px;font-weight:700;color:#111827">${p.titulo}</span>
+              <span style="font-size:9.5px;font-weight:800;color:${p.color};background:${p.color}14;border-radius:20px;padding:2px 8px;letter-spacing:.03em">${p.etapa.toUpperCase()}</span>
+            </div>
+            <div style="font-size:11.5px;color:${p.siguiente ? '#374151' : '#dc2626'};margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${p.siguiente ? '' : 'font-weight:700'}">👉 ${p.siguiente || 'Sin siguiente paso — agenda una actividad'}</div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:${p.color};flex-shrink:0">${p.extra}</div>
-        </div>`).join('') : '<div class="empty-msg">Sin prioridades pendientes — todo al corriente 🎉</div>'}
+          <div style="text-align:right;flex-shrink:0;font-size:11px;color:#6b7280;line-height:1.6">
+            <div style="font-size:12.5px;font-weight:800;color:#111827">⚡ ${p.kw ? p.kw.toLocaleString() + ' kW' : '—'}</div>
+            <div>${p.en ? '🔋 ' + p.en + '%' : ''}${p.en && (p.monto || p.roi) ? ' · ' : ''}${p.monto ? fMXN(p.monto) : ''}${p.roi ? ' · 📈 ' + p.roi + ' años' : ''}</div>
+          </div>
+        </div>`).join('') : '<div class="empty-msg">Sin prioridades que califiquen (150+ kW o 50%+ energía) 🎉</div>'}
       </div>`;
 
-    function renderTareaItem(t, conCompletar = false) {
+        function renderTareaItem(t, conCompletar = false) {
       const vence = (() => {
         if (!t.deadline) return '';
         const dias = Math.ceil((new Date(t.deadline) - Date.now()) / 86400000);
@@ -1738,7 +1721,6 @@
       ${bannerTcHtml}${periodoHtml}
       ${kpisHtml}
       ${embudoHtml}
-      ${finHtml}
       ${prioHtml}
       <div class="dash-tabs" id="dash-tabs">
         <button class="dtab-btn" data-t="tareas" onclick="switchDashTab('tareas')">⚡ Seguimientos <span>${misTareas.length}</span></button>
