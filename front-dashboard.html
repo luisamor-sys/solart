@@ -1519,7 +1519,10 @@
       <div class="seccion" style="margin-bottom:16px">
         <div style="font-size:13px;font-weight:800;color:#111827;margin-bottom:2px">🎯 Mi embudo</div>
         <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Cada nivel incluye a los que ya lo pasaron. Toca una barra para ver quiénes son.</div>
-        ${nivelesEmb.map(nv => `
+        ${nivelesEmb.map((nv, ix) => {
+          const prev = ix > 0 ? nivelesEmb[ix - 1].n : 0;
+          const pct = ix > 0 && prev > 0 ? Math.round(nv.n / prev * 100) : null;
+          return `
         <div onclick="${nv.k === 'ganadas' ? 'abrirGanadasModal()' : `abrirCohorteModal('${nv.k}')`}" style="display:flex;align-items:center;gap:10px;margin-bottom:6px;cursor:pointer">
           <div style="width:150px;font-size:11.5px;font-weight:700;color:#374151;text-align:right">${nv.t}</div>
           <div style="flex:1;background:#f3f4f6;border-radius:20px;height:22px;overflow:hidden">
@@ -1527,7 +1530,8 @@
               <span style="font-size:12px;font-weight:800;color:#fff">${nv.n}</span>
             </div>
           </div>
-        </div>`).join('')}
+          <div style="width:88px;font-size:10.5px;font-weight:800;color:${pct == null ? '#d1d5db' : pct >= 50 ? '#15803d' : pct >= 25 ? '#d97706' : '#dc2626'}">${pct == null ? '' : '✔ ' + pct + '% avanzó'}</div>
+        </div>`; }).join('')}
         ${H.perdidas ? `<div style="text-align:right;margin-top:6px"><span style="font-size:11px;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:20px;padding:3px 10px">🔻 ${H.perdidas} perdidas (${H.tasaPerdida}%)</span></div>` : ''}
       </div>
     `;
