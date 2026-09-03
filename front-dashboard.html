@@ -668,7 +668,7 @@
           return '';
         })();
         return `<div style="display:flex;align-items:center;gap:8px;background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px">
-          <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</div><div style="font-size:10px;color:${STATUS_COLOR[st]||'#6b7280'}">${STATUS_LABEL[st]||'en curso'}${durTxt}</div></div>
+          <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</div><div style="font-size:10px;color:${STATUS_COLOR[st]||'#6b7280'}">${STATUS_LABEL[st]||'en curso'}${t.deadline ? ' · vence ' + String(t.deadline).substring(0,10) : ''}${durTxt}</div></div>
           <button onclick="abrirTareaModal(${t.id})" style="background:#eef2ff;color:#4338ca;border:none;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer">Ver</button>
           ${!done?`<button onclick="aprobarTareaModal(${t.id},${dealId})" style="background:#16a34a;color:#fff;border:none;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer">✓ Aprobar</button>`:''}
         </div>`;
@@ -859,7 +859,8 @@
       <div onclick="abrirDealModal(${d.ID})" style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tituloAmigable(d.TITLE, d.UF_CRM_1741392978542)}</div>
-          <div style="font-size:11px;color:#6b7280">${d.STAGE_ID && d.STAGE_ID.endsWith('LOSE') ? '❌ perdida' : d.STAGE_ID === 'C2:WON' || ['4','6'].includes(String(d.CATEGORY_ID)) ? '🏆 ganada' : '🟢 activa'}${d.UF_CRM_1741208352117 ? ' · ⚡ ' + d.UF_CRM_1741208352117 + ' kW' : ''}</div>
+          <div style="font-size:11px;color:#6b7280">${d.STAGE_ID && d.STAGE_ID.endsWith('LOSE') ? '❌ perdida' : d.STAGE_ID === 'C2:WON' || ['4','6'].includes(String(d.CATEGORY_ID)) ? '🏆 ganada' : '🟢 activa'}${d.UF_CRM_1741208352117 ? ' · ⚡ ' + d.UF_CRM_1741208352117 + ' kW' : ''}${d.UF_CRM_1753209254287 ? ' · 🔋 ' + String(d.UF_CRM_1753209254287).replace('%','') + '%' : ''}</div>
+          ${(() => { const sg = window.sigPasoDe ? window.sigPasoDe(d.ID) : null; return sg ? `<div style="font-size:11px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">👉 ${sg}</div>` : '<div style="font-size:11px;color:#dc2626;font-weight:700">👉 Sin siguiente paso</div>'; })()}
         </div>
         <div style="font-size:13px;font-weight:800;color:#374151;white-space:nowrap">${parseFloat(d.OPPORTUNITY) ? fMXNg(d.OPPORTUNITY) : '—'}</div>
       </div>`).join('') + (key === 'clientes' && c.leads?.length ? `<div style="font-size:11px;font-weight:800;color:#6b7280;text-transform:uppercase;margin:12px 0 8px">👤 Prospectos (${c.leads.length})</div>` + listaLeads(c.leads) : '')
@@ -1401,6 +1402,14 @@
 
   function renderDashboard(kpis, leads, deals, dealsCierre, misTareas, tareasCliente, actividadesHoy = [], misGanadas = [], dealsConAct = new Set(), hitos = null) {
     window._misGanadas = misGanadas;
+    window._misTareas = misTareas;
+    window.sigPasoDe = dealId => {
+      const sig = window._sigPaso?.[String(dealId)];
+      if (sig) return `${sig.txt}${sig.fecha ? ' · vence ' + sig.fecha : ''}`;
+      const t = (window._misTareas || []).find(x => (x.ufCrmTask || []).includes('D_' + dealId));
+      if (t) return `Tarea: ${t.title}${t.deadline ? ' · vence ' + t.deadline.substring(0, 10) : ''}`;
+      return null;
+    };
     const labels = { hoy: 'hoy', semana: 'esta semana', mes: 'este mes' };
     const lbl = labels[periodoActual];
 
@@ -1489,18 +1498,14 @@
       .sort((a, b) => b.nivel - a.nivel || b.kw - a.kw || b.en - a.en)
       .slice(0, 8)
       .forEach(({ d, kw, en, nivel }) => {
-        const sig = window._sigPaso?.[String(d.ID)];
-        const tareaDeal = misTareas.find(t => (t.ufCrmTask || []).includes('D_' + d.ID));
-        const siguiente = sig ? `${sig.txt}${sig.fecha ? ' (' + sig.fecha + ')' : ''}`
-          : tareaDeal ? `Tarea: ${tareaDeal.title}`
-          : null;
+        const siguiente = window.sigPasoDe ? window.sigPasoDe(d.ID) : null;
         const monto = parseFloat(d.OPPORTUNITY) || 0;
         const roi = roiDe(d);
         prioridades.push({
           nivel,
           etapa: NIVEL_NOMBRE[nivel] || 'En proceso',
           color: NIVEL_COLOR[nivel] || '#94a3b8',
-          tipo: kw >= 150 ? 'grande' : 'cobertura',
+          esGrande: kw >= 150, esCobertura: en >= 50,
           titulo: tituloAmigable(d.TITLE, d.UF_CRM_1741392978542),
           siguiente,
           kw, en, monto, roi,
@@ -1509,7 +1514,10 @@
       });
 
     window.filtrarPrio = tipo => {
-      document.querySelectorAll('.prio-card').forEach(c => { c.style.display = (!tipo || c.dataset.tipo === tipo) ? 'flex' : 'none'; });
+      document.querySelectorAll('.prio-card').forEach(c => {
+        const ok = !tipo || (tipo === 'grande' ? c.dataset.g === '1' : c.dataset.c === '1');
+        c.style.display = ok ? 'flex' : 'none';
+      });
       document.querySelectorAll('.prio-chip').forEach(c => {
         const on = c.dataset.v === (tipo || '');
         c.style.background = on ? '#1a1a2e' : '#fff';
@@ -1529,7 +1537,7 @@
           <button class="prio-chip" data-v="cobertura" onclick="filtrarPrio('cobertura')" style="background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">🔋 50%+ energía</button>
         </div>` : ''}
         ${prioridades.length ? prioridades.map((p, i) => `
-        <div class="prio-card" data-tipo="${p.tipo}" onclick="abrirDealModal(${p.dealId})" style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e5e7eb;border-left:4px solid ${p.color};border-radius:12px;padding:10px 14px;margin-bottom:8px;cursor:pointer">
+        <div class="prio-card" data-g="${p.esGrande ? 1 : 0}" data-c="${p.esCobertura ? 1 : 0}" onclick="abrirDealModal(${p.dealId})" style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e5e7eb;border-left:4px solid ${p.color};border-radius:12px;padding:10px 14px;margin-bottom:8px;cursor:pointer">
           <div style="font-size:15px;font-weight:900;color:#d1d5db;width:18px;text-align:center">${i + 1}</div>
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1704,7 +1712,8 @@
     const TIPO_ACT_LABEL = { '1': '🤝 Reunión', '2': '📞 Llamada', '6': '📝 Nota', '4': '📋 Tarea' };
     const actHtml = actividadesHoy.length
       ? actividadesHoy.map(a => {
-          const hora  = a.DEADLINE ? new Date(a.DEADLINE).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) : '';
+          const esHoyAct = a.DEADLINE && new Date(a.DEADLINE).toDateString() === new Date().toDateString();
+          const hora = a.DEADLINE ? (esHoyAct ? '' : new Date(a.DEADLINE).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) + ' ') + new Date(a.DEADLINE).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '';
           const tipo  = TIPO_ACT_LABEL[a.TYPE_ID] || '📌 Actividad';
           const hecha = a.COMPLETED === 'Y';
           const vencida = !hecha && a.DEADLINE && new Date(a.DEADLINE) < new Date(new Date().setHours(0,0,0,0));
