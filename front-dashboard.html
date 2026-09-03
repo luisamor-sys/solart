@@ -1409,12 +1409,17 @@
       visita: { titulo: '🧭 Con visita técnica', deals: conVisita },
       negociacion: { titulo: '💬 En negociación (post-visita)', deals: negociacion },
       cierre: { titulo: '📄 En cierre', deals: enCierreH },
+      kpiLeads: { titulo: '📥 Contactos nuevos del periodo', leads: leadsNew },
+      kpiPropuesta: { titulo: '🤝 Llegaron a propuesta este periodo', deals: kpiPropuesta },
+      kpiCierres: { titulo: '🏆 Cierres del periodo', deals: kpiCierres },
     };
     // KPIs del periodo con la definición de Victor:
     // "pasó a negociación" = llegó a presentación de propuesta o más allá
     const enPeriodo = f => f && f >= ini && f <= fin;
-    kpis.convertidos = vivas.filter(d => depthDeal(d) >= 2 && enPeriodo(String(d.MOVED_TIME || '').substring(0, 10))).length;
-    kpis.ganados = misGanadasF.filter(d => enPeriodo(String(d.MOVED_TIME || d.CLOSEDATE || '').substring(0, 10))).length;
+    const kpiPropuesta = vivas.filter(d => depthDeal(d) >= 2 && enPeriodo(String(d.MOVED_TIME || '').substring(0, 10)));
+    const kpiCierres = misGanadasF.filter(d => enPeriodo(String(d.MOVED_TIME || d.CLOSEDATE || '').substring(0, 10)));
+    kpis.convertidos = kpiPropuesta.length;
+    kpis.ganados = kpiCierres.length;
 
     const hitos = {
       prospectos: leadsActF.length,
@@ -1480,17 +1485,17 @@
 
     const kpisHtml = `
       <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
-        <div class="kpi-card amarillo">
+        <div class="kpi-card amarillo" onclick="abrirCohorteModal('kpiLeads')" style="cursor:pointer">
           <div class="kpi-icono">📥</div>
           <div class="kpi-valor">${kpis.leadsCreados}</div>
           <div class="kpi-label">Contactos nuevos ${lbl}</div>
         </div>
-        <div class="kpi-card azul">
+        <div class="kpi-card azul" onclick="abrirCohorteModal('kpiPropuesta')" style="cursor:pointer">
           <div class="kpi-icono">🤝</div>
           <div class="kpi-valor">${kpis.convertidos}</div>
           <div class="kpi-label">Llegaron a propuesta ${lbl}</div>
         </div>
-        <div class="kpi-card verde">
+        <div class="kpi-card verde" onclick="abrirCohorteModal('kpiCierres')" style="cursor:pointer">
           <div class="kpi-icono">🏆</div>
           <div class="kpi-valor">${kpis.ganados}</div>
           <div class="kpi-label">Cierres logrados ${lbl}</div>
