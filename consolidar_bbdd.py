@@ -6,7 +6,7 @@ import openpyxl
 from collections import defaultdict
 
 WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/'
-PIPE = "/private/tmp/claude-501/-Users-luisamor-Documents-Valle-de-san-miguel/89fce07d-a546-44b2-9518-fde77859183e/scratchpad/bbdd/Pipedrive/Respaldo 19-03-25/"
+PIPE = "/Users/luisamor/Downloads/OneDrive_1_24-8-2026/Pipedrive/Respaldo 19-03-25/"
 TC = 17.22  # para convertir MXN→USD cuando Bitrix no trae USD
 
 def bx(method, params):
@@ -110,7 +110,10 @@ for d in deals_pd:
     emp = d.get('Organización') or ''
     nota = nota_por_deal.get(d.get('ID'), {})
     desc = re.sub(r'<[^>]+>', ' ', str(nota.get('Contenido') or '')).strip()[:400] or None
-    usd = d.get('Valor Venta + IVA USD') or d.get('Valor de Venta (sin IVA) USD') or (d.get('Valor') if d.get('Moneda de Valor') == 'USD' else None)
+    # OJO: los campos "... USD" de Pipedrive traen el valor en la moneda ORIGINAL del trato (el nombre engaña).
+    # USD real: si el trato está en USD, el Valor tal cual; si está en MXN, Valor / TC.
+    _val = float(d['Valor']) if d.get('Valor') else None
+    usd = (_val if d.get('Moneda de Valor') == 'USD' else round(_val / TC, 2)) if _val else None
     ult = str(d.get('Fecha de la última actividad') or d.get('Hora de actualización') or '')[:10] or None
     registros.append({
         'origen': 'pipedrive', 'id': f"PD-{d['ID']}", 'bitrixId': None,
