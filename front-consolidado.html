@@ -241,20 +241,20 @@
     });
     const lista = Object.entries(por).map(([n, p]) => ({ n, ...p, prom: p.comp / p.total, estatus: estatusAsesor(n) }))
       .sort((a, b) => b.total - a.total);
-    const tagE = e => e === 'vigente' ? '<span class="tag" style="background:#dcfce7;color:#15803d">VIGENTE</span>'
-      : e === 'externo' ? '<span class="tag" style="background:#fef3c7;color:#92400e">EXTERNO</span>'
-      : e === '—' ? '' : '<span class="tag" style="background:#fee2e2;color:#991b1b">NO VIGENTE</span>';
+    const tagE = v => v.total >= 10
+      ? '<span class="tag" style="background:#dcfce7;color:#15803d">BBDD COMPLETA</span>'
+      : '<span class="tag" style="background:#fee2e2;color:#991b1b">BBDD INCOMPLETA</span>';
     const cComp = x => x >= 7 ? 'c-alta' : x >= 4 ? 'c-media' : 'c-baja';
     document.getElementById('m-det').innerHTML = `
       <button class="m-cerrar" onclick="document.getElementById('ov-det').style.display='none'">✕</button>
       <div class="m-tit">👥 Proyectos por vendedor</div>
       <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Cuántos proyectos tiene cada quien (histórico + vivo) y qué tan calificados están sus datos (promedio de los 10 atributos). Toca un vendedor para ver sus proyectos.</div>
       <div style="overflow-x:auto"><table style="box-shadow:none">
-        <thead><tr><th>Vendedor</th><th>Estatus</th><th>Total</th><th>🟢</th><th>🏆</th><th>❌</th><th>Calif.</th><th>📱 tel</th><th>✉️ email</th></tr></thead>
+        <thead><tr><th>Vendedor</th><th>BBDD</th><th>Total</th><th>🟢</th><th>🏆</th><th>❌</th><th>Calif.</th><th>📱 tel</th><th>✉️ email</th></tr></thead>
         <tbody>
         ${lista.map(v => `<tr onclick="filtrarPorDueno('${v.n.replace(/'/g, '')}')">
           <td style="font-weight:700">${v.n}</td>
-          <td>${tagE(v.estatus)}</td>
+          <td>${tagE(v)}</td>
           <td style="font-weight:800">${v.total}</td>
           <td>${v.abiertos}</td><td>${v.ganados}</td><td>${v.perdidos}</td>
           <td class="comp ${cComp(v.prom)}">${v.prom.toFixed(1)}/10</td>
