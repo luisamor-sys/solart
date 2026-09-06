@@ -183,8 +183,10 @@
     pinta(1);
   };
   const NUM_MIN = ['kwp', 'precio', 'precioUSD', 'energia', 'completitud'];
+  // Dato dudoso: kWp o precio fuera de toda proporción (error de captura, ej. monto tecleado en el campo kWp)
+  const sospechoso = r => (parseFloat(r.kwp) || 0) > 20000 || (parseFloat(r.precio) || 0) > 100000000;
   // Prioridad: proyecto abierto con 150+ kW o que cubre 50%+ de la energía (misma regla del tablero de vendedores)
-  const esPrio = r => r.estado === 'abierto' && ((parseFloat(r.kwp) || 0) >= 150 || (parseFloat(r.energia) || 0) >= 50);
+  const esPrio = r => !sospechoso(r) && r.estado === 'abierto' && ((parseFloat(r.kwp) || 0) >= 150 || (parseFloat(r.energia) || 0) >= 50);
   function filtrados() {
     const q = (document.getElementById('buscar').value || '').toLowerCase();
     const est = document.getElementById('f-estado').value;
@@ -210,7 +212,7 @@
       if (ord === 'usd') arr.sort((a,b) => (b.precioUSD||0) - (a.precioUSD||0));
       else if (ord === 'reciente') arr.sort((a,b) => String(b.ultContacto||'').localeCompare(String(a.ultContacto||'')));
       else if (ord === 'completitud') arr.sort((a,b) => b.completitud - a.completitud || (b.precioUSD||0) - (a.precioUSD||0));
-      else arr.sort((a,b) => (esPrio(b) - esPrio(a)) || ((parseFloat(b.kwp)||0) - (parseFloat(a.kwp)||0)) || ((parseFloat(b.energia)||0) - (parseFloat(a.energia)||0)));
+      else arr.sort((a,b) => (sospechoso(a) - sospechoso(b)) || (esPrio(b) - esPrio(a)) || ((parseFloat(b.kwp)||0) - (parseFloat(a.kwp)||0)) || ((parseFloat(b.energia)||0) - (parseFloat(a.energia)||0)));
     }
     return arr;
   }
@@ -223,7 +225,7 @@
       const tag = r.origen === 'bitrix' ? '<span class="tag t-bx">BITRIX</span>' : r.origen === 'monday' ? '<span class="tag t-md">MONDAY</span>' : '<span class="tag t-pd">PIPEDRIVE</span>';
       const cc = r.completitud >= 7 ? 'c-alta' : r.completitud >= 4 ? 'c-media' : 'c-baja';
       return `<tr onclick="detalle('${r.id}')">
-        <td>${tag}${esPrio(r) ? ' <span class="tag" style="background:#fef3c7;color:#92400e">🎯 PRIORIDAD</span>' : ''}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
+        <td>${tag}${sospechoso(r) ? ' <span class="tag" style="background:#fee2e2;color:#991b1b">⚠️ DATO DUDOSO</span>' : ''}${esPrio(r) ? ' <span class="tag" style="background:#fef3c7;color:#92400e">🎯 PRIORIDAD</span>' : ''}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
         <td style="font-weight:700;max-width:200px">${r.empresa || '—'}</td>
         <td style="max-width:180px">${r.proyecto || '—'}</td>
         <td>${r.contacto || '—'}</td>
@@ -239,12 +241,14 @@
       </tr>`;
     }).join('') || '<tr><td colspan="13" style="text-align:center;color:#9ca3af;padding:20px">Sin resultados.</td></tr>';
     const tot = Math.max(1, Math.ceil(arr.length / POR_PAG));
-    const sumUSD = arr.reduce((t, r) => t + (parseFloat(r.precioUSD) || 0), 0);
-    const sumKW  = arr.reduce((t, r) => { const k = parseFloat(r.kwp) || 0; return t + (k < 100000 ? k : 0); }, 0); // ignora kWp absurdos mal capturados
+    const limpios = arr.filter(r => !sospechoso(r));
+    const nDud = arr.length - limpios.length;
+    const sumUSD = limpios.reduce((t, r) => t + (parseFloat(r.precioUSD) || 0), 0);
+    const sumKW  = limpios.reduce((t, r) => t + (parseFloat(r.kwp) || 0), 0);
     document.getElementById('pag').innerHTML = `
       <button onclick="pinta(${Math.max(1,pagina-1)})">←</button>
       página ${pagina} de ${tot} · ${arr.length.toLocaleString()} proyectos ·
-      <b>Σ del filtro: ⚡ ${Math.round(sumKW).toLocaleString()} kW · 💵 $${(sumUSD/1e6).toFixed(1)} M USD</b>
+      <b>Σ del filtro: ⚡ ${Math.round(sumKW).toLocaleString()} kW · 💵 $${(sumUSD/1e6).toFixed(1)} M USD</b>${nDud ? ` <span style="color:#b45309">(sin ${nDud} con ⚠️ dato dudoso)</span>` : ''}
       <button onclick="pinta(${Math.min(tot,pagina+1)})">→</button>`;
   }
 
