@@ -76,7 +76,8 @@
       <option value="perdido">Perdidos</option>
     </select>
     <select id="f-orden" onchange="pinta(1)">
-      <option value="completitud">Orden: más completos</option>
+      <option value="prioridad">Orden: prioridad</option>
+      <option value="completitud">Más completos</option>
       <option value="usd">Mayor valor USD</option>
       <option value="reciente">Contacto más reciente</option>
     </select>
@@ -182,6 +183,8 @@
     pinta(1);
   };
   const NUM_MIN = ['kwp', 'precio', 'precioUSD', 'energia', 'completitud'];
+  // Prioridad: proyecto abierto con 150+ kW o que cubre 50%+ de la energía (misma regla del tablero de vendedores)
+  const esPrio = r => r.estado === 'abierto' && ((parseFloat(r.kwp) || 0) >= 150 || (parseFloat(r.energia) || 0) >= 50);
   function filtrados() {
     const q = (document.getElementById('buscar').value || '').toLowerCase();
     const est = document.getElementById('f-estado').value;
@@ -206,7 +209,8 @@
       const ord = document.getElementById('f-orden').value;
       if (ord === 'usd') arr.sort((a,b) => (b.precioUSD||0) - (a.precioUSD||0));
       else if (ord === 'reciente') arr.sort((a,b) => String(b.ultContacto||'').localeCompare(String(a.ultContacto||'')));
-      else arr.sort((a,b) => b.completitud - a.completitud || (b.precioUSD||0) - (a.precioUSD||0));
+      else if (ord === 'completitud') arr.sort((a,b) => b.completitud - a.completitud || (b.precioUSD||0) - (a.precioUSD||0));
+      else arr.sort((a,b) => (esPrio(b) - esPrio(a)) || ((parseFloat(b.kwp)||0) - (parseFloat(a.kwp)||0)) || ((parseFloat(b.energia)||0) - (parseFloat(a.energia)||0)));
     }
     return arr;
   }
@@ -219,7 +223,7 @@
       const tag = r.origen === 'bitrix' ? '<span class="tag t-bx">BITRIX</span>' : r.origen === 'monday' ? '<span class="tag t-md">MONDAY</span>' : '<span class="tag t-pd">PIPEDRIVE</span>';
       const cc = r.completitud >= 7 ? 'c-alta' : r.completitud >= 4 ? 'c-media' : 'c-baja';
       return `<tr onclick="detalle('${r.id}')">
-        <td>${tag}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
+        <td>${tag}${esPrio(r) ? ' <span class="tag" style="background:#fef3c7;color:#92400e">🎯 PRIORIDAD</span>' : ''}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
         <td style="font-weight:700;max-width:200px">${r.empresa || '—'}</td>
         <td style="max-width:180px">${r.proyecto || '—'}</td>
         <td>${r.contacto || '—'}</td>
