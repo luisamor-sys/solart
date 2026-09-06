@@ -173,13 +173,13 @@
       const razonSocial = partes.find(p => /\b(S\.?A\.?|CV|SAPI|S DE RL|S\.C\.)\b/i.test(p));
       pon('f-nombre', razonSocial || partes[1] || partes[0] || '');
       // Inversión = Total de la negociación (OPPORTUNITY)
-      if (parseFloat(d.OPPORTUNITY)) pon('f-inversion', d.OPPORTUNITY);
+      if (parseFloat(d.OPPORTUNITY)) pon('f-inversion', Math.round(parseFloat(d.OPPORTUNITY)));
       if (d.UF_CRM_1741208352117) pon('f-kwp', d.UF_CRM_1741208352117);
       if (d.UF_CRM_1758676152864) pon('f-roi', d.UF_CRM_1758676152864);
       if (d.UF_CRM_1753209254287) pon('f-pctenergia', String(d.UF_CRM_1753209254287).includes('%') ? d.UF_CRM_1753209254287 : d.UF_CRM_1753209254287 + '%');
       // Total del recibo CFE: se captura al convertir el prospecto
       const montoRecibo = typeof d.UF_CRM_67A2ED1D84E1E === 'string' ? parseFloat(d.UF_CRM_67A2ED1D84E1E.split('|')[0]) : parseFloat(d.UF_CRM_67A2ED1D84E1E) || 0;
-      if (montoRecibo) pon('f-total', montoRecibo);
+      if (montoRecibo) pon('f-total', Math.round(montoRecibo));
       // Pago con SOLART = recibo CFE - "Ahorro mensual CON SOLART" (campo de Bitrix)
       const ahorroBx = typeof d.UF_CRM_1758675881434 === 'string' ? parseFloat(d.UF_CRM_1758675881434.split('|')[0]) : parseFloat(d.UF_CRM_1758675881434) || 0;
       if (montoRecibo && ahorroBx && ahorroBx < montoRecibo) pon('f-consolart', Math.round(montoRecibo - ahorroBx));
@@ -206,7 +206,7 @@
     if (d?.rates?.MXN) window._tcHoy = d.rates.MXN;
   }).catch(() => {});
 
-  window.fmtDinero = el => { const d = String(el.value).replace(/[^\d]/g, ''); el.value = d ? '$' + Number(d).toLocaleString('es-MX') : ''; };
+  window.fmtDinero = el => { let v = String(el.value); if (/^\$?[\d]+(\.\d+)$/.test(v.replace(/,/g, ''))) v = String(Math.round(parseFloat(v.replace(/[$,]/g, '')))); const d = v.replace(/[^\d]/g, ''); el.value = d ? '$' + Number(d).toLocaleString('es-MX') : ''; };
   const v = id => document.getElementById(id).value;
   const n = id => parseFloat(String(document.getElementById(id).value).replace(/[^\d.]/g, '')) || 0;
 
