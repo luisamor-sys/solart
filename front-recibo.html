@@ -371,14 +371,28 @@
           </div>
         </div>
       </div>
+      ${(() => {
+        // Árboles equivalentes: kWh al año × 0.438 kg CO₂ por kWh (red eléctrica MX) ÷ 22 kg que absorbe un árbol al año
+        const kwhMes = n('f-kwh');
+        if (!kwhMes) return `
       <div class="r-aviso">
         <div class="icono">⚠️</div>
         <div style="flex:1">
           <div class="rojo-t">¡AVISO IMPORTANTE!</div>
-          <div class="txt">Cada mes que pasa sin implementar tu proyecto SOLART estás pagando aproximadamente:</div>
+          <div class="txt">Cada mes que pasa sin implementar tu proyecto SOLART estás pagando de más en energía eléctrica.</div>
         </div>
-        <div class="grande">${fMX(ahorroMensual)} MÁS<small>de lo necesario en energía eléctrica.</small></div>
-      </div>
+      </div>`;
+        const arboles = Math.round(kwhMes * 12 * 0.438 / 22);
+        return `
+      <div class="r-aviso" style="border-color:#16a34a">
+        <div class="icono">🌳</div>
+        <div style="flex:1">
+          <div class="rojo-t" style="color:#15803d">TU PROYECTO TAMBIÉN CUIDA EL PLANETA</div>
+          <div class="txt">Con la energía limpia que producirías, cada año dejarías de emitir el CO₂ que absorben:</div>
+        </div>
+        <div class="grande" style="color:#15803d">${arboles.toLocaleString('es-MX')} ÁRBOLES<small>plantados y creciendo, cada año.</small></div>
+      </div>`;
+      })()}
       <div class="cfe-linea" style="margin-top:16px"></div>
       <div class="barcode"></div>
       <div class="barcode-num">${String(Math.abs(conSolart)).padStart(6,'0')} ${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')} 000${Math.round(ahorroMensual)}</div>
