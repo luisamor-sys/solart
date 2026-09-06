@@ -240,7 +240,7 @@
     }).join('') || '<tr><td colspan="13" style="text-align:center;color:#9ca3af;padding:20px">Sin resultados.</td></tr>';
     const tot = Math.max(1, Math.ceil(arr.length / POR_PAG));
     const sumUSD = arr.reduce((t, r) => t + (parseFloat(r.precioUSD) || 0), 0);
-    const sumKW  = arr.reduce((t, r) => t + (parseFloat(r.kwp) || 0), 0);
+    const sumKW  = arr.reduce((t, r) => { const k = parseFloat(r.kwp) || 0; return t + (k < 100000 ? k : 0); }, 0); // ignora kWp absurdos mal capturados
     document.getElementById('pag').innerHTML = `
       <button onclick="pinta(${Math.max(1,pagina-1)})">←</button>
       página ${pagina} de ${tot} · ${arr.length.toLocaleString()} proyectos ·
