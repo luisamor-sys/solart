@@ -196,6 +196,7 @@
       (!est || r.estado === est) &&
       (!q || [r.empresa, r.proyecto, r.contacto, r.dueno].join(' ').toLowerCase().includes(q))
     );
+    if (window._soloDudosos) arr = arr.filter(sospechoso);
     for (const [c, v] of Object.entries(colF)) {
       if (!v) continue;
       if (NUM_MIN.includes(c)) arr = arr.filter(r => (parseFloat(r[c]) || 0) >= parseFloat(v));
@@ -246,15 +247,16 @@
     const nDud = arr.length - limpios.length;
     const sumUSD = limpios.reduce((t, r) => t + (parseFloat(r.precioUSD) || 0), 0);
     const sumKW  = limpios.reduce((t, r) => t + (parseFloat(r.kwp) || 0), 0);
-    const cajita = (icono, valor, etiqueta, color) => `
-      <div style="flex:1;min-width:150px;background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 14px">
+    const cajita = (icono, valor, etiqueta, color, click) => `
+      <div ${click ? `onclick="${click}"` : ''} style="flex:1;min-width:150px;background:${window._soloDudosos && click ? '#fef2f2' : '#fff'};border:1.5px solid ${window._soloDudosos && click ? '#fecaca' : '#e5e7eb'};border-radius:12px;padding:10px 14px;${click ? 'cursor:pointer' : ''}">
         <div style="font-size:19px;font-weight:900;color:${color}">${icono} ${valor}</div>
         <div style="font-size:10.5px;color:#9ca3af;font-weight:700">${etiqueta}</div>
       </div>`;
+    window.toggleDudosos = () => { window._soloDudosos = !window._soloDudosos; pinta(1); };
     const hayFiltro = !!(filtroOrigen || document.getElementById('buscar').value || document.getElementById('f-estado').value || Object.values(colF).some(x => x));
     document.getElementById('totales').innerHTML =
       cajita('📁', arr.length.toLocaleString(), hayFiltro ? 'proyectos (con tus filtros)' : 'proyectos en total', '#111827') +
-      cajita('💵', '$' + (sumUSD/1e6).toFixed(1) + ' M USD', 'valor total' + (nDud ? ` · sin ${nDud} ⚠️ dudosos` : ''), '#006099') +
+      cajita('💵', '$' + (sumUSD/1e6).toFixed(1) + ' M USD', window._soloDudosos ? '⚠️ viendo solo los dudosos · toca para volver' : 'valor total' + (nDud ? ` · sin ${nDud} ⚠️ dudosos — toca para verlos` : ''), '#006099', (nDud || window._soloDudosos) ? 'toggleDudosos()' : '') +
       cajita('⚡', Math.round(sumKW).toLocaleString() + ' kW', 'capacidad total', '#b45309');
     document.getElementById('pag').innerHTML = `
       <button onclick="pinta(${Math.max(1,pagina-1)})">←</button>
