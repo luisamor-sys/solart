@@ -82,6 +82,7 @@
       <option value="reciente">Contacto más reciente</option>
     </select>
   </div>
+  <div id="totales" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0"></div>
   <div class="tabla-wrap">
     <table>
       <thead><tr>
@@ -245,10 +246,20 @@
     const nDud = arr.length - limpios.length;
     const sumUSD = limpios.reduce((t, r) => t + (parseFloat(r.precioUSD) || 0), 0);
     const sumKW  = limpios.reduce((t, r) => t + (parseFloat(r.kwp) || 0), 0);
+    const cajita = (icono, valor, etiqueta, color) => `
+      <div style="flex:1;min-width:150px;background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 14px">
+        <div style="font-size:19px;font-weight:900;color:${color}">${icono} ${valor}</div>
+        <div style="font-size:10.5px;color:#9ca3af;font-weight:700">${etiqueta}</div>
+      </div>`;
+    const hayFiltro = !!(filtroOrigen || document.getElementById('buscar').value || document.getElementById('f-estado').value || Object.values(colF).some(x => x));
+    document.getElementById('totales').innerHTML =
+      cajita('📁', arr.length.toLocaleString(), hayFiltro ? 'proyectos (con tus filtros)' : 'proyectos en total', '#111827') +
+      cajita('💵', '$' + (sumUSD/1e6).toFixed(1) + ' M USD', 'valor total' + (nDud ? ` · sin ${nDud} ⚠️ dudosos` : ''), '#006099') +
+      cajita('⚡', Math.round(sumKW).toLocaleString() + ' kW', 'capacidad total', '#b45309');
     document.getElementById('pag').innerHTML = `
       <button onclick="pinta(${Math.max(1,pagina-1)})">←</button>
       página ${pagina} de ${tot} · ${arr.length.toLocaleString()} proyectos ·
-      <b>Σ del filtro: ⚡ ${Math.round(sumKW).toLocaleString()} kW · 💵 $${(sumUSD/1e6).toFixed(1)} M USD</b>${nDud ? ` <span style="color:#b45309">(sin ${nDud} con ⚠️ dato dudoso)</span>` : ''}
+      <b>Σ: ⚡ ${Math.round(sumKW).toLocaleString()} kW · 💵 $${(sumUSD/1e6).toFixed(1)} M USD</b>
       <button onclick="pinta(${Math.min(tot,pagina+1)})">→</button>`;
   }
 
