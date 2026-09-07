@@ -46,6 +46,21 @@
   .fila-filtros td { padding: 4px 6px; background: #f8fafc; }
   .col-f { width: 100%; min-width: 54px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px 6px; font-size: 11px; box-sizing: border-box; }
   .flecha { font-size: 9px; }
+  .cuerpo-flex { display:flex; gap:14px; align-items:flex-start; }
+  #lateral { width:225px; flex-shrink:0; background:#fff; border:1.5px solid #e5e7eb; border-radius:14px; padding:6px 12px 12px; position:sticky; top:10px; max-height:92vh; overflow-y:auto; }
+  #lateral details { border-bottom:1px solid #f3f4f6; padding:8px 0; }
+  #lateral details:last-child { border-bottom:none; }
+  #lateral summary { font-size:12.5px; font-weight:800; color:#111827; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; }
+  #lateral summary::after { content:'▾'; color:#9ca3af; font-size:10px; }
+  #lateral details[open] summary::after { content:'▴'; }
+  .fop { display:flex; align-items:center; gap:7px; padding:4px 0; font-size:12px; color:#374151; cursor:pointer; }
+  .fop input { accent-color:#006099; }
+  .fop .cnt { margin-left:auto; font-size:11px; color:#9ca3af; font-weight:700; }
+  .fop.off { opacity:.45; }
+  .rango { display:flex; gap:6px; margin-top:6px; }
+  .rango input { width:50%; border:1px solid #e5e7eb; border-radius:8px; padding:5px 7px; font-size:11.5px; box-sizing:border-box; }
+  .btn-limpiar { width:100%; margin-top:10px; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:8px; padding:7px; font-size:11.5px; font-weight:800; color:#374151; cursor:pointer; }
+  @media (max-width:860px) { .cuerpo-flex { flex-direction:column; } #lateral { width:100%; position:static; max-height:none; box-sizing:border-box; } }
 </style>
 </head>
 <body>
@@ -63,18 +78,6 @@
   </div>
   <div class="controles">
     <input id="buscar" placeholder="Buscar empresa, proyecto o contacto…" oninput="pinta(1)">
-    <div class="chips-o" id="chips-origen">
-      <div class="chip-o on" data-v="">Todos</div>
-      <div class="chip-o" data-v="bitrix">Bitrix</div>
-      <div class="chip-o" data-v="pipedrive">Pipedrive</div>
-      <div class="chip-o" data-v="monday">Monday</div>
-    </div>
-    <select id="f-estado" onchange="pinta(1)">
-      <option value="">Estado: todos</option>
-      <option value="abierto">Abiertos</option>
-      <option value="ganado">Ganados</option>
-      <option value="perdido">Perdidos</option>
-    </select>
     <select id="f-orden" onchange="pinta(1)">
       <option value="prioridad">Orden: prioridad</option>
       <option value="completitud">Más completos</option>
@@ -83,6 +86,9 @@
     </select>
   </div>
   <div id="totales" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0"></div>
+  <div class="cuerpo-flex">
+  <aside id="lateral"></aside>
+  <div style="flex:1;min-width:0">
   <div class="tabla-wrap">
     <table>
       <thead><tr>
@@ -119,6 +125,8 @@
     </table>
   </div>
   <div class="pag" id="pag"></div>
+  </div>
+  </div>
 </div>
 
 <!-- modal detalle -->
@@ -156,7 +164,9 @@
     { id: 296, n: 'Alberto Atilano Taylor' }, { id: 356, n: 'Moises Jimenez' },
     { id: 8, n: 'Daniel González' },
   ];
-  let DATA = [], filtroOrigen = '', pagina = 1, seleccionRifa = null;
+  let DATA = [], pagina = 1, seleccionRifa = null;
+  // Filtros laterales (multi-selección estilo buscador de vuelos)
+  const F = { origen: new Set(), estado: new Set(), esp: new Set(), dueno: new Set(), usdMin:'', usdMax:'', kwMin:'', kwMax:'', enMin:'', compMin:'' };
   const POR_PAG = 60;
   const fUSD = n => n ? '$' + Math.round(n).toLocaleString('es-MX') : '—';
   const asignados = new Set(JSON.parse(localStorage.getItem('rifa_asignados') || '[]'));
@@ -166,14 +176,103 @@
     document.getElementById('sub-info').textContent =
       `${d.total.toLocaleString()} proyectos · Bitrix ${DATA.filter(r=>r.origen==='bitrix').length} · Pipedrive ${DATA.filter(r=>r.origen==='pipedrive').length} · actualizado ${d.generado.replace('T',' ')}`;
     document.getElementById('rifa-vend').innerHTML = VENDEDORES.map(v => `<option value="${v.id}">${v.n}</option>`).join('');
+    renderLateral();
     pinta(1);
   });
 
-  document.getElementById('chips-origen').addEventListener('click', e => {
-    const c = e.target.closest('.chip-o'); if (!c) return;
-    document.querySelectorAll('.chip-o').forEach(x => x.classList.remove('on'));
-    c.classList.add('on'); filtroOrigen = c.dataset.v; pinta(1);
-  });
+  window.togF = (grupo, val, on) => { on ? F[grupo].add(val) : F[grupo].delete(val); pinta(1); };
+  window.setRango = (campo, val) => { F[campo] = val; pinta(1); };
+  window.limpiarF = () => {
+    ['origen','estado','esp','dueno'].forEach(g => F[g].clear());
+    ['usdMin','usdMax','kwMin','kwMax','enMin','compMin'].forEach(c => F[c] = '');
+    document.querySelectorAll('#lateral input[type=checkbox]').forEach(c => c.checked = false);
+    document.querySelectorAll('#lateral input[type=number]').forEach(c => c.value = '');
+    pinta(1);
+  };
+  const ESPECIALES = [ ['prio','🎯 Prioridad'], ['dudoso','⚠️ Dato dudoso'], ['enbx','Ya está en Bitrix'] ];
+  const cumpleEsp = (r, e) => e === 'prio' ? esPrio(r) : e === 'dudoso' ? sospechoso(r) : !!r.enBitrix;
+  // Aplica todos los filtros laterales, con opción de saltarse un grupo (para los conteos por opción)
+  function pasaF(r, saltar) {
+    if (saltar !== 'origen' && F.origen.size && !F.origen.has(r.origen)) return false;
+    if (saltar !== 'estado' && F.estado.size && !F.estado.has(r.estado)) return false;
+    if (saltar !== 'esp' && F.esp.size && ![...F.esp].every(e => cumpleEsp(r, e))) return false;
+    if (saltar !== 'dueno' && F.dueno.size && !F.dueno.has(r.dueno || 'Sin dueño')) return false;
+    const usd = parseFloat(r.precioUSD) || 0, kw = parseFloat(r.kwp) || 0, en = parseFloat(r.energia) || 0;
+    if (F.usdMin !== '' && usd < parseFloat(F.usdMin)) return false;
+    if (F.usdMax !== '' && usd > parseFloat(F.usdMax)) return false;
+    if (F.kwMin !== '' && kw < parseFloat(F.kwMin)) return false;
+    if (F.kwMax !== '' && kw > parseFloat(F.kwMax)) return false;
+    if (F.enMin !== '' && en < parseFloat(F.enMin)) return false;
+    if (F.compMin !== '' && (r.completitud || 0) < parseFloat(F.compMin)) return false;
+    return true;
+  }
+  function baseQ() {
+    const q = (document.getElementById('buscar').value || '').toLowerCase();
+    let arr = DATA.filter(r => !q || [r.empresa, r.proyecto, r.contacto, r.dueno].join(' ').toLowerCase().includes(q));
+    if (window._soloDudosos) arr = arr.filter(sospechoso);
+    for (const [c, v] of Object.entries(colF)) {
+      if (!v) continue;
+      if (NUM_MIN.includes(c)) arr = arr.filter(r => (parseFloat(r[c]) || 0) >= parseFloat(v));
+      else if (c === 'retorno') arr = arr.filter(r => r.retorno && parseFloat(r.retorno) <= parseFloat(v));
+      else arr = arr.filter(r => String(r[c] || '').toLowerCase().includes(v));
+    }
+    return arr;
+  }
+  // Construye el panel lateral una sola vez; los conteos se refrescan en cada pinta()
+  function renderLateral() {
+    const cb = (g, v, txt) => `<label class="fop" data-g="${g}" data-v="${v}"><input type="checkbox" onchange="togF('${g}','${v}',this.checked)"> ${txt} <span class="cnt"></span></label>`;
+    const duenos = {};
+    DATA.forEach(r => { const d = r.dueno || 'Sin dueño'; duenos[d] = (duenos[d] || 0) + 1; });
+    const listaD = Object.entries(duenos).sort((a, b) => b[1] - a[1]);
+    document.getElementById('lateral').innerHTML = `
+      <details open><summary>Origen</summary>
+        ${cb('origen','bitrix','Bitrix')}${cb('origen','pipedrive','Pipedrive')}${cb('origen','monday','Monday')}
+      </details>
+      <details open><summary>Estado</summary>
+        ${cb('estado','abierto','🟢 Abiertos')}${cb('estado','ganado','🏆 Ganados')}${cb('estado','perdido','❌ Perdidos')}
+      </details>
+      <details open><summary>Especiales</summary>
+        ${ESPECIALES.map(([v, t]) => cb('esp', v, t)).join('')}
+      </details>
+      <details><summary>Dueño</summary>
+        <div style="max-height:190px;overflow-y:auto;margin-top:4px">
+          ${listaD.map(([d]) => cb('dueno', d.replace(/'/g, ''), d)).join('')}
+        </div>
+      </details>
+      <details><summary>Precio (USD)</summary>
+        <div class="rango">
+          <input type="number" placeholder="mín" oninput="setRango('usdMin',this.value)">
+          <input type="number" placeholder="máx" oninput="setRango('usdMax',this.value)">
+        </div>
+      </details>
+      <details><summary>Tamaño (kW)</summary>
+        <div class="rango">
+          <input type="number" placeholder="mín" oninput="setRango('kwMin',this.value)">
+          <input type="number" placeholder="máx" oninput="setRango('kwMax',this.value)">
+        </div>
+      </details>
+      <details><summary>% Energía</summary>
+        <div class="rango"><input type="number" placeholder="mín %" oninput="setRango('enMin',this.value)"></div>
+      </details>
+      <details><summary>Calidad de datos</summary>
+        <div class="rango"><input type="number" min="0" max="10" placeholder="mín /10" oninput="setRango('compMin',this.value)"></div>
+      </details>
+      <button class="btn-limpiar" onclick="limpiarF()">Limpiar filtros</button>`;
+  }
+  // Conteos por opción (con los demás filtros aplicados, como el buscador de vuelos)
+  function pintaConteos() {
+    const base = baseQ();
+    document.querySelectorAll('#lateral .fop').forEach(l => {
+      const g = l.dataset.g, v = l.dataset.v;
+      const arr = base.filter(r => pasaF(r, g));
+      const n = g === 'origen' ? arr.filter(r => r.origen === v).length
+        : g === 'estado' ? arr.filter(r => r.estado === v).length
+        : g === 'esp' ? arr.filter(r => cumpleEsp(r, v)).length
+        : arr.filter(r => (r.dueno || 'Sin dueño').replace(/'/g, '') === v).length;
+      l.querySelector('.cnt').textContent = n.toLocaleString();
+      l.classList.toggle('off', !n);
+    });
+  }
 
   const colF = {};
   window.setColF = (c, v) => { colF[c] = String(v || '').trim().toLowerCase(); pinta(1); };
@@ -189,20 +288,7 @@
   // Prioridad: proyecto abierto con 150+ kW o que cubre 50%+ de la energía (misma regla del tablero de vendedores)
   const esPrio = r => !sospechoso(r) && r.estado === 'abierto' && ((parseFloat(r.kwp) || 0) >= 150 || (parseFloat(r.energia) || 0) >= 50);
   function filtrados() {
-    const q = (document.getElementById('buscar').value || '').toLowerCase();
-    const est = document.getElementById('f-estado').value;
-    let arr = DATA.filter(r =>
-      (!filtroOrigen || r.origen === filtroOrigen) &&
-      (!est || r.estado === est) &&
-      (!q || [r.empresa, r.proyecto, r.contacto, r.dueno].join(' ').toLowerCase().includes(q))
-    );
-    if (window._soloDudosos) arr = arr.filter(sospechoso);
-    for (const [c, v] of Object.entries(colF)) {
-      if (!v) continue;
-      if (NUM_MIN.includes(c)) arr = arr.filter(r => (parseFloat(r[c]) || 0) >= parseFloat(v));
-      else if (c === 'retorno') arr = arr.filter(r => r.retorno && parseFloat(r.retorno) <= parseFloat(v));
-      else arr = arr.filter(r => String(r[c] || '').toLowerCase().includes(v));
-    }
+    let arr = baseQ().filter(r => pasaF(r, null));
     if (ordCol) {
       const num = [...NUM_MIN, 'retorno'].includes(ordCol);
       // ordDir -1 = descendente (primer clic), 1 = ascendente
@@ -253,11 +339,14 @@
         <div style="font-size:10.5px;color:#9ca3af;font-weight:700">${etiqueta}</div>
       </div>`;
     window.toggleDudosos = () => { window._soloDudosos = !window._soloDudosos; pinta(1); };
-    const hayFiltro = !!(filtroOrigen || document.getElementById('buscar').value || document.getElementById('f-estado').value || Object.values(colF).some(x => x));
+    const hayFiltro = !!(document.getElementById('buscar').value || Object.values(colF).some(x => x) ||
+      F.origen.size || F.estado.size || F.esp.size || F.dueno.size ||
+      [F.usdMin, F.usdMax, F.kwMin, F.kwMax, F.enMin, F.compMin].some(x => x !== ''));
     document.getElementById('totales').innerHTML =
       cajita('📁', arr.length.toLocaleString(), hayFiltro ? 'proyectos (con tus filtros)' : 'proyectos en total', '#111827') +
       cajita('💵', '$' + (sumUSD/1e6).toFixed(1) + ' M USD', window._soloDudosos ? '⚠️ viendo solo los dudosos · toca para volver' : 'valor total' + (nDud ? ` · sin ${nDud} ⚠️ dudosos — toca para verlos` : ''), '#006099', (nDud || window._soloDudosos) ? 'toggleDudosos()' : '') +
       cajita('⚡', Math.round(sumKW).toLocaleString() + ' kW', 'capacidad total', '#b45309');
+    pintaConteos();
     document.getElementById('pag').innerHTML = `
       <button onclick="pinta(${Math.max(1,pagina-1)})">←</button>
       página ${pagina} de ${tot} · ${arr.length.toLocaleString()} proyectos ·
