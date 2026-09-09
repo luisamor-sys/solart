@@ -180,10 +180,13 @@
     const nBx = DATA.filter(r => r.origen === 'bitrix').length;
     const nDup = DATA.filter(esDuplicado).length;
     const nPd = DATA.filter(r => r.origen === 'pipedrive').length - nDup;
+    const nMdy = DATA.filter(r => r.origen === 'monday').length;
+    const nComp = DATA.filter(r => r.monday && r.origen !== 'monday').length;
     document.getElementById('sub-info').textContent =
-      `${(DATA.length - nDup).toLocaleString()} clientes distintos · Bitrix ${nBx} · Pipedrive ${nPd}` +
-      (nDup ? ` · ${nDup} repetidos en ambos (se cuentan una sola vez)` : '') +
-      ` · actualizado ${d.generado.replace('T',' ')}`;
+      `${(DATA.length - nDup).toLocaleString()} clientes distintos · Bitrix ${nBx} · Pipedrive ${nPd} · Monday ${nMdy}` +
+      (nDup ? ` · ${nDup} repetidos (se cuentan una vez)` : '') +
+      (nComp ? ` · ${nComp} con ficha de Monday para comparar` : '') +
+      ` · actualizado ${d.generado.replace('T',' ').substring(0,16)}`;
     document.getElementById('rifa-vend').innerHTML = VENDEDORES.map(v => `<option value="${v.id}">${v.n}</option>`).join('');
     renderLateral();
     pinta(1);
