@@ -49,6 +49,17 @@ MAPA = [
 GENERICO = re.compile(r'^(propuesta|cotizacion|subelemento|prueba|sin nombre|nuevo elemento|item)\b', re.I)
 
 
+def limpiar_vendedor(txt):
+    """Monday guarda varios asignados y a veces el correo: deja un solo nombre legible."""
+    if not txt:
+        return None
+    primero = str(txt).split(',')[0].strip()
+    if '@' in primero:  # nombre.apellido@solart.mx → Nombre Apellido
+        usuario = primero.split('@')[0].replace('.', ' ').replace('_', ' ')
+        primero = ' '.join(p.capitalize() for p in usuario.split())
+    return primero or None
+
+
 def norm(s):
     s = unicodedata.normalize('NFD', str(s or ''))
     s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
@@ -133,7 +144,7 @@ def leer_tableros():
                 'nota': (datos.get('nota') or '')[:300] or None,
                 'estatus': datos.get('estatus') or datos.get('respuesta'),
                 'ultContacto': datos.get('ultContacto') or (it.get('updated_at') or '')[:10],
-                'dueno': datos.get('asignado'),
+                'dueno': limpiar_vendedor(datos.get('asignado')),
             })
     return registros
 

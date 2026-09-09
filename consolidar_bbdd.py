@@ -23,6 +23,17 @@ def bx_all(method, params):
         start = r['next']
     return out
 
+def _pct(v):
+    """% de energía: solo números; textos como 'Desconocido' se descartan."""
+    if v in (None, ''): return None
+    t = str(v).replace('%', '').replace(',', '').strip()
+    try:
+        float(t)
+        return t
+    except ValueError:
+        return None
+
+
 def norm(s):
     s = unicodedata.normalize('NFD', str(s or '').lower())
     s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
@@ -140,7 +151,7 @@ for d in deals_pd:
         'moneda': d.get('Moneda de Valor') or 'USD',
         'precioUSD': round(float(usd), 2) if usd else None,
         'retorno': None,
-        'energia': str(d['% Energía cubierto']).replace('%','').strip() if d.get('% Energía cubierto') else None,
+        'energia': _pct(d.get('% Energía cubierto')),
         'ultContacto': ult,
         'estado': {'Ganado': 'ganado', 'Perdido': 'perdido'}.get(d.get('Estado'), 'abierto'),
         'dueno': d.get('Propietario') or '',

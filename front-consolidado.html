@@ -216,7 +216,7 @@
     if (bv) { bv.value = ''; filtrarVend(''); }
     pinta(1);
   };
-  const ESPECIALES = [ ['prio','🎯 Prioridad'], ['dudoso','⚠️ Dato dudoso'],
+  const ESPECIALES = [ ['prio','🎯 Prioridad (150+ kW y 50%+)'], ['dudoso','⚠️ Dato dudoso'],
     ['conmdy','🟣 Tiene ficha en Monday'], ['nocuadra','⚖️ No cuadra con Monday'], ['enbx','🔁 Repetidos con Bitrix'] ];
   const cumpleEsp = (r, e) => e === 'prio' ? esPrio(r) : e === 'dudoso' ? sospechoso(r)
     : e === 'conmdy' ? !!r.monday : e === 'nocuadra' ? noCuadra(r) : esDuplicado(r);
@@ -367,8 +367,15 @@
   const NUM_MIN = ['kwp', 'precio', 'precioUSD', 'energia', 'completitud'];
   // Dato dudoso: kWp o precio fuera de toda proporción (error de captura, ej. monto tecleado en el campo kWp)
   const sospechoso = r => (parseFloat(r.kwp) || 0) > 20000 || (parseFloat(r.precio) || 0) > 100000000;
-  // Prioridad: proyecto abierto con 150+ kW o que cubre 50%+ de la energía (misma regla del tablero de vendedores)
-  const esPrio = r => !sospechoso(r) && r.estado === 'abierto' && ((parseFloat(r.kwp) || 0) >= 150 || (parseFloat(r.energia) || 0) >= 50);
+  // Prioridad (misma regla del tablero de vendedores): el proyecto debe ser grande —150+ kW—
+  // Y cubrir al menos la mitad de la energía del cliente. Si no sabemos el %, el tamaño manda.
+  const esPrio = r => {
+    if (sospechoso(r) || r.estado !== 'abierto') return false;
+    const kw = parseFloat(r.kwp) || 0;
+    if (kw < 150) return false;
+    const en = parseFloat(r.energia) || 0;
+    return en === 0 || en >= 50;   // en === 0 = dato no capturado
+  };
   function filtrados() {
     let arr = baseQ().filter(r => pasaF(r, null));
     if (ordCol) {

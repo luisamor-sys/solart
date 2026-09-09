@@ -1588,7 +1588,7 @@
     const NIVEL_COLOR  = { 1:'#94a3b8', 2:'#d97706', 3:'#0369a1', 4:'#7c3aed', 5:'#15803d' };
     [...deals, ...dealsCierre]
       .map(d => ({ d, kw: kwDe(d), en: enDe(d), nivel: Math.min(depthDeal(d), 5) }))
-      .filter(x => x.kw >= 150 || x.en >= 50)
+      .filter(x => x.kw >= 150 && (x.en === 0 || x.en >= 50))
       .sort((a, b) => b.nivel - a.nivel || b.kw - a.kw || b.en - a.en)
       .forEach(({ d, kw, en, nivel }) => {
         const siguiente = window.sigPasoDe ? window.sigPasoDe(d.ID) : null;
@@ -1623,7 +1623,7 @@
           <span class="seccion-titulo">🎯 Prioridades del mes</span>
           <span class="seccion-count">${prioridades.length}</span>
         </div>
-        <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">ℹ️ Entran los proyectos de 150+ kW o que cubren 50%+ de la energía del cliente. Se ordenan por etapa (más avanzada primero), luego por tamaño y % de energía. Toca una tarjeta para ver el detalle.</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">ℹ️ Entran los proyectos de 150+ kW que además cubren 50%+ de la energía del cliente (si el % no está capturado, entra por tamaño). Se ordenan por etapa (más avanzada primero), luego por tamaño y % de energía. Toca una tarjeta para ver el detalle.</div>
         ${prioridades.length ? `
         <div style="display:flex;gap:6px;margin-bottom:10px">
           <button class="prio-chip" data-v="" onclick="filtrarPrio('')" style="background:#1a1a2e;color:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">Todas</button>
