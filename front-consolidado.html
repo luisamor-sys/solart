@@ -105,6 +105,9 @@
         <th onclick="sortCol('dueno')" style="cursor:pointer">Dueño <span class="flecha" data-c="dueno"></span></th>
         <th onclick="sortCol('estado')" style="cursor:pointer">Estado <span class="flecha" data-c="estado"></span></th>
         <th onclick="sortCol('completitud')" style="cursor:pointer">Datos <span class="flecha" data-c="completitud"></span></th>
+        <th style="background:#faf5ff;color:#6b21a8">kW Monday</th>
+        <th style="background:#faf5ff;color:#6b21a8">% en. Monday</th>
+        <th style="background:#faf5ff;color:#6b21a8">USD Monday</th>
       </tr>
       <tr class="fila-filtros">
         <td></td>
@@ -120,6 +123,7 @@
         <td><input class="col-f" oninput="setColF('dueno',this.value)" placeholder="filtrar…"></td>
         <td></td>
         <td><input class="col-f" type="number" oninput="setColF('completitud',this.value)" placeholder="mín"></td>
+        <td colspan="3" style="background:#faf5ff;font-size:10px;color:#6b21a8;font-weight:700;text-align:center">lo que decía Monday</td>
       </tr></thead>
       <tbody id="cuerpo"></tbody>
     </table>
@@ -166,7 +170,7 @@
   ];
   let DATA = [], pagina = 1, seleccionRifa = null;
   // Filtros laterales (multi-selección estilo buscador de vuelos)
-  const F = { origen: new Set(), estado: new Set(), esp: new Set(), dueno: new Set(), usdMin:'', usdMax:'', kwMin:'', kwMax:'', enMin:'', compMin:'' };
+  const F = { origen: new Set(), estado: new Set(), esp: new Set(), dueno: new Set(), pipeline: new Set(), etapa: new Set(), usdMin:'', usdMax:'', kwMin:'', kwMax:'', enMin:'', compMin:'' };
   const POR_PAG = 60;
   const fUSD = n => n ? '$' + Math.round(n).toLocaleString('es-MX') : '—';
   const asignados = new Set(JSON.parse(localStorage.getItem('rifa_asignados') || '[]'));
@@ -188,20 +192,24 @@
   window.togF = (grupo, val, on) => { on ? F[grupo].add(val) : F[grupo].delete(val); pinta(1); };
   window.setRango = (campo, val) => { F[campo] = val; pinta(1); };
   window.limpiarF = () => {
-    ['origen','estado','esp','dueno'].forEach(g => F[g].clear());
+    ['origen','estado','esp','dueno','pipeline','etapa'].forEach(g => F[g].clear());
     ['usdMin','usdMax','kwMin','kwMax','enMin','compMin'].forEach(c => F[c] = '');
     document.querySelectorAll('#lateral input[type=checkbox]').forEach(c => c.checked = false);
     document.querySelectorAll('#lateral input[type=number]').forEach(c => c.value = '');
     pinta(1);
   };
-  const ESPECIALES = [ ['prio','🎯 Prioridad'], ['dudoso','⚠️ Dato dudoso'], ['enbx','🔁 Repetidos con Bitrix'] ];
-  const cumpleEsp = (r, e) => e === 'prio' ? esPrio(r) : e === 'dudoso' ? sospechoso(r) : esDuplicado(r);
+  const ESPECIALES = [ ['prio','🎯 Prioridad'], ['dudoso','⚠️ Dato dudoso'],
+    ['conmdy','🟣 Tiene ficha en Monday'], ['nocuadra','⚖️ No cuadra con Monday'], ['enbx','🔁 Repetidos con Bitrix'] ];
+  const cumpleEsp = (r, e) => e === 'prio' ? esPrio(r) : e === 'dudoso' ? sospechoso(r)
+    : e === 'conmdy' ? !!r.monday : e === 'nocuadra' ? noCuadra(r) : esDuplicado(r);
   // Aplica todos los filtros laterales, con opción de saltarse un grupo (para los conteos por opción)
   function pasaF(r, saltar) {
     if (saltar !== 'origen' && F.origen.size && !F.origen.has(r.origen)) return false;
     if (saltar !== 'estado' && F.estado.size && !F.estado.has(r.estado)) return false;
     if (saltar !== 'esp' && F.esp.size && ![...F.esp].every(e => cumpleEsp(r, e))) return false;
     if (saltar !== 'dueno' && F.dueno.size && !F.dueno.has(r.dueno || 'Sin dueño')) return false;
+    if (saltar !== 'pipeline' && F.pipeline.size && !F.pipeline.has((r.pipeline || 'Sin embudo').replace(/'/g, ''))) return false;
+    if (saltar !== 'etapa' && F.etapa.size && !F.etapa.has((r.etapa || 'Sin etapa').replace(/'/g, ''))) return false;
     const usd = parseFloat(r.precioUSD) || 0, kw = parseFloat(r.kwp) || 0, en = parseFloat(r.energia) || 0;
     if (F.usdMin !== '' && usd < parseFloat(F.usdMin)) return false;
     if (F.usdMax !== '' && usd > parseFloat(F.usdMax)) return false;
@@ -211,6 +219,29 @@
     if (F.compMin !== '' && (r.completitud || 0) < parseFloat(F.compMin)) return false;
     return true;
   }
+  // ── Comparativo con Monday (allá solo se hacían propuestas) ──
+  const difiere = (a, b) => {
+    a = parseFloat(a) || 0; b = parseFloat(b) || 0;
+    return a > 0 && b > 0 && Math.abs(a - b) / Math.max(a, b) > 0.10;
+  };
+  const noCuadra = r => {
+    const m = r.monday; if (!m || r.origen === 'monday') return false;
+    return difiere(m.kwp, r.kwp) || difiere(m.precioUSD, r.precioUSD) || difiere(m.energia, r.energia);
+  };
+  function celdasMonday(r) {
+    const m = r.monday;
+    if (!m) return '<td colspan="3" style="background:#fafafa;color:#d1d5db;font-size:10.5px;text-align:center">sin ficha en Monday</td>';
+    const cel = (val, actual, fmt) => {
+      if (val == null || val === '') return '<td style="background:#faf5ff;color:#d1d5db">—</td>';
+      const mal = difiere(val, actual);
+      return '<td class="num" style="background:#faf5ff;font-weight:' + (mal ? '800' : '600') +
+        ';color:' + (mal ? '#dc2626' : '#6b21a8') + '">' + fmt(val) + (mal ? ' ⚠️' : '') + '</td>';
+    };
+    return cel(m.kwp, r.kwp, x => Math.round(x).toLocaleString('es-MX')) +
+           cel(m.energia, r.energia, x => Math.round(x) + '%') +
+           cel(m.precioUSD, r.precioUSD, x => '$' + Math.round(x).toLocaleString('es-MX'));
+  }
+
   // Un proyecto de Pipedrive cuya empresa ya existe en Bitrix es el MISMO cliente: no se cuenta dos veces
   const esDuplicado = r => r.origen !== 'bitrix' && !!r.enBitrix;
   function baseQ() {
@@ -241,6 +272,26 @@
       </details>
       <details open><summary>Especiales</summary>
         ${ESPECIALES.map(([v, t]) => cb('esp', v, t)).join('')}
+      </details>
+      <details><summary>Embudo / pipeline</summary>
+        <div style="max-height:230px;overflow-y:auto;margin-top:4px">
+          ${['bitrix','pipedrive','monday'].map(o => {
+            const props = [...new Set(DATA.filter(r => r.origen === o).map(r => r.pipeline || 'Sin embudo'))].sort();
+            if (!props.length) return '';
+            return `<div style="font-size:10px;font-weight:800;color:#9ca3af;text-transform:uppercase;margin:6px 0 2px">${o}</div>` +
+              props.map(p => cb('pipeline', p.replace(/'/g, ''), p)).join('');
+          }).join('')}
+        </div>
+      </details>
+      <details><summary>Etapa</summary>
+        <div style="max-height:230px;overflow-y:auto;margin-top:4px">
+          ${['bitrix','pipedrive','monday'].map(o => {
+            const ets = [...new Set(DATA.filter(r => r.origen === o).map(r => r.etapa || 'Sin etapa'))].sort();
+            if (!ets.length) return '';
+            return `<div style="font-size:10px;font-weight:800;color:#9ca3af;text-transform:uppercase;margin:6px 0 2px">${o}</div>` +
+              ets.map(e => cb('etapa', e.replace(/'/g, ''), e)).join('');
+          }).join('')}
+        </div>
       </details>
       <details><summary>Dueño</summary>
         <div style="max-height:190px;overflow-y:auto;margin-top:4px">
@@ -277,6 +328,8 @@
       const n = g === 'origen' ? arr.filter(r => r.origen === v).length
         : g === 'estado' ? arr.filter(r => r.estado === v).length
         : g === 'esp' ? arr.filter(r => cumpleEsp(r, v)).length
+        : g === 'pipeline' ? arr.filter(r => (r.pipeline || 'Sin embudo').replace(/'/g, '') === v).length
+        : g === 'etapa' ? arr.filter(r => (r.etapa || 'Sin etapa').replace(/'/g, '') === v).length
         : arr.filter(r => (r.dueno || 'Sin dueño').replace(/'/g, '') === v).length;
       l.querySelector('.cnt').textContent = n.toLocaleString();
       l.classList.toggle('off', !n);
@@ -335,8 +388,9 @@
         <td style="max-width:130px;font-size:11px;color:#6b7280">${r.dueno || '—'}</td>
         <td>${r.estado === 'ganado' ? '🏆' : r.estado === 'perdido' ? '❌' : '🟢'} ${r.estado}</td>
         <td class="comp ${cc}">${r.completitud}/10</td>
+        ${celdasMonday(r)}
       </tr>`;
-    }).join('') || '<tr><td colspan="13" style="text-align:center;color:#9ca3af;padding:20px">Sin resultados.</td></tr>';
+    }).join('') || '<tr><td colspan="16" style="text-align:center;color:#9ca3af;padding:20px">Sin resultados.</td></tr>';
     const tot = Math.max(1, Math.ceil(arr.length / POR_PAG));
     const limpios = arr.filter(r => !sospechoso(r));
     const nDud = arr.length - limpios.length;
@@ -349,7 +403,7 @@
       </div>`;
     window.toggleDudosos = () => { window._soloDudosos = !window._soloDudosos; pinta(1); };
     const hayFiltro = !!(document.getElementById('buscar').value || Object.values(colF).some(x => x) ||
-      F.origen.size || F.estado.size || F.esp.size || F.dueno.size ||
+      F.origen.size || F.estado.size || F.esp.size || F.dueno.size || F.pipeline.size || F.etapa.size ||
       [F.usdMin, F.usdMax, F.kwMin, F.kwMax, F.enMin, F.compMin].some(x => x !== ''));
     document.getElementById('totales').innerHTML =
       cajita('📁', arr.length.toLocaleString(), hayFiltro ? 'proyectos (con tus filtros)' : 'proyectos en total', '#111827') +
@@ -381,6 +435,25 @@
       ${fila('% Energía cubierta', r.energia ? r.energia + '%' : null)}
       ${fila('Último contacto', r.ultContacto)}
       ${fila('Estado', r.estado)}
+      ${r.monday ? `
+      <div style="margin-top:12px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:12px">
+        <div style="font-size:11px;font-weight:800;color:#6b21a8;text-transform:uppercase;margin-bottom:8px">🟣 Ficha de Monday${r.monday.tablero ? ' · ' + r.monday.tablero : ''}</div>
+        <table style="box-shadow:none">
+          <tr><th style="background:none;color:#6b21a8">Dato</th><th style="background:none;color:#6b21a8;text-align:right">En la base</th><th style="background:none;color:#6b21a8;text-align:right">En Monday</th></tr>
+          ${[['Tamaño (kW)', r.kwp, r.monday.kwp, x => Math.round(x).toLocaleString('es-MX')],
+             ['% de energía', r.energia, r.monday.energia, x => Math.round(x) + '%'],
+             ['Precio USD', r.precioUSD, r.monday.precioUSD, x => '$' + Math.round(x).toLocaleString('es-MX')],
+             ['Módulos', null, r.monday.modulos, x => Math.round(x).toLocaleString('es-MX')],
+             ['Tarifa', null, r.monday.tarifa, x => x]]
+            .filter(f => (f[1] != null && f[1] !== '') || (f[2] != null && f[2] !== ''))
+            .map(f => `<tr><td>${f[0]}</td>
+              <td class="num">${f[1] != null && f[1] !== '' ? f[3](f[1]) : '—'}</td>
+              <td class="num" style="font-weight:700;color:${difiere(f[2], f[1]) ? '#dc2626' : '#6b21a8'}">${f[2] != null && f[2] !== '' ? f[3](f[2]) : '—'}${difiere(f[2], f[1]) ? ' ⚠️' : ''}</td></tr>`).join('')}
+        </table>
+        ${r.monday.dueno ? `<div style="font-size:11px;color:#6b7280;margin-top:6px">Lo llevaba: <b>${r.monday.dueno}</b>${r.monday.fecha ? ' · última edición ' + r.monday.fecha : ''}</div>` : ''}
+        ${r.monday.nota ? `<div style="font-size:11.5px;color:#374151;margin-top:6px;font-style:italic">"${r.monday.nota}"</div>` : ''}
+        ${noCuadra(r) ? '<div style="font-size:11.5px;color:#991b1b;font-weight:700;margin-top:8px">⚠️ Los números no coinciden: confirma cuál es el bueno antes de usarlos con el cliente.</div>' : ''}
+      </div>` : ''}
       <div style="font-size:11px;color:#6b7280;margin-top:10px">Completitud: <b>${r.completitud}/10 campos</b>${r.origen !== 'bitrix' && !r.enBitrix && r.estado === 'abierto' ? ' · elegible para la 🎰 rifa' : ''}</div>
       ${r.bitrixId ? `<a href="https://crm-solart.bitrix24.mx/crm/deal/details/${r.bitrixId}/" target="_blank" style="display:inline-block;margin-top:10px;background:#006099;color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;text-decoration:none">Abrir en Bitrix ↗</a>` : ''}`;
     document.getElementById('ov-det').style.display = 'flex';

@@ -38,6 +38,16 @@ bit = []
 for cat in [0, 2, 4, 6]:
     bit += bx_all('crm.deal.list', {'filter': {'CATEGORY_ID': cat}, 'select': sel})
 
+# Nombres reales de los embudos y sus etapas (para poder filtrar por dónde va cada proyecto)
+_cats = bx('crm.category.list', {'entityTypeId': 2}).get('result', {})
+_cats = _cats.get('categories', _cats) if isinstance(_cats, dict) else _cats
+PIPELINES = {str(c['id']): c.get('name', 'Embudo ' + str(c['id'])) for c in (_cats or [])}
+ETAPAS = {}
+for cat in [0, 2, 4, 6]:
+    ent = 'DEAL_STAGE' if cat == 0 else f'DEAL_STAGE_{cat}'
+    for st in bx('crm.status.list', {'filter[ENTITY_ID]': ent}).get('result', []):
+        ETAPAS[st['STATUS_ID']] = st['NAME']
+
 def empresa_bitrix(title):
     partes = [p.strip() for p in str(title or '').split('_') if p.strip()]
     razon = next((p for p in partes if re.search(r'\b(SA|S\.A\.|CV|SAPI|S DE RL)\b', p, re.I)), None)
@@ -79,6 +89,8 @@ for d in bit:
         'estado': 'ganado' if str(d.get('STAGE_ID','')).endswith('WON') or str(d.get('CATEGORY_ID')) in ('4','6')
                   else ('perdido' if str(d.get('STAGE_ID','')).endswith('LOSE') else 'abierto'),
         'dueno': users.get(str(d.get('ASSIGNED_BY_ID')), ''),
+        'pipeline': PIPELINES.get(str(d.get('CATEGORY_ID')), 'Embudo ' + str(d.get('CATEGORY_ID'))),
+        'etapa': ETAPAS.get(str(d.get('STAGE_ID')), str(d.get('STAGE_ID') or '')),
     })
 
 # ── PIPEDRIVE ──
@@ -132,6 +144,8 @@ for d in deals_pd:
         'ultContacto': ult,
         'estado': {'Ganado': 'ganado', 'Perdido': 'perdido'}.get(d.get('Estado'), 'abierto'),
         'dueno': d.get('Propietario') or '',
+        'pipeline': d.get('Embudo') or None,
+        'etapa': d.get('Etapa') or None,
         'enBitrix': norm(emp) in emp_bitrix if emp else False,
     })
 
