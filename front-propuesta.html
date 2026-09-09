@@ -69,7 +69,7 @@
         <div class="campo"><label>No. de servicio (RPU)</label><input id="f-servicio" placeholder="Ej. 044171204311"></div>
         <div class="campo"><label>Estado</label><select id="f-estado" onchange="llenarMunicipios()"></select></div>
         <div class="campo"><label>Municipio</label><select id="f-municipio" onchange="pintarDivision()"></select></div>
-        <div class="campo"><label>Ciudad de referencia solar</label><select id="f-lugar"></select><div class="ayuda">De dónde se toma la radiación</div></div>
+        <div class="campo"><label>Ciudad de referencia solar</label><select id="f-lugar"></select><div class="ayuda" id="ayuda-lugar">De dónde se toma la radiación solar</div></div>
         <div class="campo"><label>División tarifaria</label><input id="f-division" readonly style="background:#f8fafc"></div>
       </div>
 
@@ -173,18 +173,44 @@
     var lug = document.getElementById('f-lugar');
     lug.innerHTML = Object.keys(DATOS.hsp).sort().map(function (l) { return '<option>' + l + '</option>'; }).join('');
   }
+  // La tabla de radiación trae 32 ciudades: este mapa elige la que representa a cada estado
+  var LUGAR_POR_ESTADO = {
+    'aguascalientes': 'AGUASCALIENTES', 'baja california': 'MEXICALI', 'baja california sur': 'LA PAZ',
+    'campeche': 'CAMPECHE', 'chiapas': 'TUXTLA GUTIERREZ', 'chihuahua': 'CHIHUAHUA',
+    'ciudad de mexico': 'CDMX', 'coahuila': 'TORREÓN', 'coahuila de zaragoza': 'TORREÓN',
+    'colima': 'COLIMA', 'durango': 'DURANGO', 'estado de mexico': 'ESTADO DE MEXICO', 'mexico': 'ESTADO DE MEXICO',
+    'guanajuato': 'GUANAJUATO', 'guerrero': 'CHILPANCINGO', 'hidalgo': 'HIDALGO', 'jalisco': 'JALISCO',
+    'michoacan': 'MICHOACÁN', 'michoacan de ocampo': 'MICHOACÁN', 'morelos': 'MORELOS', 'nayarit': 'NAYARIT',
+    'nuevo leon': 'MONTERREY', 'oaxaca': 'OAXACA DE JUAREZ', 'puebla': 'PUEBLA', 'queretaro': 'QUERETARO',
+    'quintana roo': 'QUINTANA ROO', 'san luis potosi': 'SAN LUIS POTOSÍ (CAPITAL)', 'sinaloa': 'DURANGO',
+    'sonora': 'CHIHUAHUA', 'tabasco': 'TABASCO', 'tamaulipas': 'MONTERREY', 'tlaxcala': 'PUEBLA',
+    'veracruz': 'CD DEL CARMEN', 'veracruz de ignacio de la llave': 'CD DEL CARMEN',
+    'yucatan': 'MERIDA', 'zacatecas': 'AGUASCALIENTES'
+  };
+  // Estados sin ciudad propia en la tabla: se usa la más parecida en clima
+  var APROXIMADOS = { 'sinaloa': 1, 'sonora': 1, 'tamaulipas': 1, 'tlaxcala': 1, 'veracruz': 1,
+    'veracruz de ignacio de la llave': 1, 'zacatecas': 1, 'guerrero': 1, 'coahuila': 1, 'coahuila de zaragoza': 1,
+    'baja california': 1 };
+
   function llenarMunicipios() {
     var est = v('f-estado'), sel = document.getElementById('f-municipio');
     var mun = DATOS.municipios[est] || {};
     sel.innerHTML = '<option value="">— elige —</option>' +
       Object.keys(mun).sort().map(function (m) { return '<option>' + m + '</option>'; }).join('');
-    // Ciudad de radiación más parecida al estado
+    // Ciudad de radiación que representa al estado
     var lug = document.getElementById('f-lugar');
     var nEst = est.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-    for (var i = 0; i < lug.options.length; i++) {
-      var nl = lug.options[i].value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-      if (nl === nEst || nl.indexOf(nEst) >= 0 || nEst.indexOf(nl) >= 0) { lug.selectedIndex = i; break; }
+    var destino = LUGAR_POR_ESTADO[nEst];
+    if (!destino) {
+      for (var i = 0; i < lug.options.length; i++) {
+        var nl = lug.options[i].value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        if (nl === nEst || nl.indexOf(nEst) >= 0 || nEst.indexOf(nl) >= 0) { destino = lug.options[i].value; break; }
+      }
     }
+    if (destino) lug.value = destino;
+    document.getElementById('ayuda-lugar').innerHTML = APROXIMADOS[nEst]
+      ? '<span style="color:#b45309;font-weight:700">Aproximada:</span> no hay medición de ' + est + ', se usa la ciudad de clima más parecido. Cámbiala si conoces una mejor.'
+      : 'De dónde se toma la radiación solar';
     pintarDivision();
   }
   function pintarDivision() {
