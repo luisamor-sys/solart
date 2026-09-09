@@ -173,8 +173,13 @@
 
   fetch('consolidado.json?v=' + Date.now()).then(r => r.json()).then(d => {
     DATA = d.registros;
+    const nBx = DATA.filter(r => r.origen === 'bitrix').length;
+    const nDup = DATA.filter(esDuplicado).length;
+    const nPd = DATA.filter(r => r.origen === 'pipedrive').length - nDup;
     document.getElementById('sub-info').textContent =
-      `${d.total.toLocaleString()} proyectos · Bitrix ${DATA.filter(r=>r.origen==='bitrix').length} · Pipedrive ${DATA.filter(r=>r.origen==='pipedrive').length} · actualizado ${d.generado.replace('T',' ')}`;
+      `${(DATA.length - nDup).toLocaleString()} clientes distintos · Bitrix ${nBx} · Pipedrive ${nPd}` +
+      (nDup ? ` · ${nDup} repetidos en ambos (se cuentan una sola vez)` : '') +
+      ` · actualizado ${d.generado.replace('T',' ')}`;
     document.getElementById('rifa-vend').innerHTML = VENDEDORES.map(v => `<option value="${v.id}">${v.n}</option>`).join('');
     renderLateral();
     pinta(1);
@@ -189,8 +194,8 @@
     document.querySelectorAll('#lateral input[type=number]').forEach(c => c.value = '');
     pinta(1);
   };
-  const ESPECIALES = [ ['prio','🎯 Prioridad'], ['dudoso','⚠️ Dato dudoso'], ['enbx','Ya está en Bitrix'] ];
-  const cumpleEsp = (r, e) => e === 'prio' ? esPrio(r) : e === 'dudoso' ? sospechoso(r) : !!r.enBitrix;
+  const ESPECIALES = [ ['prio','🎯 Prioridad'], ['dudoso','⚠️ Dato dudoso'], ['enbx','🔁 Repetidos con Bitrix'] ];
+  const cumpleEsp = (r, e) => e === 'prio' ? esPrio(r) : e === 'dudoso' ? sospechoso(r) : esDuplicado(r);
   // Aplica todos los filtros laterales, con opción de saltarse un grupo (para los conteos por opción)
   function pasaF(r, saltar) {
     if (saltar !== 'origen' && F.origen.size && !F.origen.has(r.origen)) return false;
@@ -206,9 +211,12 @@
     if (F.compMin !== '' && (r.completitud || 0) < parseFloat(F.compMin)) return false;
     return true;
   }
+  // Un proyecto de Pipedrive cuya empresa ya existe en Bitrix es el MISMO cliente: no se cuenta dos veces
+  const esDuplicado = r => r.origen !== 'bitrix' && !!r.enBitrix;
   function baseQ() {
     const q = (document.getElementById('buscar').value || '').toLowerCase();
     let arr = DATA.filter(r => !q || [r.empresa, r.proyecto, r.contacto, r.dueno].join(' ').toLowerCase().includes(q));
+    if (!F.esp.has('enbx')) arr = arr.filter(r => !esDuplicado(r));
     if (window._soloDudosos) arr = arr.filter(sospechoso);
     for (const [c, v] of Object.entries(colF)) {
       if (!v) continue;
@@ -264,7 +272,8 @@
     const base = baseQ();
     document.querySelectorAll('#lateral .fop').forEach(l => {
       const g = l.dataset.g, v = l.dataset.v;
-      const arr = base.filter(r => pasaF(r, g));
+      let arr = base.filter(r => pasaF(r, g));
+      if (g === 'esp' && v === 'enbx') arr = DATA.filter(r => pasaF(r, 'esp'));
       const n = g === 'origen' ? arr.filter(r => r.origen === v).length
         : g === 'estado' ? arr.filter(r => r.estado === v).length
         : g === 'esp' ? arr.filter(r => cumpleEsp(r, v)).length
