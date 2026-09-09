@@ -289,7 +289,8 @@
           '<div class="kpi verde"><div class="v">' + Math.round(s.cobertura * 100) + '%</div><div class="l">de su energía cubierta</div></div>' +
           '<div class="kpi verde"><div class="v">' + fMill(ahorroMes) + '</div><div class="l">ahorro cada mes</div></div>' +
           '<div class="kpi oro"><div class="v">' + fMill(p.precioMxnIva) + '</div><div class="l">inversión con IVA</div></div>' +
-          '<div class="kpi"><div class="v">' + (r.roi.roiAnios ? r.roi.roiAnios.toFixed(1) : p.roiSimple.toFixed(1)) + ' años</div><div class="l">en recuperar la inversión</div></div>' +
+          '<div class="kpi"><div class="v">' + p.roiSimple.toFixed(1) + ' años</div><div class="l">en recuperar la inversión</div></div>' +
+          '<div class="kpi verde"><div class="v">' + r.beneficioFiscal.retornoAnios.toFixed(1) + ' años</div><div class="l">con el beneficio fiscal</div></div>' +
         '</div>' +
         (r.avisos || []).map(function (a) { return '<div class="aviso">⚠️ ' + a + '</div>'; }).join('') +
         '<div class="acciones">' +
@@ -483,7 +484,7 @@
         '<div class="cajas">' +
           '<div class="caja oro"><div class="v">' + fMill(p.precioMxnIva) + '</div><div class="l">inversión total con IVA</div></div>' +
           '<div class="caja verde"><div class="v">' + fMill(r.beneficioFiscal.costoReal) + '</div><div class="l">costo real tras beneficio fiscal</div></div>' +
-          '<div class="caja"><div class="v">' + (r.roi.roiAnios ? r.roi.roiAnios.toFixed(1) : p.roiSimple.toFixed(1)) + ' años</div><div class="l">en recuperarla</div></div>' +
+          '<div class="caja"><div class="v">' + p.roiSimple.toFixed(1) + ' años</div><div class="l">en recuperarla</div></div>' +
           '<div class="caja verde"><div class="v">' + fMill(ahorro25) + '</div><div class="l">ahorro en 25 años</div></div>' +
         '</div>' +
         '<table style="margin-top:12px">' +
