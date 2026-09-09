@@ -102,7 +102,7 @@
         <th onclick="sortCol('retorno')" style="cursor:pointer">Retorno <span class="flecha" data-c="retorno"></span></th>
         <th onclick="sortCol('energia')" style="cursor:pointer">% Energía <span class="flecha" data-c="energia"></span></th>
         <th onclick="sortCol('ultContacto')" style="cursor:pointer">Últ. contacto <span class="flecha" data-c="ultContacto"></span></th>
-        <th onclick="sortCol('dueno')" style="cursor:pointer">Dueño <span class="flecha" data-c="dueno"></span></th>
+        <th onclick="sortCol('dueno')" style="cursor:pointer">Vendedor <span class="flecha" data-c="dueno"></span></th>
         <th onclick="sortCol('estado')" style="cursor:pointer">Estado <span class="flecha" data-c="estado"></span></th>
         <th onclick="sortCol('completitud')" style="cursor:pointer">Datos <span class="flecha" data-c="completitud"></span></th>
         <th style="background:#faf5ff;color:#6b21a8">kW Monday</th>
@@ -193,12 +193,27 @@
   });
 
   window.togF = (grupo, val, on) => { on ? F[grupo].add(val) : F[grupo].delete(val); pinta(1); };
+  window.filtrarVend = txt => {
+    const q = String(txt || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    let visibles = 0;
+    document.querySelectorAll('#lista-vend .fop').forEach(l => {
+      const n = l.textContent.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const marcado = l.querySelector('input').checked;
+      const ok = !q || n.indexOf(q) >= 0 || marcado;
+      l.style.display = ok ? '' : 'none';
+      if (ok) visibles++;
+    });
+    const vacio = document.getElementById('vend-vacio');
+    if (vacio) vacio.style.display = visibles ? 'none' : 'block';
+  };
   window.setRango = (campo, val) => { F[campo] = val; pinta(1); };
   window.limpiarF = () => {
     ['origen','estado','esp','dueno','pipeline','etapa'].forEach(g => F[g].clear());
     ['usdMin','usdMax','kwMin','kwMax','enMin','compMin'].forEach(c => F[c] = '');
     document.querySelectorAll('#lateral input[type=checkbox]').forEach(c => c.checked = false);
     document.querySelectorAll('#lateral input[type=number]').forEach(c => c.value = '');
+    const bv = document.getElementById('busca-vend');
+    if (bv) { bv.value = ''; filtrarVend(''); }
     pinta(1);
   };
   const ESPECIALES = [ ['prio','🎯 Prioridad'], ['dudoso','⚠️ Dato dudoso'],
@@ -210,7 +225,7 @@
     if (saltar !== 'origen' && F.origen.size && !F.origen.has(r.origen)) return false;
     if (saltar !== 'estado' && F.estado.size && !F.estado.has(r.estado)) return false;
     if (saltar !== 'esp' && F.esp.size && ![...F.esp].every(e => cumpleEsp(r, e))) return false;
-    if (saltar !== 'dueno' && F.dueno.size && !F.dueno.has(r.dueno || 'Sin dueño')) return false;
+    if (saltar !== 'dueno' && F.dueno.size && !F.dueno.has(r.dueno || 'Sin vendedor')) return false;
     if (saltar !== 'pipeline' && F.pipeline.size && !F.pipeline.has((r.pipeline || 'Sin embudo').replace(/'/g, ''))) return false;
     if (saltar !== 'etapa' && F.etapa.size && !F.etapa.has((r.etapa || 'Sin etapa').replace(/'/g, ''))) return false;
     const usd = parseFloat(r.precioUSD) || 0, kw = parseFloat(r.kwp) || 0, en = parseFloat(r.energia) || 0;
@@ -264,7 +279,7 @@
   function renderLateral() {
     const cb = (g, v, txt) => `<label class="fop" data-g="${g}" data-v="${v}"><input type="checkbox" onchange="togF('${g}','${v}',this.checked)"> ${txt} <span class="cnt"></span></label>`;
     const duenos = {};
-    DATA.forEach(r => { const d = r.dueno || 'Sin dueño'; duenos[d] = (duenos[d] || 0) + 1; });
+    DATA.forEach(r => { const d = r.dueno || 'Sin vendedor'; duenos[d] = (duenos[d] || 0) + 1; });
     const listaD = Object.entries(duenos).sort((a, b) => b[1] - a[1]);
     document.getElementById('lateral').innerHTML = `
       <details open><summary>Origen</summary>
@@ -296,10 +311,12 @@
           }).join('')}
         </div>
       </details>
-      <details><summary>Dueño</summary>
-        <div style="max-height:190px;overflow-y:auto;margin-top:4px">
+      <details><summary>Vendedor</summary>
+        <input class="col-f" id="busca-vend" placeholder="Buscar vendedor…" oninput="filtrarVend(this.value)" style="margin:6px 0 4px">
+        <div style="max-height:210px;overflow-y:auto" id="lista-vend">
           ${listaD.map(([d]) => cb('dueno', d.replace(/'/g, ''), d)).join('')}
         </div>
+        <div id="vend-vacio" style="display:none;font-size:11px;color:#9ca3af;padding:4px 0">Nadie con ese nombre.</div>
       </details>
       <details><summary>Precio (USD)</summary>
         <div class="rango">
@@ -333,7 +350,7 @@
         : g === 'esp' ? arr.filter(r => cumpleEsp(r, v)).length
         : g === 'pipeline' ? arr.filter(r => (r.pipeline || 'Sin embudo').replace(/'/g, '') === v).length
         : g === 'etapa' ? arr.filter(r => (r.etapa || 'Sin etapa').replace(/'/g, '') === v).length
-        : arr.filter(r => (r.dueno || 'Sin dueño').replace(/'/g, '') === v).length;
+        : arr.filter(r => (r.dueno || 'Sin vendedor').replace(/'/g, '') === v).length;
       l.querySelector('.cnt').textContent = n.toLocaleString();
       l.classList.toggle('off', !n);
     });
@@ -426,7 +443,7 @@
     document.getElementById('m-det').innerHTML = `
       <button class="m-cerrar" onclick="document.getElementById('ov-det').style.display='none'">✕</button>
       <div class="m-tit">${r.empresa || r.proyecto || r.id}</div>
-      <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Origen: ${r.origen.toUpperCase()} · ${r.id}${r.dueno ? ' · Dueño: ' + r.dueno : ''}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Origen: ${r.origen.toUpperCase()} · ${r.id}${r.dueno ? ' · Vendedor: ' + r.dueno : ''}</div>
       ${fila('Nombre del proyecto', r.proyecto)}
       ${fila('Empresa', r.empresa)}
       ${fila('Contacto', r.contacto ? r.contacto + (r.tel ? ' · 📱 ' + r.tel : '') + (r.email ? ' · ✉️ ' + r.email : '') : null)}
@@ -481,7 +498,7 @@
   function vistaVendedores() {
     const por = {};
     DATA.forEach(r => {
-      const d = r.dueno || 'Sin dueño';
+      const d = r.dueno || 'Sin vendedor';
       por[d] = por[d] || { total: 0, abiertos: 0, ganados: 0, perdidos: 0, comp: 0, tel: 0, mail: 0 };
       const p = por[d];
       p.total++; p.comp += r.completitud;
@@ -552,7 +569,7 @@
       document.getElementById('rifa-info').innerHTML = `
         <b style="font-size:14px">🎉 ${r.empresa}</b> ${r.proyecto ? '· ' + r.proyecto : ''}<br>
         ${r.contacto ? '👤 ' + r.contacto + (r.tel ? ' · 📱 ' + r.tel : '') + '<br>' : ''}
-        ${r.kwp ? '⚡ ' + r.kwp.toLocaleString() + ' kW · ' : ''}${r.precioUSD ? '💵 ' + fUSD(r.precioUSD) + ' USD · ' : ''}${r.energia ? '🔋 ' + r.energia + '% · ' : ''}🕐 últ. contacto: ${r.ultContacto || 'sin registro'}${r.dueno ? '<br>🧑 Dueño anterior (' + r.origen + '): <b>' + r.dueno + '</b>' : ''}
+        ${r.kwp ? '⚡ ' + r.kwp.toLocaleString() + ' kW · ' : ''}${r.precioUSD ? '💵 ' + fUSD(r.precioUSD) + ' USD · ' : ''}${r.energia ? '🔋 ' + r.energia + '% · ' : ''}🕐 últ. contacto: ${r.ultContacto || 'sin registro'}${r.dueno ? '<br>🧑 Lo llevaba (' + r.origen + '): <b>' + r.dueno + '</b>' : ''}
         ${r.descripcion ? '<br>📝 ' + r.descripcion.slice(0, 180) : ''}`;
       document.getElementById('rifa-res').style.display = 'block';
     }, 3400);
@@ -570,7 +587,7 @@
         ASSIGNED_BY_ID: vid, CREATED_BY_ID: vid,
         UF_CRM_1741392978542: r.proyecto || r.empresa,
         COMMENTS: `Proyecto recuperado del histórico ${r.origen.toUpperCase()} (${r.id}) vía 🎰 rifa.\n` +
-          (r.dueno ? `Dueño anterior en ${r.origen}: ${r.dueno}\n` : '') +
+          (r.dueno ? `Vendedor anterior en ${r.origen}: ${r.dueno}\n` : '') +
           (r.descripcion ? 'Situación: ' + r.descripcion + '\n' : '') +
           (r.tel ? 'Tel contacto: ' + r.tel + '\n' : '') +
           (r.ultContacto ? 'Último contacto registrado: ' + r.ultContacto : '')
