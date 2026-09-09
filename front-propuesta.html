@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generar propuesta — SOLART</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6fa; color: #111827; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 16px; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  h1 { font-size: 20px; margin: 0 0 3px; }
+  .sub { font-size: 12px; color: #6b7280; }
+  .volver { font-size: 12.5px; font-weight: 700; color: #006099; text-decoration: none; background: #fff; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 9px 14px; }
+  .tarjeta { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+  .seccion-form { font-size: 11px; font-weight: 800; color: #006099; text-transform: uppercase; letter-spacing: .05em; margin: 16px 0 8px; padding-bottom: 5px; border-bottom: 2px solid #e8eef5; }
+  .seccion-form:first-child { margin-top: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  .campo label { display: block; font-size: 11.5px; font-weight: 700; color: #4b5563; margin-bottom: 4px; }
+  .campo input, .campo select { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 9px 11px; font-size: 13.5px; font-family: inherit; background: #fff; }
+  .campo input:focus, .campo select:focus { outline: none; border-color: #006099; }
+  .campo .ayuda { font-size: 10.5px; color: #9ca3af; margin-top: 3px; }
+  .bx { color: #16a34a; font-weight: 800; font-size: 10.5px; }
+  .btn { border: none; border-radius: 12px; padding: 13px 24px; font-size: 14.5px; font-weight: 800; cursor: pointer; }
+  .btn-calc { background: #006099; color: #fff; width: 100%; margin-top: 16px; }
+  .btn-calc:hover { background: #00507f; }
+  .btn-sec { background: #fff; color: #006099; border: 1.5px solid #006099; }
+  .btn-oro { background: #d8ae3f; color: #fff; }
+  .btn-verde { background: #15803d; color: #fff; }
+  .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .kpi { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 14px; padding: 12px 14px; }
+  .kpi .v { font-size: 21px; font-weight: 900; color: #006099; line-height: 1.15; }
+  .kpi .l { font-size: 10.5px; color: #9ca3af; font-weight: 700; margin-top: 2px; }
+  .kpi.verde .v { color: #15803d; }
+  .kpi.oro .v { color: #b45309; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { background: #f8fafc; text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 800; color: #4b5563; text-transform: uppercase; border-bottom: 2px solid #e5e7eb; }
+  td { padding: 7px 10px; border-bottom: 1px solid #f3f4f6; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .aviso { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 9px 12px; font-size: 12px; color: #92400e; margin-bottom: 6px; }
+  .error { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 14px; font-size: 13.5px; color: #991b1b; font-weight: 600; }
+  .glos { font-size: 11px; color: #9ca3af; margin-bottom: 10px; line-height: 1.5; }
+  .cargando { text-align: center; padding: 40px; color: #9ca3af; font-size: 13px; }
+  .oculto { display: none; }
+  .titulo-sec { font-size: 14px; font-weight: 800; margin: 0 0 3px; }
+  @media (max-width: 640px) { .wrap { padding: 12px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>⚡ Generar propuesta</h1>
+      <div class="sub" id="sub">Motor de ingeniería SOLART · reglas oficiales de dimensionamiento y precio</div>
+    </div>
+    <a class="volver" href="front-dashboard.html" target="_top">← Volver a Mi día</a>
+  </div>
+
+  <div id="cargando" class="cargando">Cargando tarifas CFE y datos de radiación…</div>
+
+  <div id="form-wrap" class="oculto">
+    <div class="tarjeta">
+      <div class="glos">ℹ️ Captura lo que dice el recibo CFE del cliente y el sistema calcula todo: cuántos paneles caben, cuánta energía generan, cuánto ahorra al mes, cuánto cuesta el proyecto y en cuánto se paga solo. Usa las mismas reglas que ingeniería aplica a mano.</div>
+
+      <div class="seccion-form">Cliente y ubicación</div>
+      <div class="grid">
+        <div class="campo"><label>Cliente <span id="lb-cliente"></span></label><input id="f-cliente" placeholder="Nombre o razón social"></div>
+        <div class="campo"><label>No. de servicio (RPU)</label><input id="f-servicio" placeholder="Ej. 044171204311"></div>
+        <div class="campo"><label>Estado</label><select id="f-estado" onchange="llenarMunicipios()"></select></div>
+        <div class="campo"><label>Municipio</label><select id="f-municipio" onchange="pintarDivision()"></select></div>
+        <div class="campo"><label>Ciudad de referencia solar</label><select id="f-lugar"></select><div class="ayuda">De dónde se toma la radiación</div></div>
+        <div class="campo"><label>División tarifaria</label><input id="f-division" readonly style="background:#f8fafc"></div>
+      </div>
+
+      <div class="seccion-form">Datos del recibo CFE</div>
+      <div class="grid">
+        <div class="campo"><label>Tarifa</label>
+          <select id="f-tarifa" onchange="cambiarTarifa()">
+            <option value="GDMTH">GDMTH (media tensión horaria)</option>
+            <option value="GDMTO">GDMTO (media tensión ordinaria)</option>
+            <option value="PDBT">PDBT (baja tensión)</option>
+            <option value="GDBT">GDBT (baja tensión)</option>
+          </select></div>
+        <div class="campo"><label>Último mes facturado</label><input id="f-periodo" type="month"><div class="ayuda">El fin del periodo del recibo</div></div>
+        <div class="campo"><label>Días del periodo</label><input id="f-dias" type="number" value="30"></div>
+      </div>
+      <div class="grid" id="grid-media" style="margin-top:10px">
+        <div class="campo"><label>kWh base</label><input id="f-kwh-base" type="number" step="1" placeholder="Ej. 23,906"></div>
+        <div class="campo"><label>kWh intermedia</label><input id="f-kwh-int" type="number" step="1" placeholder="Ej. 58,218"></div>
+        <div class="campo"><label>kWh punta</label><input id="f-kwh-punta" type="number" step="1" placeholder="Ej. 7,242"></div>
+        <div class="campo"><label>Demanda máxima (kW)</label><input id="f-kw-max" type="number" step="0.1" placeholder="Ej. 227"></div>
+        <div class="campo"><label>Demanda en punta (kW)</label><input id="f-kw-punta" type="number" step="0.1" placeholder="Ej. 191"></div>
+        <div class="campo"><label>kVArh</label><input id="f-kvarh" type="number" step="1" placeholder="Ej. 42,949"><div class="ayuda">Para el banco de capacitores</div></div>
+        <div class="campo"><label>Factor de potencia (%)</label><input id="f-fp" type="number" step="0.01" placeholder="Ej. 89.72"></div>
+        <div class="campo"><label>Demanda contratada (kW)</label><input id="f-contratada" type="number" step="1" placeholder="Ej. 354"></div>
+      </div>
+      <div class="grid oculto" id="grid-baja" style="margin-top:10px">
+        <div class="campo"><label>kWh del bimestre</label><input id="f-kwh-bim" type="number" step="1" placeholder="Ej. 12,400"></div>
+        <div class="campo"><label>DAP (% del subtotal)</label><input id="f-dap" type="number" step="1" value="10"></div>
+      </div>
+
+      <div class="seccion-form">Parámetros del proyecto</div>
+      <div class="grid">
+        <div class="campo"><label>Cobertura objetivo (%)</label><input id="f-cobertura" type="number" step="1" value="100"><div class="ayuda">Cuánto de su consumo cubrimos</div></div>
+        <div class="campo"><label>Techo disponible (nº de módulos)</label><input id="f-techo" type="number" step="1" placeholder="Opcional"><div class="ayuda">Si lo dejas vacío, no se limita</div></div>
+        <div class="campo"><label>Tipo de cambio (USD)</label><input id="f-tc" type="number" step="0.01" value="17.50"><div class="ayuda" id="ayuda-tc">FIX de Banxico</div></div>
+        <div class="campo"><label>Equipo</label>
+          <select id="f-equipo">
+            <option value="solis">Solis (estándar)</option>
+            <option value="huawei">Huawei</option>
+            <option value="auto">El más conveniente</option>
+          </select></div>
+      </div>
+
+      <button class="btn btn-calc" onclick="calcular()">⚡ Calcular propuesta</button>
+    </div>
+  </div>
+
+  <div id="resultado"></div>
+</div>
+
+<script>
+  var WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/';
+  var DATOS = null, RES = null, DEAL = null, USUARIO = null;
+
+  try { USUARIO = JSON.parse(localStorage.getItem('solart_user') || 'null'); } catch (e) {}
+
+  function bx(metodo, params) {
+    var cuerpo = new URLSearchParams();
+    (function plano(obj, pre) {
+      for (var k in obj) {
+        var v = obj[k], key = pre ? pre + '[' + k + ']' : k;
+        if (v && typeof v === 'object') plano(v, key); else cuerpo.append(key, v);
+      }
+    })(params || '', '');
+    return fetch(WEBHOOK + metodo, { method: 'POST', body: cuerpo }).then(function (r) { return r.json(); });
+  }
+  var fMXN = function (n) { return '$' + Math.round(n || 0).toLocaleString('es-MX'); };
+  var fMill = function (n) { return n >= 1e6 ? '$' + (n / 1e6).toFixed(2) + ' M' : fMXN(n); };
+  var v = function (id) { var e = document.getElementById(id); return e ? e.value : ''; };
+  var num = function (id) { return parseFloat(String(v(id)).replace(/[^0-9.\-]/g, '')) || 0; };
+  var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  // ── Arranque: cargar datos y precargar del deal ──────────────────────────
+  Promise.all([
+    fetch('datos-propuesta.json?v=3').then(function (r) { return r.json(); }),
+    new Promise(function (res) {
+      var s = document.createElement('script');
+      s.src = 'motor-propuesta.js?v=3'; s.onload = res; s.onerror = res;
+      document.head.appendChild(s);
+    })
+  ]).then(function (r) {
+    DATOS = r[0];
+    MotorSolar.cargarDatos(DATOS);
+    llenarSelects();
+    document.getElementById('cargando').classList.add('oculto');
+    document.getElementById('form-wrap').classList.remove('oculto');
+    document.getElementById('sub').textContent =
+      'Motor de ingeniería SOLART · tarifas CFE al ' + (DATOS.generado || '') + ' · módulos 645 W, inversores Solis, tope 499 kW AC';
+    var hoy = new Date();
+    document.getElementById('f-periodo').value = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0');
+    precargarDeal();
+    tipoCambioVivo();
+  }).catch(function (e) {
+    document.getElementById('cargando').innerHTML = '<div class="error">No se pudieron cargar los datos base: ' + e.message + '</div>';
+  });
+
+  function llenarSelects() {
+    var sel = document.getElementById('f-estado');
+    sel.innerHTML = '<option value="">— elige —</option>' +
+      Object.keys(DATOS.municipios).sort().map(function (e) { return '<option>' + e + '</option>'; }).join('');
+    var lug = document.getElementById('f-lugar');
+    lug.innerHTML = Object.keys(DATOS.hsp).sort().map(function (l) { return '<option>' + l + '</option>'; }).join('');
+  }
+  function llenarMunicipios() {
+    var est = v('f-estado'), sel = document.getElementById('f-municipio');
+    var mun = DATOS.municipios[est] || {};
+    sel.innerHTML = '<option value="">— elige —</option>' +
+      Object.keys(mun).sort().map(function (m) { return '<option>' + m + '</option>'; }).join('');
+    // Ciudad de radiación más parecida al estado
+    var lug = document.getElementById('f-lugar');
+    var nEst = est.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    for (var i = 0; i < lug.options.length; i++) {
+      var nl = lug.options[i].value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+      if (nl === nEst || nl.indexOf(nEst) >= 0 || nEst.indexOf(nl) >= 0) { lug.selectedIndex = i; break; }
+    }
+    pintarDivision();
+  }
+  function pintarDivision() {
+    var d = null;
+    try { d = MotorSolar.divisionDe(v('f-estado'), v('f-municipio')); } catch (e) {}
+    document.getElementById('f-division').value = d || '—';
+  }
+  function cambiarTarifa() {
+    var baja = ['PDBT', 'GDBT'].indexOf(v('f-tarifa')) >= 0;
+    document.getElementById('grid-media').classList.toggle('oculto', baja);
+    document.getElementById('grid-baja').classList.toggle('oculto', !baja);
+  }
+
+  function tipoCambioVivo() {
+    fetch('https://open.er-api.com/v6/latest/USD').then(function (r) { return r.json(); }).then(function (d) {
+      var tc = d && d.rates && d.rates.MXN;
+      if (tc) {
+        document.getElementById('f-tc').value = tc.toFixed(2);
+        document.getElementById('ayuda-tc').innerHTML = '<span class="bx">✓ en vivo hoy</span> · el costo se calcula con $' + (tc - 0.10).toFixed(2) + ' (colchón)';
+      }
+    }).catch(function () {});
+  }
+
+  // ── Precarga desde la negociación de Bitrix ──────────────────────────────
+  function precargarDeal() {
+    var id = new URLSearchParams(location.search).get('dealId');
+    if (!id) return;
+    bx('crm.deal.get', { id: id }).then(function (r) {
+      var d = r.result; if (!d) return;
+      DEAL = d;
+      document.getElementById('lb-cliente').innerHTML = '<span class="bx">✓ de Bitrix</span>';
+      var t = String(d.TITLE || '').split('_');
+      document.getElementById('f-cliente').value = d.UF_CRM_1741392978542 || t[1] || d.TITLE || '';
+      if (d.UF_CRM_1741208352117) document.getElementById('f-techo').value = Math.round(parseFloat(d.UF_CRM_1741208352117) * 1000 / 645);
+      if (d.UF_CRM_1753209254287) {
+        var e = parseFloat(String(d.UF_CRM_1753209254287).replace('%', ''));
+        if (e > 0 && e <= 150) document.getElementById('f-cobertura').value = Math.round(e);
+      }
+      document.getElementById('sub').innerHTML += ' · <b>Negociación ' + id + '</b>';
+    });
+  }
+
+  // ── Calcular ─────────────────────────────────────────────────────────────
+  function calcular() {
+    var tarifa = v('f-tarifa');
+    var baja = ['PDBT', 'GDBT'].indexOf(tarifa) >= 0;
+    var per = (v('f-periodo') || '').split('-');
+    var entrada = {
+      tarifa: tarifa, estado: v('f-estado'), municipio: v('f-municipio'), lugarHsp: v('f-lugar'),
+      cliente: v('f-cliente'), noServicio: v('f-servicio'),
+      tc: num('f-tc') || 17.5, equipo: v('f-equipo'),
+      coberturaObjetivo: (num('f-cobertura') || 100) / 100,
+      techoModulos: num('f-techo') || null,
+      demandaContratadaKw: num('f-contratada'),
+      periodoFin: { anio: parseInt(per[0], 10) || new Date().getFullYear(), mes: parseInt(per[1], 10) || 1 },
+      consumo: baja ? { kwhTotal: num('f-kwh-bim') } : {
+        kwhBase: num('f-kwh-base'), kwhIntermedia: num('f-kwh-int'), kwhPunta: num('f-kwh-punta'),
+        demandaMaxKw: num('f-kw-max'), demandaPuntaKw: num('f-kw-punta'),
+        kvarh: num('f-kvarh'), fpPct: num('f-fp'), dias: num('f-dias') || 30
+      },
+      dapPct: baja ? (num('f-dap') || 0) / 100 : 0
+    };
+    if (!entrada.estado || !entrada.municipio) { alert('Elige estado y municipio para saber qué tarifas aplican.'); return; }
+
+    var r;
+    try { r = MotorSolar.cotizarProyecto(entrada); }
+    catch (e) { r = { ok: false, error: e.message }; }
+    RES = r;
+    pintarResultado(r);
+    document.getElementById('resultado').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function pintarResultado(r) {
+    var cont = document.getElementById('resultado');
+    if (!r.ok) { cont.innerHTML = '<div class="tarjeta"><div class="error">⚠️ ' + r.error + '</div></div>'; return; }
+    var s = r.sistema, p = r.precio;
+    var mensualSolar = r.facturaConProm, ahorroMes = r.ahorroAnualMxn / 12;
+
+    var filas = (r.detalleMeses || []).map(function (m) {
+      var etiqueta = m.periodo || (MESES[(m.mes || 1) - 1] + ' ' + String(m.anio || '').slice(-2));
+      return '<tr><td>' + etiqueta + '</td>' +
+        '<td class="num">' + Math.round(m.kwhTotal).toLocaleString('es-MX') + '</td>' +
+        '<td class="num">' + Math.round(m.genKwh).toLocaleString('es-MX') + '</td>' +
+        '<td class="num">' + fMXN(m.sin) + '</td>' +
+        '<td class="num" style="color:#15803d;font-weight:700">' + fMXN(m.con) + '</td>' +
+        '<td class="num" style="font-weight:800">' + fMXN(m.ahorro) + '</td></tr>';
+    }).join('');
+
+    var adics = '';
+    for (var k in p.adicionales) {
+      adics += '<tr><td>' + k + '</td><td class="num">$' + Math.round(p.adicionales[k]).toLocaleString('es-MX') + ' USD</td></tr>';
+    }
+
+    cont.innerHTML =
+      '<div class="tarjeta">' +
+        '<div class="titulo-sec">📊 Resultado de la propuesta</div>' +
+        '<div class="glos">ℹ️ Modo <b>' + r.modo + '</b> · división ' + r.division + ' · radiación de ' + r.lugarHsp +
+        ' · el precio ya incluye O&M del primer año, medidor bidireccional' + (r.kvarBanco ? ' y banco de capacitores' : '') + '.</div>' +
+        '<div class="kpis">' +
+          '<div class="kpi"><div class="v">' + s.kwpDc.toLocaleString('es-MX') + ' kWp</div><div class="l">' + s.nModulos + ' módulos de 645 W</div></div>' +
+          '<div class="kpi"><div class="v">' + s.nInversores + '× ' + s.kwAc + ' kW</div><div class="l">' + s.modeloInversor + '</div></div>' +
+          '<div class="kpi verde"><div class="v">' + Math.round(s.cobertura * 100) + '%</div><div class="l">de su energía cubierta</div></div>' +
+          '<div class="kpi verde"><div class="v">' + fMill(ahorroMes) + '</div><div class="l">ahorro cada mes</div></div>' +
+          '<div class="kpi oro"><div class="v">' + fMill(p.precioMxnIva) + '</div><div class="l">inversión con IVA</div></div>' +
+          '<div class="kpi"><div class="v">' + (r.roi.roiAnios ? r.roi.roiAnios.toFixed(1) : p.roiSimple.toFixed(1)) + ' años</div><div class="l">en recuperar la inversión</div></div>' +
+        '</div>' +
+        (r.avisos || []).map(function (a) { return '<div class="aviso">⚠️ ' + a + '</div>'; }).join('') +
+        '<div class="acciones">' +
+          '<button class="btn btn-oro" onclick="verPropuesta()">📄 Ver propuesta para el cliente</button>' +
+          (DEAL ? '<button class="btn btn-verde" id="btn-guardar" onclick="guardarEnBitrix()">💾 Guardar en la negociación</button>' : '') +
+          '<button class="btn btn-sec" onclick="verRecibo()">🧾 Recibo simulado</button>' +
+        '</div>' +
+        '<div id="msg-guardar" style="font-size:12.5px;font-weight:700;margin-top:8px"></div>' +
+      '</div>' +
+
+      '<div class="tarjeta">' +
+        '<div class="titulo-sec">💰 Precio y financiamiento</div>' +
+        '<div class="glos">ℹ️ El margen se calcula solo: el mayor posible para que el crédito se pague con el ahorro en 60 meses (tope 72), sin enganche. El costo se convierte con el dólar menos $0.10 de colchón.</div>' +
+        '<div class="grid">' +
+          '<div><table>' +
+            '<tr><th>Concepto</th><th style="text-align:right">Monto</th></tr>' +
+            '<tr><td>Precio sin IVA</td><td class="num">' + fMXN(p.precioMxn) + '</td></tr>' +
+            '<tr><td>IVA 16%</td><td class="num">' + fMXN(p.precioMxn * 0.16) + '</td></tr>' +
+            '<tr style="background:#f0fdf4"><td><b>Total con IVA</b></td><td class="num"><b>' + fMXN(p.precioMxnIva) + '</b></td></tr>' +
+            '<tr><td>Precio por watt</td><td class="num">$' + p.usdW.toFixed(3) + ' USD/W</td></tr>' +
+            '<tr><td>Margen aplicado</td><td class="num">' + Math.round(p.margen * 100) + '%</td></tr>' +
+            '<tr><td>Tipo de cambio</td><td class="num">$' + p.tc.toFixed(2) + ' (costeo $' + p.tcCosteo.toFixed(2) + ')</td></tr>' +
+          '</table></div>' +
+          '<div><table>' +
+            '<tr><th>Financiamiento (14% anual)</th><th style="text-align:right">Mensualidad</th></tr>' +
+            p.escenarios.map(function (e) {
+              return '<tr><td>' + e.anios + ' años, sin enganche</td><td class="num">' + fMXN(e.mensualidad) + '</td></tr>';
+            }).join('') +
+            '<tr style="background:#f0fdf4"><td>Con ' + Math.round(p.enganche4a * 100) + '% de enganche a 4 años</td><td class="num"><b>' + fMXN(p.mensualidad4a) + '</b></td></tr>' +
+            '<tr><td>Se paga solo en</td><td class="num">' + (p.plazoPagoNeutroMeses ? Math.round(p.plazoPagoNeutroMeses) + ' meses' : 'más de 72 meses') + '</td></tr>' +
+            '<tr><td>Ahorro mensual disponible</td><td class="num" style="color:#15803d;font-weight:800">' + fMXN(ahorroMes) + '</td></tr>' +
+          '</table></div>' +
+        '</div>' +
+        '<div style="margin-top:12px"><table>' +
+          '<tr><th>Incluido en el precio</th><th style="text-align:right">USD</th></tr>' + adics +
+        '</table></div>' +
+      '</div>' +
+
+      '<div class="tarjeta">' +
+        '<div class="titulo-sec">🧮 Beneficio fiscal</div>' +
+        '<div class="glos">ℹ️ El proyecto es 100% deducible en un solo ejercicio (depreciación acelerada) y el IVA es acreditable: eso baja el costo real de la inversión.</div>' +
+        '<table>' +
+          '<tr><td>Inversión deducible (con IVA)</td><td class="num">' + fMXN(r.beneficioFiscal.deducible) + '</td></tr>' +
+          '<tr><td>Ahorro de ISR (30%)</td><td class="num" style="color:#15803d">' + fMXN(r.beneficioFiscal.bfIsr) + '</td></tr>' +
+          '<tr><td>IVA acreditable</td><td class="num" style="color:#15803d">' + fMXN(r.beneficioFiscal.iva) + '</td></tr>' +
+          '<tr style="background:#f0fdf4"><td><b>Costo real del proyecto</b></td><td class="num"><b>' + fMXN(r.beneficioFiscal.costoReal) + '</b></td></tr>' +
+          '<tr><td>Retorno considerando el beneficio</td><td class="num"><b>' + r.beneficioFiscal.retornoAnios.toFixed(2) + ' años</b></td></tr>' +
+        '</table>' +
+      '</div>' +
+
+      (filas ? '<div class="tarjeta">' +
+        '<div class="titulo-sec">📅 Mes por mes</div>' +
+        '<div class="glos">ℹ️ Así queda su recibo cada mes: lo que paga hoy contra lo que pagaría con el sistema instalado.</div>' +
+        '<div style="overflow-x:auto"><table>' +
+          '<tr><th>Periodo</th><th style="text-align:right">Consumo kWh</th><th style="text-align:right">Genera kWh</th>' +
+          '<th style="text-align:right">Paga hoy</th><th style="text-align:right">Con SOLART</th><th style="text-align:right">Ahorra</th></tr>' +
+          filas +
+        '</table></div></div>' : '');
+  }
+
+  // ── Guardar en Bitrix ────────────────────────────────────────────────────
+  function guardarEnBitrix() {
+    if (!RES || !RES.ok || !DEAL) return;
+    var btn = document.getElementById('btn-guardar'), msg = document.getElementById('msg-guardar');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    var p = RES.precio, s = RES.sistema;
+    var ahorroMes = Math.round(RES.ahorroAnualMxn / 12);
+    var quien = (USUARIO && USUARIO.nombre) || 'el portal';
+    var campos = {
+      OPPORTUNITY: Math.round(p.precioMxnIva),
+      CURRENCY_ID: 'MXN',
+      UF_CRM_1741208352117: s.kwpDc,
+      UF_CRM_1753209254287: Math.round(s.cobertura * 100) + '%',
+      UF_CRM_1758676152864: +(RES.roi.roiAnios || p.roiSimple).toFixed(2),
+      UF_CRM_1758675881434: ahorroMes + '|MXN',
+      UF_CRM_67A2ED1D84E1E: Math.round(RES.facturaSinProm) + '|MXN'
+    };
+    bx('crm.deal.update', { id: DEAL.ID, fields: campos }).then(function () {
+      var txt = '⚡ PROPUESTA GENERADA DESDE EL PORTAL por ' + quien + '\n\n' +
+        'Sistema: ' + s.kwpDc + ' kWp · ' + s.nModulos + ' módulos de 645 W · ' +
+        s.nInversores + '× ' + s.modeloInversor + ' (' + s.kwAc + ' kW AC)\n' +
+        'Genera: ' + Math.round(s.generacionAnualKwh).toLocaleString('es-MX') + ' kWh al año · cubre ' + Math.round(s.cobertura * 100) + '% de su consumo\n' +
+        'Recibo hoy: ' + fMXN(RES.facturaSinProm) + '/mes → con SOLART: ' + fMXN(RES.facturaConProm) + '/mes\n' +
+        'Ahorro: ' + fMXN(ahorroMes) + ' al mes (' + fMXN(RES.ahorroAnualMxn) + ' al año)\n' +
+        'Inversión: ' + fMXN(p.precioMxnIva) + ' con IVA (' + p.usdW.toFixed(3) + ' USD/W, margen ' + Math.round(p.margen * 100) + '%)\n' +
+        'Retorno: ' + (RES.roi.roiAnios || p.roiSimple).toFixed(2) + ' años · con beneficio fiscal ' + RES.beneficioFiscal.retornoAnios.toFixed(2) + ' años\n' +
+        'Financiamiento: ' + fMXN(p.mensualidad4a) + '/mes a 4 años con ' + Math.round(p.enganche4a * 100) + '% de enganche\n' +
+        'Modo: ' + RES.modo + ' · T.C. $' + p.tc.toFixed(2) + '\n' +
+        (RES.avisos.length ? '\nAvisos: ' + RES.avisos.join(' · ') : '');
+      return bx('crm.timeline.comment.add', { fields: { ENTITY_ID: DEAL.ID, ENTITY_TYPE: 'deal', COMMENT: txt } });
+    }).then(function () {
+      btn.textContent = '✅ Guardado';
+      msg.style.color = '#15803d';
+      msg.textContent = '✅ Listo: la negociación ya trae el monto, los kWp, el % de energía, el retorno y el ahorro mensual. El detalle quedó en su historial.';
+    }).catch(function (e) {
+      btn.disabled = false; btn.textContent = '💾 Guardar en la negociación';
+      msg.style.color = '#dc2626'; msg.textContent = '❌ No se pudo guardar: ' + e.message;
+    });
+  }
+
+  function verRecibo() {
+    if (!RES || !RES.ok) return;
+    var q = 'front-recibo.html?' + (DEAL ? 'dealId=' + DEAL.ID + '&' : '') +
+      'total=' + Math.round(RES.facturaSinProm) + '&consolart=' + Math.round(RES.facturaConProm) +
+      '&inversion=' + Math.round(RES.precio.precioMxnIva) + '&kwp=' + RES.sistema.kwpDc +
+      '&kwh=' + Math.round(RES.sistema.generacionAnualKwh / 12) +
+      '&roi=' + (RES.roi.roiAnios || RES.precio.roiSimple).toFixed(2) +
+      '&energia=' + Math.round(RES.sistema.cobertura * 100);
+    window.open(q, '_blank');
+  }
+
+  // ── Propuesta imprimible para el cliente ─────────────────────────────────
+  function verPropuesta() {
+    if (!RES || !RES.ok) return;
+    var r = RES, s = r.sistema, p = r.precio;
+    var ahorroMes = r.ahorroAnualMxn / 12;
+    var ahorro25 = r.ahorroAnualMxn * 25;
+    var arboles = Math.round(s.generacionAnualKwh * 0.438 / 22);
+    var hoy = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+    var maxBarra = Math.max(r.facturaSinProm, 1);
+
+    var w = window.open('', '_blank');
+    w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">' +
+      '<title>Propuesta SOLART — ' + (r.cliente || '') + '</title>' +
+      '<style>' +
+      '@page { size: letter; margin: 12mm; }' +
+      'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; color: #111827; background: #eef2f7; }' +
+      '.hoja { max-width: 900px; margin: 16px auto; background: #fff; padding: 28px 32px; }' +
+      '.enc { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 4px solid #006099; padding-bottom: 12px; margin-bottom: 18px; }' +
+      '.logo { height: 46px; }' +
+      'h1 { font-size: 23px; margin: 0 0 4px; color: #006099; }' +
+      '.cli { font-size: 14px; font-weight: 800; }' +
+      '.meta { font-size: 11px; color: #6b7280; text-align: right; line-height: 1.6; }' +
+      '.tit { font-size: 12px; font-weight: 900; color: #006099; text-transform: uppercase; letter-spacing: .06em; margin: 22px 0 10px; padding-bottom: 5px; border-bottom: 2px solid #e8eef5; }' +
+      '.cajas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }' +
+      '.caja { border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 12px; text-align: center; }' +
+      '.caja .v { font-size: 20px; font-weight: 900; color: #006099; }' +
+      '.caja .l { font-size: 10px; color: #6b7280; font-weight: 700; margin-top: 3px; }' +
+      '.verde .v { color: #15803d; } .oro .v { color: #b45309; }' +
+      'table { width: 100%; border-collapse: collapse; font-size: 12px; }' +
+      'th { background: #006099; color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; }' +
+      'td { padding: 7px 10px; border-bottom: 1px solid #f3f4f6; }' +
+      'td.num { text-align: right; font-variant-numeric: tabular-nums; }' +
+      '.barras { margin: 14px 0; }' +
+      '.barra-fila { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }' +
+      '.barra-lbl { width: 130px; font-size: 12px; font-weight: 800; }' +
+      '.barra-track { flex: 1; background: #f3f4f6; border-radius: 20px; height: 30px; overflow: hidden; }' +
+      '.barra-fill { height: 100%; border-radius: 20px; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; color: #fff; font-weight: 900; font-size: 13px; }' +
+      '.verde-caja { background: #f0fdf4; border: 2px solid #16a34a; border-radius: 14px; padding: 14px 18px; margin: 16px 0; display: flex; align-items: center; gap: 14px; }' +
+      '.pie { margin-top: 24px; padding-top: 12px; border-top: 2px solid #e8eef5; font-size: 10px; color: #6b7280; line-height: 1.6; }' +
+      '.no-print { text-align: center; padding: 12px; }' +
+      '.btn-p { background: #006099; color: #fff; border: none; border-radius: 10px; padding: 11px 22px; font-size: 14px; font-weight: 800; cursor: pointer; margin: 0 4px; }' +
+      '@media print { .no-print { display: none !important; } body { background: #fff; } .hoja { margin: 0; max-width: none; padding: 0; } }' +
+      '</style></head><body>' +
+      '<div class="no-print"><button class="btn-p" onclick="window.print()">🖨️ Imprimir o guardar en PDF</button></div>' +
+      '<div class="hoja">' +
+        '<div class="enc">' +
+          '<div><img class="logo" src="https://app.solart.mx/logo-color.png" alt="SOLART"><h1>Propuesta de energía solar</h1>' +
+          '<div class="cli">' + (r.cliente || 'Cliente') + '</div></div>' +
+          '<div class="meta">' + hoy + '<br>' + r.ubicacion + '<br>Tarifa ' + r.tarifa +
+          (r.noServicio ? '<br>RPU ' + r.noServicio : '') + '</div>' +
+        '</div>' +
+
+        '<div class="tit">Lo que hoy le cuesta la luz</div>' +
+        '<div class="barras">' +
+          '<div class="barra-fila"><div class="barra-lbl" style="color:#dc2626">Paga hoy</div>' +
+            '<div class="barra-track"><div class="barra-fill" style="width:100%;background:#dc2626">' + fMXN(r.facturaSinProm) + ' al mes</div></div></div>' +
+          '<div class="barra-fila"><div class="barra-lbl" style="color:#15803d">Con SOLART</div>' +
+            '<div class="barra-track"><div class="barra-fill" style="width:' + Math.max(8, r.facturaConProm / maxBarra * 100) + '%;background:#16a34a">' + fMXN(r.facturaConProm) + '</div></div></div>' +
+        '</div>' +
+        '<div style="font-size:13px;text-align:center;font-weight:800;color:#15803d;margin-bottom:6px">' +
+          'Se ahorra ' + fMXN(ahorroMes) + ' cada mes · ' + fMXN(r.ahorroAnualMxn) + ' al año</div>' +
+
+        '<div class="tit">El sistema que le proponemos</div>' +
+        '<div class="cajas">' +
+          '<div class="caja"><div class="v">' + s.kwpDc.toLocaleString('es-MX') + '</div><div class="l">kWp de capacidad</div></div>' +
+          '<div class="caja"><div class="v">' + s.nModulos.toLocaleString('es-MX') + '</div><div class="l">paneles solares</div></div>' +
+          '<div class="caja verde"><div class="v">' + Math.round(s.cobertura * 100) + '%</div><div class="l">de su luz, generada por usted</div></div>' +
+          '<div class="caja"><div class="v">' + Math.round(s.generacionAnualKwh / 1000).toLocaleString('es-MX') + ' MWh</div><div class="l">que produce al año</div></div>' +
+        '</div>' +
+        '<table style="margin-top:12px">' +
+          '<tr><td>Paneles</td><td class="num">' + s.nModulos + ' × JA Solar 645 W bifacial</td></tr>' +
+          '<tr><td>Inversores</td><td class="num">' + s.nInversores + ' × ' + s.modeloInversor + ' (' + s.kwAc + ' kW)</td></tr>' +
+          '<tr><td>Producción estimada</td><td class="num">' + Math.round(s.generacionAnualKwh).toLocaleString('es-MX') + ' kWh al año</td></tr>' +
+          (r.medidor ? '<tr><td>Medidor bidireccional</td><td class="num">' + r.medidor.modelo + ' (incluido)</td></tr>' : '') +
+          (r.kvarBanco ? '<tr><td>Banco de capacitores</td><td class="num">' + r.kvarBanco + ' kVAr (incluido)</td></tr>' : '') +
+          '<tr><td>Operación y mantenimiento</td><td class="num">Primer año incluido</td></tr>' +
+        '</table>' +
+
+        '<div class="tit">Su inversión</div>' +
+        '<div class="cajas">' +
+          '<div class="caja oro"><div class="v">' + fMill(p.precioMxnIva) + '</div><div class="l">inversión total con IVA</div></div>' +
+          '<div class="caja verde"><div class="v">' + fMill(r.beneficioFiscal.costoReal) + '</div><div class="l">costo real tras beneficio fiscal</div></div>' +
+          '<div class="caja"><div class="v">' + (r.roi.roiAnios ? r.roi.roiAnios.toFixed(1) : p.roiSimple.toFixed(1)) + ' años</div><div class="l">en recuperarla</div></div>' +
+          '<div class="caja verde"><div class="v">' + fMill(ahorro25) + '</div><div class="l">ahorro en 25 años</div></div>' +
+        '</div>' +
+        '<table style="margin-top:12px">' +
+          '<tr><th>Cómo puede pagarlo</th><th style="text-align:right">Mensualidad</th></tr>' +
+          p.escenarios.map(function (e) {
+            return '<tr><td>A ' + e.anios + ' años, sin enganche</td><td class="num">' + fMXN(e.mensualidad) + '</td></tr>';
+          }).join('') +
+          '<tr style="background:#f0fdf4"><td><b>A 4 años con ' + Math.round(p.enganche4a * 100) + '% de enganche</b></td>' +
+          '<td class="num"><b>' + fMXN(p.mensualidad4a) + '</b></td></tr>' +
+        '</table>' +
+        '<div style="font-size:11px;color:#6b7280;margin-top:6px">' +
+          'Su ahorro mensual es de ' + fMXN(ahorroMes) + ': ' +
+          (ahorroMes > p.mensualidad4a ? 'la mensualidad se paga sola con lo que deja de pagarle a CFE.' : 'cubre buena parte de la mensualidad desde el primer mes.') +
+        '</div>' +
+
+        '<div class="tit">Beneficio fiscal</div>' +
+        '<table>' +
+          '<tr><td>Inversión deducible (100% en un ejercicio)</td><td class="num">' + fMXN(r.beneficioFiscal.deducible) + '</td></tr>' +
+          '<tr><td>Le regresa en ISR (30%)</td><td class="num" style="color:#15803d;font-weight:700">' + fMXN(r.beneficioFiscal.bfIsr) + '</td></tr>' +
+          '<tr><td>IVA acreditable</td><td class="num" style="color:#15803d;font-weight:700">' + fMXN(r.beneficioFiscal.iva) + '</td></tr>' +
+          '<tr style="background:#f0fdf4"><td><b>Costo real del proyecto</b></td><td class="num"><b>' + fMXN(r.beneficioFiscal.costoReal) + '</b></td></tr>' +
+        '</table>' +
+
+        '<div class="verde-caja">' +
+          '<div style="font-size:34px">🌳</div>' +
+          '<div><div style="font-size:13px;font-weight:900;color:#15803d">TAMBIÉN CUIDA EL PLANETA</div>' +
+          '<div style="font-size:12px;color:#374151">Con la energía limpia que produciría, cada año dejaría de emitir el CO₂ que absorben ' +
+          '<b>' + arboles.toLocaleString('es-MX') + ' árboles</b>.</div></div>' +
+        '</div>' +
+
+        '<div class="pie">' +
+          '<b>SOLART CONTIGO</b> · Energía limpia · Ahorro garantizado · Inversión inteligente · Respaldo y confianza<br>' +
+          'Propuesta ' + r.modo.toLowerCase() + ' con tipo de cambio de $' + p.tc.toFixed(2) + ' MXN/USD, vigente 10 días. ' +
+          'Paneles con 25 años de garantía de generación. Cálculo basado en el consumo del recibo CFE y en la radiación solar de ' + r.lugarHsp + '. ' +
+          'Sujeta a visita técnica y a la capacidad de interconexión disponible en el punto de suministro.' +
+        '</div>' +
+      '</div></body></html>');
+    w.document.close();
+  }
+</script>
+</body>
+</html>
