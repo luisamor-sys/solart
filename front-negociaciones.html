@@ -528,6 +528,13 @@
 <script>
   const WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/';
 
+  // Marcadores que ingeniería escribe en la descripción de la tarea
+  const rxMarca = tag => new RegExp(`===${tag}===\\s*([\\s\\S]*?)\\s*===FIN ${tag}===`, 'i');
+  const rxMarcaG = tag => new RegExp(`\\n*===${tag}===[\\s\\S]*?===FIN ${tag}===`, 'gi');
+  const campoDep = (txt, campo) => {
+    const m = (txt || '').match(new RegExp('^' + campo + ':\\s*(.+)$', 'mi'));
+    return m ? m[1].trim() : '';
+  };
   const TAREA_ETAPA = {
     visita: 'EXECUTING',
     formal: 'UC_OF6DF0',
@@ -1131,6 +1138,71 @@
       : {background:'#fff', borderColor:'#e5e7eb', color:'#6b7280'});
   }
 
+  // Lo que ingeniería pide, con el campo justo para responderlo
+  function cajaDependencia(tareaId, bloque) {
+    const queFalta = campoDep(bloque, 'QUE_FALTA') || 'Falta un dato';
+    const sePide   = campoDep(bloque, 'SE_PIDE') || 'El dato que hace falta';
+    const tipoDato = campoDep(bloque, 'TIPO_DATO') || 'texto';
+    const ejemplo  = campoDep(bloque, 'EJEMPLO') || '';
+    const por      = campoDep(bloque, 'POR') || 'Ingeniería';
+    const detalle  = campoDep(bloque, 'DETALLE');
+    const esUrl = tipoDato === 'url';
+    return `
+      <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:12px 14px">
+        <div style="font-size:12px;font-weight:800;color:#c2410c;margin-bottom:4px">⚠️ INGENIERÍA NO PUEDE CONTINUAR</div>
+        <div style="font-size:13.5px;font-weight:700;color:#7c2d12">${queFalta}</div>
+        ${detalle && detalle !== '—' ? `<div style="font-size:12.5px;color:#7c2d12;margin-top:4px">${detalle}</div>` : ''}
+        <div style="font-size:11px;color:#9a3412;margin-top:6px">Lo pidió ${por}</div>
+        <div style="font-size:12.5px;font-weight:700;color:#7c2d12;margin:10px 0 5px">👉 ${sePide}</div>
+        <input id="dep-in-${tareaId}" type="${esUrl ? 'url' : 'text'}" placeholder="${ejemplo || (esUrl ? 'https://maps.app.goo.gl/…' : 'Escribe aquí el dato')}"
+          style="width:100%;border:1.5px solid #fdba74;border-radius:9px;padding:9px 11px;font-size:13.5px;font-family:inherit;box-sizing:border-box">
+        <button id="dep-btn-${tareaId}" onclick="event.stopPropagation();responderDependencia(${tareaId})"
+          style="width:100%;margin-top:8px;background:#c2410c;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13.5px;font-weight:800;cursor:pointer">📨 Enviar el dato y reanudar</button>
+        <div id="dep-msg-${tareaId}" style="font-size:12px;font-weight:700;margin-top:6px"></div>
+      </div>`;
+  }
+
+  // El vendedor manda el dato: se comenta en la tarea, se guarda y vuelve al flujo
+  window.responderDependencia = async function (tareaId) {
+    const inp = document.getElementById(`dep-in-${tareaId}`);
+    const val = (inp?.value || '').trim();
+    const msg = document.getElementById(`dep-msg-${tareaId}`);
+    if (!val) { inp?.focus(); msg.style.color = '#b91c1c'; msg.textContent = 'Escribe el dato antes de enviarlo.'; return; }
+    const btn = document.getElementById(`dep-btn-${tareaId}`);
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      const u = JSON.parse(localStorage.getItem('solart_user') || '{}');
+      const quien = u.nombre || 'el vendedor';
+      const tr = await fetch(WEBHOOK + 'tasks.task.get.json', {
+        method: 'POST', body: new URLSearchParams({ taskId: tareaId, 'select[]': 'DESCRIPTION', 'select[1]': 'TITLE' })
+      }).then(r => r.json());
+      const tk = tr.result?.task || {};
+      let titulo = tk.title || tk.TITLE || '';
+      let descr = tk.description || tk.DESCRIPTION || '';
+      const bloque = (descr.match(rxMarca('DEPENDENCIA')) || [])[1] || '';
+      const queFalta = campoDep(bloque, 'QUE_FALTA') || 'dato pendiente';
+      const fecha = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+      descr = descr.replace(rxMarcaG('DEPENDENCIA'), '').replace(rxMarcaG('DATO_VENDEDOR'), '');
+      descr += `\n\n===DATO_VENDEDOR===\nRESPUESTA A: ${queFalta}\n${val}\nEnviado por ${quien} (${fecha})\n===FIN DATO_VENDEDOR===`;
+      titulo = titulo.replace(/^⚠️ FALTA DATO \| /, '');
+      await fetch(WEBHOOK + 'tasks.task.update.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: tareaId, fields: { TITLE: titulo, DESCRIPTION: descr, STAGE_ID: '258' } })
+      });
+      await fetch(WEBHOOK + 'task.commentitem.add.json', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ TASKID: tareaId, FIELDS: { POST_MESSAGE:
+          `✅ DATO ENVIADO por ${quien}\n\nLo que faltaba: ${queFalta}\nRespuesta: ${val}\n\nYa se puede continuar con la propuesta.` } })
+      });
+      btn.textContent = '✅ Enviado';
+      msg.style.color = '#15803d';
+      msg.textContent = '✅ Listo: ingeniería ya tiene el dato y la tarea regresó al flujo.';
+    } catch (e) {
+      btn.disabled = false; btn.textContent = '📨 Enviar el dato y reanudar';
+      msg.style.color = '#b91c1c'; msg.textContent = 'No se pudo enviar: ' + e.message;
+    }
+  };
+
   async function abrirDetalleCompletada(tareaId) {
     const el = document.getElementById(`detalle-comp-${tareaId}`);
     if (!el) return;
@@ -1147,6 +1219,9 @@
       const td = await tr.json();
       const descr = td.result?.task?.description || '';
       // Marcador de texto plano (los corchetes no sobreviven al BBCode de Bitrix)
+      // ¿Ingeniería la regresó porque falta un dato? Eso manda sobre todo lo demás
+      const dep = descr.match(rxMarca('DEPENDENCIA'));
+      if (dep) { el.innerHTML = cajaDependencia(tareaId, dep[1]); return; }
       const m = descr.match(/===APROBADA===\s*([\s\S]*?)\s*===FIN APROBADA===/i);
       if (!m) {
         el.innerHTML = '<div style="font-size:12px;color:#9ca3af">Sin propuesta adjunta.</div>';
@@ -1707,6 +1782,12 @@
       notifItems = [];
       for (const t of tareas) {
         const descr = t.description || '';
+        const dep = descr.match(rxMarca('DEPENDENCIA'));
+        if (dep) {
+          notifItems.push({ id: t.id, titulo: t.title || t.TITLE || '', tipo: 'dependencia',
+            queFalta: campoDep(dep[1], 'QUE_FALTA') || 'Falta un dato', pdfs: [], fecha: '' });
+          continue;
+        }
         const m = descr.match(/===APROBADA===\s*([\s\S]*?)\s*===FIN APROBADA===/i);
         if (!m) continue;
         const lineas = m[1].trim().split('\n').filter(Boolean);
@@ -1723,14 +1804,24 @@
       let vistos = [];
       try { vistos = JSON.parse(localStorage.getItem('solart_notif_vistas')) || []; } catch {}
       const nuevas = notifItems.filter(n => !vistos.includes(String(n.taskId))).length;
+      const pendientes = notifItems.filter(n => n.tipo === 'dependencia').length;
 
       document.getElementById('panel-notif').style.display = 'block';
-      document.getElementById('notif-titulo').textContent =
-        nuevas > 0 ? `Propuestas entregadas — ${nuevas} nueva${nuevas>1?'s':''}` : `Propuestas entregadas (${notifItems.length})`;
+      const tit = document.getElementById('notif-titulo');
+      tit.textContent = pendientes
+        ? `⚠️ Te piden ${pendientes} dato${pendientes > 1 ? 's' : ''} para seguir`
+        : (nuevas > 0 ? `Propuestas entregadas — ${nuevas} nueva${nuevas > 1 ? 's' : ''}` : `Propuestas entregadas (${notifItems.length})`);
+      if (pendientes) tit.style.color = '#c2410c';
       const badge = document.getElementById('notif-badge');
-      if (nuevas > 0) { badge.textContent = nuevas; badge.style.display = 'inline-block'; }
+      const totalBadge = pendientes || nuevas;
+      if (totalBadge > 0) { badge.textContent = totalBadge; badge.style.display = 'inline-block'; }
 
-      document.getElementById('notif-lista').innerHTML = notifItems.map(n => `
+      document.getElementById('notif-lista').innerHTML = notifItems.map(n => n.tipo === 'dependencia' ? `
+        <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:12px 14px;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:700;color:#7c2d12;margin-bottom:2px">${n.titulo.replace(/^⚠️ FALTA DATO \| /, '')}</div>
+          <div style="font-size:12px;color:#c2410c;font-weight:700;margin-bottom:6px">⚠️ Ingeniería no puede continuar: ${n.queFalta}</div>
+          <div style="font-size:11.5px;color:#9a3412">Ábrela en tus tareas para mandar el dato y que siga el proceso.</div>
+        </div>` : `
         <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:8px">
           <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:2px">${n.titulo}</div>
           <div style="font-size:11px;color:#6b7280;margin-bottom:8px">✅ Aprobada por Daniel González${n.fecha ? ' · ' + n.fecha : ''}</div>

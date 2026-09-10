@@ -326,15 +326,38 @@ function userName(id) { return USER_NAMES[String(id)] || `Usuario #${id}`; }
 function statusName(s) { return STATUS_NAMES[String(s)] || `Estado ${s}`; }
 const STAGE_IDS_MANUAL = {
   'Nuevo Especial':                                    '0',
-  'Nuevo Validación SUNWISE':                          '',
+  'Nuevo Validación SUNWISE':                          '278',
   'En progreso Ingeniería':                            '238',
   'En progreso Operaciones':                           '270',
   'Propuestas regresadas o con dependencia resuelta':  '258',
   'Con dependencia comercial':                         '242',
-  'Con dependencia del cliente':                       '',
-  'Esperando aprobación':                              '',
+  'Con dependencia del cliente':                       '244',
+  'Esperando aprobación':                              '262',
   'Terminado':                                         '240'
 };
+// Motivos por los que una tarea se regresa. Cada uno dice a quién le toca resolver
+// y qué dato concreto hay que pedirle, para que el vendedor sepa exactamente qué mandar.
+const MOTIVOS_DEP = [
+  { id: 'ubicacion', icono: '📍', tipo: 'comercial', label: 'No está la ubicación del inmueble',
+    pide: 'Liga de Google Maps del inmueble', tipoDato: 'url', ejemplo: 'https://maps.app.goo.gl/…' },
+  { id: 'captura', icono: '✏️', tipo: 'comercial', label: 'La tarea está mal capturada',
+    pide: 'Los datos correctos (qué estaba mal y cómo va)', tipoDato: 'texto', ejemplo: 'Ej. el kWp correcto es 450, no 45' },
+  { id: 'recibo', icono: '🧾', tipo: 'cliente', label: 'Falta el recibo CFE del cliente',
+    pide: 'El recibo CFE (adjúntalo en la tarea o pega la liga)', tipoDato: 'texto', ejemplo: 'Liga del archivo o "ya lo adjunté"' },
+  { id: 'consumo', icono: '⚡', tipo: 'comercial', label: 'Faltan datos de consumo o tarifa',
+    pide: 'kWh del recibo, demanda y tarifa', tipoDato: 'texto', ejemplo: 'Ej. GDMTH · 89,366 kWh · 227 kW' },
+  { id: 'contacto', icono: '📞', tipo: 'comercial', label: 'Falta el contacto del cliente',
+    pide: 'Nombre, teléfono y correo de quien decide', tipoDato: 'texto', ejemplo: 'Ej. Ing. Juan Pérez · 442 123 4567' },
+  { id: 'alcance', icono: '📐', tipo: 'comercial', label: 'No está claro el alcance del proyecto',
+    pide: 'Qué se va a cotizar exactamente', tipoDato: 'texto', ejemplo: 'Ej. solo techo de nave 1, sin baterías' },
+  { id: 'techo', icono: '🏭', tipo: 'cliente', label: 'Faltan planos o fotos del techo',
+    pide: 'Planos, fotos o medidas del área disponible', tipoDato: 'texto', ejemplo: 'Liga a las fotos o "ya las adjunté"' },
+  { id: 'espera', icono: '⏳', tipo: 'cliente', label: 'El cliente no ha respondido',
+    pide: 'Confirmar cuándo retomamos', tipoDato: 'texto', ejemplo: 'Ej. me confirma el lunes 15' },
+  { id: 'otro', icono: '❓', tipo: 'comercial', label: 'Otro motivo',
+    pide: 'Lo que se necesita para continuar', tipoDato: 'texto', ejemplo: '' },
+];
+const motivoDe = id => MOTIVOS_DEP.find(m => m.id === id) || MOTIVOS_DEP[MOTIVOS_DEP.length - 1];
 let pinActual = '';
 let STAGES = {}; // nombre → id
 
@@ -755,11 +778,10 @@ async function cargarDrawer(id) {
       if (esPendiente) {
         accionesHTML = `
           <button class="btn-verde" onclick="ejecutarAutorizacionDrawer(${id})">✅ Autorizar → Mover a Ingeniería</button>
-          <button class="btn-naranja" style="margin-top:8px" onclick="toggleDepDrawer()">⚠️ Hay una dependencia…</button>
+          <button class="btn-naranja" style="margin-top:8px" onclick="toggleDepDrawer()">⚠️ Regresar al vendedor…</button>
           <div id="dep-drawer" style="display:none;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-top:8px">
-            <div style="font-size:13px;font-weight:600;color:#c2410c;margin-bottom:10px">¿De qué tipo?</div>
-            <button class="btn-dep-op" onclick="moverDepDrawer(${id},'comercial')">🏢 Dependencia del vendedor</button>
-            <button class="btn-dep-op" onclick="moverDepDrawer(${id},'cliente')">👤 Dependencia del cliente</button>
+            <div style="font-size:13px;font-weight:600;color:#c2410c;margin-bottom:10px">¿Qué falta para poder trabajarla?</div>
+            ${menuMotivosHtml(id, true)}
             <button class="btn-dep-cancel" onclick="toggleDepDrawer()">Cancelar</button>
           </div>`;
       } else {
@@ -1008,17 +1030,7 @@ async function ejecutarAutorizacionDrawer(id) {
     cargarSupervisor(document.getElementById('tab-pend')?.classList.contains('activo') ? 'pendientes' : 'proceso');
   } catch { alert('Error al autorizar.'); }
 }
-async function moverDepDrawer(id, tipo) {
-  const nombre = tipo==='comercial' ? 'Con dependencia comercial' : 'Con dependencia del cliente';
-  const stageDestino = sid(nombre);
-  if (!stageDestino) { alert('Etapa no encontrada.'); return; }
-  try {
-    await bxTask('tasks.task.update', { taskId: id, fields: { STAGE_ID: stageDestino } });
-    document.getElementById('drawer-body').innerHTML = `<div class="empty-msg"><div class="empty-icono">⚠️</div><div class="empty-txt">Dependencia marcada</div></div>`;
-    setTimeout(cerrarDrawer, 1600);
-    cargarSupervisor('pendientes');
-  } catch { alert('Error.'); }
-}
+// (el drawer usa moverDep con esDrawer = true)
 function completarDrawer(id) {
   document.getElementById(`dr-btn-comp-${id}`).style.display='none';
   document.getElementById(`dr-conf-${id}`).classList.add('visible');
@@ -1581,11 +1593,10 @@ function cardSupervisor(t, tab, sinConfig) {
         <button class="btn-no" onclick="cancelarConfOps('${id}')">Cancelar</button>
       </div>
     </div>
-    <button class="btn-naranja" onclick="toggleDep(${id})">⚠️ Hay una dependencia…</button>
+    <button class="btn-naranja" onclick="toggleDep(${id})">⚠️ Regresar al vendedor…</button>
     <div class="dep-box" id="dep-${id}">
-      <div class="dep-titulo">¿De qué tipo?</div>
-      <button class="btn-dep-op" onclick="moverDep(${id},'comercial')">🏢 Dependencia del vendedor — falta dato</button>
-      <button class="btn-dep-op" onclick="moverDep(${id},'cliente')">👤 Dependencia del cliente — falta documento</button>
+      <div class="dep-titulo">¿Qué falta para poder trabajarla?</div>
+      ${menuMotivosHtml(id)}
       <button class="btn-dep-cancel" onclick="toggleDep(${id})">Cancelar</button>
     </div>` : `<div style="font-size:13px;color:#6b7280">Propuesta en proceso.</div>`;
 
@@ -1725,14 +1736,70 @@ async function ejecutarAutorizacionOps(id) {
   } catch { alert('Error al mover. Intenta de nuevo.'); cancelarConfOps(id); }
 }
 function toggleDep(id) { document.getElementById(`dep-${id}`).classList.toggle('visible'); }
-async function moverDep(id, tipo) {
-  const nombre = tipo === 'comercial' ? 'Con dependencia comercial' : 'Con dependencia del cliente';
-  const stageDestino = sid(nombre);
+
+// Menú de motivos: se elige uno y se escribe el detalle que verá el vendedor
+function menuMotivosHtml(id, esDrawer) {
+  return `
+    <select id="mot-${id}" onchange="pintarAyudaMotivo(${id})" style="width:100%;border:1.5px solid #fed7aa;border-radius:8px;padding:8px;font-size:13px;font-family:inherit;margin-bottom:6px">
+      <option value="">— elige qué falta —</option>
+      ${MOTIVOS_DEP.map(m => `<option value="${m.id}">${m.icono} ${m.label}</option>`).join('')}
+    </select>
+    <div id="ayuda-mot-${id}" style="font-size:11.5px;color:#9a3412;margin-bottom:6px"></div>
+    <textarea id="det-${id}" rows="2" placeholder="Detalle para el vendedor (opcional)"
+      style="width:100%;border:1.5px solid #fed7aa;border-radius:8px;padding:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;margin-bottom:6px"></textarea>
+    <button class="btn-dep-op" id="btn-dep-${id}" onclick="moverDep(${id}${esDrawer ? ', true' : ''})">📨 Regresar al vendedor con este motivo</button>`;
+}
+function pintarAyudaMotivo(id) {
+  const m = motivoDe(document.getElementById(`mot-${id}`).value);
+  const el = document.getElementById(`ayuda-mot-${id}`);
+  if (el) el.textContent = document.getElementById(`mot-${id}`).value ? '👉 Se le pedirá: ' + m.pide : '';
+}
+
+async function moverDep(id, esDrawer) {
+  const sel = document.getElementById(`mot-${id}`);
+  const motivoId = sel ? sel.value : '';
+  if (!motivoId) { alert('Elige qué falta para poder regresarla.'); return; }
+  const m = motivoDe(motivoId);
+  const detalle = (document.getElementById(`det-${id}`)?.value || '').trim();
+  const stageDestino = sid(m.tipo === 'comercial' ? 'Con dependencia comercial' : 'Con dependencia del cliente');
   if (!stageDestino) { alert('No se encontró la etapa.'); return; }
+  const btn = document.getElementById(`btn-dep-${id}`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
   try {
-    await bxTask('tasks.task.update', { taskId: id, fields: { STAGE_ID: stageDestino } });
-    exitoCard(`card-${id}`, `⚠️ Marcada: dependencia ${tipo==='comercial'?'del vendedor':'del cliente'}`, '#fff7ed', '#fed7aa');
-  } catch { alert('Error.'); }
+    await marcarDependencia(id, m, detalle, stageDestino);
+    if (esDrawer) {
+      document.getElementById('drawer-body').innerHTML = `<div class="empty-msg"><div class="empty-icono">📨</div><div class="empty-txt">Regresada al vendedor</div><div class="empty-sub">Ya le llegó el aviso con lo que falta.</div></div>`;
+      setTimeout(cerrarDrawer, 1800);
+      cargarSupervisor('pendientes');
+    } else {
+      exitoCard(`card-${id}`, `📨 Regresada al vendedor: ${m.label}`, '#fff7ed', '#fed7aa');
+    }
+  } catch (e) {
+    alert('Error: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '📨 Regresar al vendedor con este motivo'; }
+  }
+}
+
+// Deja el motivo donde el vendedor lo pueda ver: comentario en el chat de la tarea
+// + bloque ===DEPENDENCIA=== en la descripción (los comentarios no se pueden leer por API)
+async function marcarDependencia(id, m, detalle, stageDestino) {
+  const quien = USER_NOMBRES[String(usuarioActual?.id)] || 'Ingeniería';
+  const fecha = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+  const tr = await bxTask('tasks.task.get', { taskId: id, select: ['TITLE', 'DESCRIPTION'] });
+  const tk = tr.result?.task || {};
+  let titulo = tk.title || tk.TITLE || '';
+  let descr = tk.description || tk.DESCRIPTION || '';
+  if (!titulo.startsWith('⚠️')) titulo = `⚠️ FALTA DATO | ${titulo}`;
+  descr = descr.replace(rxMarcaG('DEPENDENCIA'), '').replace(rxMarcaG('DATO_VENDEDOR'), '');
+  descr += `\n\n${marcaAbre('DEPENDENCIA')}\nMOTIVO: ${m.id}\nQUE_FALTA: ${m.label}\nSE_PIDE: ${m.pide}\nTIPO_DATO: ${m.tipoDato}\nEJEMPLO: ${m.ejemplo}\nPOR: ${quien} (${fecha})\nDETALLE: ${detalle || '—'}\n${marcaCierra('DEPENDENCIA')}`;
+  await bxTask('tasks.task.update', { taskId: id, fields: { STAGE_ID: stageDestino, TITLE: titulo, DESCRIPTION: descr } });
+  await bx('task.commentitem.add', {
+    TASKID: id,
+    FIELDS: { POST_MESSAGE: `⚠️ NO SE PUEDE CONTINUAR: ${m.icono} ${m.label}\n\n` +
+      `👉 Se necesita: ${m.pide}` + (m.ejemplo ? `\n   (${m.ejemplo})` : '') +
+      (detalle ? `\n\nDetalle: ${detalle}` : '') +
+      `\n\nEntra a la app, ábrela en tus tareas y manda el dato desde ahí para que siga el proceso.\n— ${quien}` }
+  });
 }
 
 // ── VENDEDOR ──────────────────────────────────────────────────────────────
