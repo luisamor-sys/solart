@@ -628,7 +628,15 @@
       await cargarLib('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'html2canvas');
       await cargarLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'jspdf');
       const el = document.getElementById('recibo');
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: -window.scrollY });
+      // Se dibuja siempre a tamaño de escritorio (750 px) aunque estemos en un celular
+      const prev = { w: el.style.width, min: el.style.minWidth, max: el.style.maxWidth };
+      el.style.width = '750px'; el.style.minWidth = '750px'; el.style.maxWidth = '750px';
+      let canvas;
+      try {
+        canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: -window.scrollY, windowWidth: 820, width: 750 });
+      } finally {
+        el.style.width = prev.w; el.style.minWidth = prev.min; el.style.maxWidth = prev.max;
+      }
       if (!canvas.width || !canvas.height) throw new Error('El recibo no se pudo dibujar');
       // Página del tamaño exacto del recibo (una sola hoja, sin cortes)
       const ancho = 612, alto = Math.round(canvas.height * ancho / canvas.width);
