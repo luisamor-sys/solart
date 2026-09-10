@@ -737,11 +737,16 @@
   // (nunca lo hizo para Poligof/Flexitech), así que si en unos segundos no aparece
   // ninguna tarea nueva ligada al deal, la crea la app con el formato que ingeniería espera.
   const EQUIPO_FLUJO = ['8', '34', '36', '86', '344', '390', '40'];
-  const NOMBRE_EQUIPO = { '36': 'Javier Olmos (ingeniería)', '40': 'Carlos Mariscal (visitas técnicas)', '390': 'Samantha Miranda' };
+  const NOMBRE_EQUIPO = { '36': 'Javier Olmos (ingeniería)', '40': 'Carlos Mariscal (visitas técnicas)', '8': 'Daniel González (BESS)', '390': 'Samantha Miranda (suministro calificado)' };
+  // Tipo de proyecto del deal (UF_CRM_1743795019024, selección múltiple) → quién trabaja la propuesta.
+  // FOTOVOLTAICO y MANTENIMIENTO siguen el flujo normal (Javier); BESS va con Daniel; Suministro con Samantha.
+  const TIPOS_PROYECTO = { '312': { nombre: 'FOTOVOLTAICO', resp: 36 }, '310': { nombre: 'BESS', resp: 8 },
+                           '336': { nombre: 'SUMINISTRO CALIFICADO', resp: 390 }, '526': { nombre: 'MANTENIMIENTO', resp: 36 } };
   async function asegurarTareaFlujo(dealId, tipo, datos, inicioMs) {
     let vendedorId = null;
     try { const u = JSON.parse(localStorage.getItem('solart_user')); vendedorId = u?.id ? String(u.id) : null; } catch {}
-    await new Promise(r => setTimeout(r, 4000)); // dar tiempo al robot, si es que corre
+    const resp = datos.responsable || (tipo === 'visita' ? 40 : 36);
+    if (!datos.sinEspera) await new Promise(r => setTimeout(r, 4000)); // dar tiempo al robot, si es que corre
     const lista = async () => {
       const res = await fetch(WEBHOOK + 'tasks.task.list.json', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -752,8 +757,11 @@
     };
     try {
       const nuevas = await lista();
+      const mia = nuevas.find(t => String(t.responsibleId) === String(resp));
+      if (mia) return { id: mia.id, resp: String(resp), robot: true };
       for (const t of nuevas) {
-        if (EQUIPO_FLUJO.includes(String(t.responsibleId))) return { id: t.id, resp: String(t.responsibleId), robot: true };
+        if (EQUIPO_FLUJO.includes(String(t.responsibleId))) continue; // ya va a alguien del equipo
+        if (resp !== 36) continue; // solo se corrige el ruteo del flujo normal
         // El robot la mandó al vendedor: se corrige para que entre al flujo
         const fields = { RESPONSIBLE_ID: 36, GROUP_ID: 16 };
         if (vendedorId) fields.CREATED_BY = vendedorId;
@@ -763,7 +771,6 @@
       }
     } catch {}
     // No hay tarea: la crea la app
-    const resp = tipo === 'visita' ? 40 : 36;
     const dias = tipo === 'visita' ? 0 : tipo === 'final' ? 5 : 10;
     let deadline = new Date(Date.now() + dias * 86400000);
     if (tipo === 'visita' && datos.fechaVisita) { const f = new Date(datos.fechaVisita); if (!isNaN(f)) deadline = f; }
@@ -1585,7 +1592,7 @@
       }
 
       // Tarea del flujo (visita / formal / final): la garantiza la app
-      let tarea = null;
+      let tarea = null, tareas = null;
       if (tipo !== 'financiera') {
         const OPT = { '100':'Compra de Activos','102':'Financiamiento','104':'PPA','106':'Arrendamiento','108':'Leasing Back','328':'Aún no sabemos',
           '110':'Sí','112':'No','264':'Sí','266':'No','1466':'CFE','1468':'Suministro Calificado','1470':'Mixto','1472':'Por definir',
@@ -1600,13 +1607,16 @@
         const kwp = fields['UF_CRM_1741208352117'] || negActual.UF_CRM_1741208352117;
         const energia = fields['UF_CRM_1753209254287'] || negActual.UF_CRM_1753209254287;
         const tam = kwp ? `Tamaño: ${kwp} kWp${energia ? ' · cubre ' + String(energia).replace('%','') + '% de su energía' : ''}` : '';
+        const tiposSel = (Array.isArray(negActual.UF_CRM_1743795019024) ? negActual.UF_CRM_1743795019024 : [negActual.UF_CRM_1743795019024])
+          .map(String).filter(x => TIPOS_PROYECTO[x]);
+        const nombresTipos = tiposSel.map(x => TIPOS_PROYECTO[x].nombre).join(' + ');
         const datos = { titulo: '', descripcion: '', fechaVisita: null };
         if (tipo === 'visita') {
           datos.titulo = `VISITA TÉCNICA_${empresa}`;
           datos.fechaVisita = getVal('f-fecha-visita');
           datos.descripcion = [`Visita técnica solicitada por ${nombreVend} para ${empresa}.`,
             `Fecha propuesta: ${getVal('f-fecha-visita')}`, `Dirección: ${getVal('f-direccion-visita')}`,
-            `Recibe: ${getVal('f-quien-recibe')}`, tam, liga].filter(Boolean).join('\n');
+            `Recibe: ${getVal('f-quien-recibe')}`, tam, nombresTipos ? `Tipo de proyecto: ${nombresTipos}` : '', liga].filter(Boolean).join('\n');
         } else if (tipo === 'formal') {
           datos.titulo = `${proyecto}_${fields['UF_CRM_1739416803761'] === '264' ? 'Actualización' : 'Generación'} de propuesta Especial ${empresa}`;
           datos.descripcion = [`Equipo, por favor me ayudan a generar la propuesta formal de la empresa ${empresa}.`, tam,
@@ -1624,7 +1634,25 @@
             getVal('f-comentarios-final') ? `Comentarios de ${nombreVend}: ${getVal('f-comentarios-final')}` : '',
             `Vendedor: ${nombreVend}`, liga].filter(Boolean).join('\n');
         }
-        tarea = await asegurarTareaFlujo(negActual.ID, tipo, datos, Date.now());
+        if (tipo === 'visita' || tiposSel.length <= 1) {
+          const unico = tiposSel[0] ? TIPOS_PROYECTO[tiposSel[0]] : null;
+          if (tipo !== 'visita' && unico) {
+            datos.responsable = unico.resp;
+            if (unico.resp !== 36) datos.titulo = `${unico.nombre}_${datos.titulo}`;
+            datos.descripcion = `Tipo de proyecto: ${unico.nombre}\n` + datos.descripcion;
+          }
+          tarea = await asegurarTareaFlujo(negActual.ID, tipo, datos, Date.now());
+        } else {
+          // Varios tipos marcados: una tarea por tipo, cada una con su responsable
+          const inicio = Date.now(); tareas = [];
+          for (let i = 0; i < tiposSel.length; i++) {
+            const tp = TIPOS_PROYECTO[tiposSel[i]];
+            const d = { ...datos, responsable: tp.resp, sinEspera: i > 0,
+              titulo: `${tp.nombre}_${datos.titulo}`, descripcion: `Tipo de proyecto: ${tp.nombre} (proyecto ${nombresTipos})\n` + datos.descripcion };
+            tareas.push({ tipoProyecto: tp.nombre, ...(await asegurarTareaFlujo(negActual.ID, tipo, d, inicio)) });
+          }
+          tarea = tareas[0];
+        }
       }
 
       const labels = {
@@ -1636,7 +1664,9 @@
       document.getElementById('exito-titulo').textContent = labels[tipo];
       document.getElementById('exito-detalle').textContent = tipo === 'financiera'
         ? 'La tarea le llegó a Samantha Miranda. Te avisaremos aquí cuando entregue el plan financiero.'
-        : `La tarea #${tarea.id} ya le llegó a ${NOMBRE_EQUIPO[tarea.resp] || 'el equipo'}. Te avisaremos aquí cuando la entreguen.`;
+        : (tareas && tareas.length > 1
+            ? `Se crearon ${tareas.length} tareas, una por tipo de proyecto: ` + tareas.map(t => `#${t.id} ${t.tipoProyecto} → ${NOMBRE_EQUIPO[t.resp] || 'equipo'}`).join(' · ') + '. Te avisaremos aquí cuando las entreguen.'
+            : `La tarea #${tarea.id} ya le llegó a ${NOMBRE_EQUIPO[tarea.resp] || 'el equipo'}. Te avisaremos aquí cuando la entreguen.`);
       mostrarEstado('vista-exito');
     } catch (err) {
       alert('Error: ' + err.message);
