@@ -668,19 +668,20 @@
       const nombre = (v('f-nombre') || 'cliente').replace(/[^\w\d]+/g, '_');
       const blob = pdf.output('blob');
       const file = new File([blob], `${base}_SOLART_${nombre}.pdf`, { type: 'application/pdf' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: `${base} SOLART` });   // celular: guardar / WhatsApp / correo
+      // El enlace visible va SIEMPRE: lo toca el usuario y ningún navegador lo bloquea
+      mostrarEnlacePDF(blob, file.name);
+      // Compartir solo en celular/tablet (en computadora el menú de compartir estorba y falla)
+      const esMovil = matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (esMovil && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: `${base} SOLART` }); }
+        catch (e2) { if (String(e2).indexOf('AbortError') === -1) console.warn('[share]', e2); }
       } else {
         try { pdf.save(file.name); } catch (e2) { console.warn('[pdf save]', e2); }
-        // Chrome bloquea descargas que tardan más de unos segundos tras el clic:
-        // se deja un enlace que el usuario toca directamente y siempre descarga.
-        mostrarEnlacePDF(blob, file.name);
       }
     } catch (e) {
-      if (String(e).indexOf('AbortError') === -1) {
-        console.warn('[pdf]', e);
-        window.print();  // respaldo: impresión nativa
-      }
+      console.warn('[pdf]', e);
+      alert('No se pudo generar el PDF (' + (e?.message || e) + '). Se abrirá el cuadro de imprimir como respaldo.');
+      window.print();
     } finally {
       btn.disabled = false; btn.textContent = txt;
     }
