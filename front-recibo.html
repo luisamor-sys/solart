@@ -618,6 +618,28 @@
     });
   }
 
+  function mostrarEnlacePDF(blob, nombre) {
+    let caja = document.getElementById('enlace-pdf');
+    if (!caja) {
+      caja = document.createElement('div');
+      caja.id = 'enlace-pdf'; caja.className = 'no-print';
+      caja.style.cssText = 'margin:8px auto 0;max-width:750px;text-align:center';
+      document.getElementById('btn-pdf').insertAdjacentElement('afterend', caja);
+    }
+    if (caja.dataset.url) URL.revokeObjectURL(caja.dataset.url);
+    const url = URL.createObjectURL(blob);
+    caja.dataset.url = url;
+    caja.innerHTML = `<a href="${url}" download="${nombre}" target="_blank"
+        style="display:inline-block;background:#15803d;color:#fff;font-weight:800;font-size:14px;padding:11px 20px;border-radius:10px;text-decoration:none">⬇️ Abrir / descargar el PDF (${Math.round(blob.size / 1024)} KB)</a>
+      <div style="font-size:11px;color:#6b7280;margin-top:4px">Si el navegador no lo descargó solo, toca este botón.</div>`;
+  }
+
+  // Las librerías se cargan desde el inicio para que el clic en "Descargar PDF" sea inmediato
+  setTimeout(() => {
+    cargarLib('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'html2canvas').catch(() => {});
+    cargarLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'jspdf').catch(() => {});
+  }, 2500);
+
   // PDF a partir de la imagen del recibo: no depende de la impresión del celular
   // (en iPhone "imprimir → guardar como PDF" salía en blanco). Respaldo: window.print().
   async function descargarPDF() {
@@ -649,7 +671,10 @@
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: `${base} SOLART` });   // celular: guardar / WhatsApp / correo
       } else {
-        pdf.save(file.name);
+        try { pdf.save(file.name); } catch (e2) { console.warn('[pdf save]', e2); }
+        // Chrome bloquea descargas que tardan más de unos segundos tras el clic:
+        // se deja un enlace que el usuario toca directamente y siempre descarga.
+        mostrarEnlacePDF(blob, file.name);
       }
     } catch (e) {
       if (String(e).indexOf('AbortError') === -1) {
