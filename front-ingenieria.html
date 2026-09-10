@@ -498,8 +498,8 @@ async function abrirApp() {
   // Mostrar nav móvil para todos (excepto vendedor que solo ve entregadas)
   const mnav = document.getElementById('mobile-nav');
   if (mnav) mnav.style.display = u.rol === 'vendedor' ? 'none' : '';
-  // La pestaña de visitas técnicas la ven Carlos (40) y Gerardo (86)
-  const veVisitas = [40, 86].includes(u.id);
+  // La pestaña de visitas técnicas la ven Carlos (40), Gerardo (86) y Javier (36)
+  const veVisitas = [40, 86, 36].includes(u.id);
   const sbVis = document.getElementById('sb-visitas'); if (sbVis) sbVis.style.display = veVisitas ? '' : 'none';
   const mnVis = document.getElementById('mnav-vis'); if (mnVis) mnVis.style.display = veVisitas ? '' : 'none';
   // Daniel (director de ingeniería): su tablero completo
@@ -2288,7 +2288,7 @@ function cardEjecutor(t, parentMap = {}, esAdhoc = false) {
       ${esAdhoc
         ? `<button class="btn-azul" id="btn-comp-${id}" onclick="iniciarCompletar(${id})" style="flex:2;padding:8px;font-size:13px">📤 Enviar a revisión</button>`
         : String(usuarioActual?.id) === '34'
-          ? `<button class="btn-azul" id="btn-comp-${id}" onclick="iniciarCompletar(${id})" style="flex:2;padding:8px;font-size:13px">📤 Enviar a revisión con Daniel</button>`
+          ? `<button class="btn-azul" id="btn-comp-${id}" onclick="iniciarCompletar(${id})" style="flex:2;padding:8px;font-size:13px">📦 Entregar al vendedor</button>`
           : `<button class="btn-azul" id="btn-comp-${id}" onclick="iniciarCompletar(${id})" style="flex:2;padding:8px;font-size:13px">✅ Completar tarea</button>`}
     </div>
     <div class="upload-prog" id="resumen-msg-${id}"></div>
@@ -2301,7 +2301,7 @@ function cardEjecutor(t, parentMap = {}, esAdhoc = false) {
              <button class="btn-no" onclick="cancelarCompletar(${id})">Cancelar</button>
            </div>`
         : String(usuarioActual?.id) === '34'
-          ? `<div class="confirm-txt">¿Confirmas que la propuesta está lista para que Daniel la revise?</div>
+          ? `<div class="confirm-txt">¿Confirmas que la entregas? Lo que subiste es lo que va a recibir el vendedor: ya no pasa por revisión.</div>
              <div class="confirm-btns">
                <button class="btn-si" id="si-ej-${id}" onclick="ejecutarCompletar(${id})">Sí, enviar</button>
                <button class="btn-no" onclick="cancelarCompletar(${id})">Cancelar</button>
@@ -2383,7 +2383,7 @@ async function subirArchivos(tareaId, input, parentTaskId) {
         </div>`;
       }).join('') || '<div style="font-size:12px;color:#9ca3af">Sin archivos aún.</div>';
     }
-    prog.textContent = `✅ ${subidos.length} archivo(s) adjuntado(s) — se enviarán al dar click en "Enviar a revisión"`;
+    prog.textContent = `✅ ${subidos.length} archivo(s) adjuntado(s) — se entregan al dar click en el botón de abajo`;
   } catch(e) { console.error('[upload]', e); prog.textContent = `Error: ${e.message}`; }
   input.value = '';
   setTimeout(() => prog.classList.remove('visible'), 7000);
@@ -2434,6 +2434,43 @@ async function aprobarPropuestaArturo(subtareaId, parentTaskId, pdfs) {
   } catch(e) { alert('Error al aprobar: ' + e.message); if (btn) { btn.disabled=false; btn.textContent='Aprobar y publicar'; } }
 }
 
+// Publica la propuesta en la tarea del vendedor: adjunta los archivos y deja la marca
+// ===APROBADA=== que la app del vendedor lee para mostrarle los PDFs.
+async function publicarAlVendedor(subtareaId, archivos, comentario) {
+  const quien = USER_NOMBRES[String(usuarioActual?.id)] || 'Ingeniería';
+  const pdfs = (archivos || []).map(a => ({ name: a.name, url: a.downloadUrl || '', fileId: a.fileId }));
+  let parentId = null;
+  try {
+    const tg = await bxTask('tasks.task.get', { taskId: subtareaId, select: ['PARENT_ID'] });
+    parentId = tg.result?.task?.parentId || tg.result?.task?.PARENT_ID;
+  } catch (e) { console.warn('[publicar: parent]', e); }
+  if (!parentId) return;
+  const lista = pdfs.map(p => `📕 ${p.name}${p.url ? `\n🔗 Descargar: ${p.url}` : ''}`).join('\n\n');
+  try {
+    await bx('task.commentitem.add', {
+      TASKID: parentId,
+      FIELDS: { POST_MESSAGE: `📦 PROPUESTA LISTA — entregada por ${quien}\n\n${lista}${comentario ? '\n\n' + comentario : ''}` }
+    });
+    const pr = await bxTask('tasks.task.get', { taskId: parentId, select: ['UF_TASK_WEBDAV_FILES', 'DESCRIPTION'] });
+    const pt = pr.result?.task || {};
+    const existing = (pt.ufTaskWebdavFiles || pt.UF_TASK_WEBDAV_FILES || []).filter(Boolean);
+    const nuevos = pdfs.filter(p => p.fileId).map(p => 'n' + p.fileId);
+    let descr = pt.description || pt.DESCRIPTION || '';
+    descr = descr.replace(rxMarcaG('APROBADA'), '');
+    const hoy = new Date().toISOString().slice(0, 10);
+    descr += `\n\n${marcaAbre('APROBADA')}\n${hoy}\n${pdfs.map(p => `${p.name}||${p.url || ''}`).join('\n')}\n${marcaCierra('APROBADA')}`;
+    await bxTask('tasks.task.update', { taskId: parentId, fields: {
+      DESCRIPTION: descr,
+      ...(nuevos.length ? { UF_TASK_WEBDAV_FILES: [...existing, ...nuevos] } : {})
+    } });
+    for (const p of pdfs) { try { await vincularArchivoADeal(parentId, p.name, p.url); } catch (e) {} }
+    await bxTask('tasks.task.complete', { taskId: subtareaId });
+    await bxTask('tasks.task.complete', { taskId: parentId });
+    const stageFin = sid('Terminado');
+    if (stageFin) await bxTask('tasks.task.update', { taskId: parentId, fields: { STAGE_ID: stageFin } });
+  } catch (e) { console.warn('[publicar al vendedor]', e); }
+}
+
 // Llamado por Daniel al devolver una propuesta
 function mostrarFormDevolucion(subtareaId) {
   document.getElementById(`form-dev-${subtareaId}`)?.classList.toggle('visible');
@@ -2477,13 +2514,13 @@ function iniciarCompletar(id) {
   } else if (String(usuarioActual?.id) === '86' || String(usuarioActual?.id) === '34') {
     if (!comentario) errores.push(String(usuarioActual?.id) === '86'
       ? '✏️ Escribe un comentario describiendo qué información recopilaste — Arturo lo necesita para elaborar la propuesta.'
-      : '✏️ Escribe un comentario con el alcance o aclaraciones de la propuesta para que Daniel pueda revisarla correctamente.');
+      : '✏️ Escribe un comentario con el alcance o aclaraciones de la propuesta — el vendedor lo va a leer tal cual.');
     const archivosEl = document.getElementById(`archivos-ej-${id}`);
     const tieneArchivos = (archivosEl && archivosEl.querySelector('.archivo-item')) ||
                           (window._archivosCache?.[id]?.length > 0);
     if (!tieneArchivos) errores.push(String(usuarioActual?.id) === '86'
       ? '📎 Adjunta los archivos de ingeniería antes de continuar — son el insumo que Arturo usará para generar la propuesta.'
-      : '📎 Adjunta el PDF de la propuesta antes de enviar a revisión — Daniel no puede aprobar sin el archivo.');
+      : '📎 Adjunta el PDF de la propuesta antes de enviar — es lo que va a recibir el vendedor.');
   }
   if (errores.length) {
     if (errEl) { errEl.textContent = errores.join(' '); errEl.style.display='block'; }
@@ -2517,8 +2554,8 @@ async function ejecutarCompletar(id) {
       await bxTask('tasks.task.update', { taskId: id, fields: { STATUS: 3 } });
       exitoCard(`card-ej-${id}`, '⏳ Enviado a revisión', '#fef9c3', '#fde68a');
     } else if (String(usuarioActual?.id) === '34') {
-      // Arturo envía a Daniel
-      const msg = [`📋 PROPUESTA LISTA PARA REVISIÓN`, comentario, linksArchivos, `⏳ En espera de aprobación de Daniel González.`].filter(Boolean).join('\n\n');
+      // Arturo publica directo al vendedor: lo que carga y envía es lo que se entrega
+      const msg = [`📦 PROPUESTA ENTREGADA AL VENDEDOR`, comentario, linksArchivos].filter(Boolean).join('\n\n');
       await bx('task.commentitem.add', { TASKID: id, FIELDS: { POST_MESSAGE: msg } });
       // Limpiar marca de devolución si la tarea fue devuelta previamente
       const camposUpd = { STATUS: 3 };
@@ -2531,7 +2568,8 @@ async function ejecutarCompletar(id) {
         if (rxMarca('DEVOLUCION').test(descActual)) camposUpd.DESCRIPTION = descActual.replace(rxMarcaG('DEVOLUCION'), '').trim();
       } catch {}
       await bxTask('tasks.task.update', { taskId: id, fields: camposUpd });
-      exitoCard(`card-ej-${id}`, '⏳ Enviada a revisión con Daniel', '#fef9c3', '#fde68a');
+      await publicarAlVendedor(id, archivos, comentario);
+      exitoCard(`card-ej-${id}`, '📦 Entregada al vendedor — ya la puede ver', '#f0fdf4', '#bbf7d0');
     } else {
       // Gerardo completa su subtarea de Ingeniería → el flujo avanza a Operaciones (Arturo)
       if (comentario || linksArchivos) {
@@ -3901,8 +3939,10 @@ function cardVisita(t) {
         style="padding:10px 6px;border-radius:10px;border:none;background:#16a34a;color:#fff;font-size:12px;font-weight:700;cursor:pointer">✅ Confirmar<br>fecha</button>
       <button onclick="document.getElementById('repro-vis-${id}').style.display = document.getElementById('repro-vis-${id}').style.display==='none' ? 'block' : 'none'"
         style="padding:10px 6px;border-radius:10px;border:none;background:#f59e0b;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📅 Proponer<br>otra fecha</button>
-      ${esCarlos ? `<button onclick="pasarAGerardo(${id})"
-        style="padding:10px 6px;border-radius:10px;border:none;background:#6b7280;color:#fff;font-size:12px;font-weight:700;cursor:pointer">➡️ Pasar a<br>Gerardo</button>` : ''}
+      ${esCarlos ? `<button onclick="pasarVisita(${id},'86')"
+        style="padding:10px 6px;border-radius:10px;border:none;background:#6b7280;color:#fff;font-size:12px;font-weight:700;cursor:pointer">➡️ Pasar a<br>Gerardo</button>
+      <button onclick="pasarVisita(${id},'36')"
+        style="padding:10px 6px;border-radius:10px;border:none;background:#0369a1;color:#fff;font-size:12px;font-weight:700;cursor:pointer">➡️ Pasar a<br>Javier</button>` : ''}
     </div>
     <div id="repro-vis-${id}" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px">
       <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">Nueva fecha y hora:</div>
@@ -3954,13 +3994,14 @@ async function reprogramarVisita(id) {
   } catch { alert('Error al reprogramar.'); }
 }
 
-async function pasarAGerardo(id) {
-  if (!confirm('¿Pasar esta visita técnica a Gerardo Vite?')) return;
+async function pasarVisita(id, destinoId) {
+  const nombre = USER_NAMES[String(destinoId)] || 'el técnico';
+  if (!confirm(`¿Pasar esta visita técnica a ${nombre}?`)) return;
   try {
-    await bxTask('tasks.task.update', { taskId: id, fields: { RESPONSIBLE_ID: 86 } });
+    await bxTask('tasks.task.update', { taskId: id, fields: { RESPONSIBLE_ID: destinoId } });
     await bx('task.commentitem.add', { TASKID: id, FIELDS: {
-      POST_MESSAGE: `➡️ Carlos Mariscal pasó esta visita técnica a Gerardo Vite.` } });
-    exitoCard(`card-vis-${id}`, '➡️ Visita pasada a Gerardo', '#f3f4f6', '#d1d5db');
+      POST_MESSAGE: `➡️ ${usuarioActual.nombre} pasó esta visita técnica a ${nombre}.\n\nYa la puede ver en su pestaña de Visitas Técnicas para cargar la información.` } });
+    exitoCard(`card-vis-${id}`, `➡️ Visita pasada a ${nombre}`, '#f3f4f6', '#d1d5db');
   } catch { alert('Error al reasignar.'); }
 }
 
