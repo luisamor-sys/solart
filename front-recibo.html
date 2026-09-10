@@ -137,7 +137,7 @@
   </div>
 
   <div class="recibo" id="recibo"></div>
-  <button class="btn-pdf no-print" id="btn-pdf" style="display:none" onclick="window.print()">📄 Descargar PDF (imprimir → guardar como PDF)</button>
+  <button class="btn-pdf no-print" id="btn-pdf" style="display:none" onclick="descargarPDF()">📄 Descargar PDF</button>
   <button class="btn-pdf no-print" id="btn-flyer" style="display:none;background:#d8ae3f;color:#1a1a2e" onclick="alternarVista()">🎨 Ver versión flyer</button>
   <button class="btn-pdf no-print" id="btn-wa" style="display:none;background:#25d366" onclick="enviarWA()">💬 Enviar por WhatsApp</button>
   <button class="btn-pdf no-print" id="btn-editar" style="display:none;background:#f3f4f6;color:#374151" onclick="document.getElementById('form-card').style.display='block';window.scrollTo({top:0,behavior:'smooth'})">✏️ Editar datos</button>
@@ -609,19 +609,56 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function cargarLib(url, nombreGlobal) {
+    if (window[nombreGlobal]) return Promise.resolve();
+    return new Promise((ok, err) => {
+      const sc = document.createElement('script');
+      sc.src = url; sc.onload = ok; sc.onerror = () => err(new Error('No se pudo cargar ' + nombreGlobal));
+      document.head.appendChild(sc);
+    });
+  }
+
+  // PDF a partir de la imagen del recibo: no depende de la impresión del celular
+  // (en iPhone "imprimir → guardar como PDF" salía en blanco). Respaldo: window.print().
+  async function descargarPDF() {
+    const btn = document.getElementById('btn-pdf');
+    const txt = btn.textContent;
+    btn.disabled = true; btn.textContent = '📄 Generando PDF…';
+    try {
+      await cargarLib('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'html2canvas');
+      await cargarLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'jspdf');
+      const el = document.getElementById('recibo');
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: -window.scrollY });
+      if (!canvas.width || !canvas.height) throw new Error('El recibo no se pudo dibujar');
+      // Página del tamaño exacto del recibo (una sola hoja, sin cortes)
+      const ancho = 612, alto = Math.round(canvas.height * ancho / canvas.width);
+      const pdf = new jspdf.jsPDF({ orientation: alto > ancho ? 'portrait' : 'landscape', unit: 'pt', format: [ancho, alto] });
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, ancho, alto);
+      const base = window._vista === 'flyer' ? 'Flyer' : window._vista === 'dolar' ? 'Dolar' : 'Recibo';
+      const nombre = (v('f-nombre') || 'cliente').replace(/[^\w\d]+/g, '_');
+      const blob = pdf.output('blob');
+      const file = new File([blob], `${base}_SOLART_${nombre}.pdf`, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `${base} SOLART` });   // celular: guardar / WhatsApp / correo
+      } else {
+        pdf.save(file.name);
+      }
+    } catch (e) {
+      if (String(e).indexOf('AbortError') === -1) {
+        console.warn('[pdf]', e);
+        window.print();  // respaldo: impresión nativa
+      }
+    } finally {
+      btn.disabled = false; btn.textContent = txt;
+    }
+  }
+
   // Enviar por WhatsApp: convierte el recibo en imagen y abre el menú de compartir
   async function enviarWA() {
     const btn = document.getElementById('btn-wa');
     btn.disabled = true; btn.textContent = '💬 Preparando imagen…';
     try {
-      if (!window.html2canvas) {
-        await new Promise((ok, err) => {
-          const sc = document.createElement('script');
-          sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-          sc.onload = ok; sc.onerror = err;
-          document.head.appendChild(sc);
-        });
-      }
+      await cargarLib('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'html2canvas');
       const canvas = await html2canvas(document.getElementById('recibo'), { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
       const blob = await new Promise(ok => canvas.toBlob(ok, 'image/png'));
       const nombre = (v('f-nombre') || 'recibo').replace(/[^\w\d]+/g, '_');
