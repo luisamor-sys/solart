@@ -740,6 +740,19 @@
   const NOMBRE_EQUIPO = { '36': 'Javier Olmos (ingeniería)', '40': 'Carlos Mariscal (visitas técnicas)', '8': 'Daniel González (BESS)', '390': 'Samantha Miranda (suministro calificado)' };
   // Tipo de proyecto del deal (UF_CRM_1743795019024, selección múltiple) → quién trabaja la propuesta.
   // FOTOVOLTAICO y MANTENIMIENTO siguen el flujo normal (Javier); BESS va con Daniel; Suministro con Samantha.
+  // Empresa y proyecto a partir de la nomenclatura del título
+  // (TIPO_Contacto_Empresa_Vendedor_kWp_Proyecto): fuera tipos, vendedor y kWp; gana la razón social.
+  function empresaYProyecto(neg, nombreVend) {
+    const bruto = String(neg.TITLE || '').split('_').map(p => p.trim()).filter(p => p.length > 1);
+    const esTipo = p => /^(FOTOVOLTAICO|BESS|SUMINISTRO( CALIFICADO)?|MANTENIMIENTO)(,\s*(FOTOVOLTAICO|BESS|SUMINISTRO( CALIFICADO)?|MANTENIMIENTO))*$/i.test(p);
+    const esVend = p => nombreVend && p.toLowerCase() === String(nombreVend).toLowerCase();
+    const esKwp = p => /^\d+([.,]\d+)?\s*kwp?$/i.test(p);
+    const partes = bruto.filter(p => !esTipo(p) && !esVend(p) && !esKwp(p));
+    const razon = partes.find(p => /\b(S\.?A\.?|CV|SAPI|S DE RL|S\.C\.)\b/i.test(p));
+    const proyecto = neg.UF_CRM_1741392978542 || partes[partes.length - 1] || neg.TITLE;
+    const empresa = razon || partes[1] || partes[0] || proyecto;
+    return { empresa, proyecto };
+  }
   const TIPOS_PROYECTO = { '312': { nombre: 'FOTOVOLTAICO', resp: 36 }, '310': { nombre: 'BESS', resp: 8 },
                            '336': { nombre: 'SUMINISTRO CALIFICADO', resp: 390 }, '526': { nombre: 'MANTENIMIENTO', resp: 36 } };
   async function asegurarTareaFlujo(dealId, tipo, datos, inicioMs) {
@@ -1598,11 +1611,9 @@
           '110':'Sí','112':'No','264':'Sí','266':'No','1466':'CFE','1468':'Suministro Calificado','1470':'Mixto','1472':'Por definir',
           '1196':'Propio','1198':'Rentado','1200':'Familiar','1202':'Empresarial','512':'BANREGIO','514':'SERFIMEX','516':'SOLARA','518':'TECSA','520':'TUTO','522':'ENERGIA REAL','1176':'CAPEX' };
         const op = v => Array.isArray(v) ? v.map(x => OPT[x] || x).join(', ') : (OPT[v] || v || '');
-        const partes = String(negActual.TITLE || '').split('_').map(p => p.trim()).filter(Boolean);
-        const empresa = partes.find(p => /\b(S\.?A\.?|CV|SAPI|S DE RL|S\.C\.)\b/i.test(p)) || partes[2] || partes[1] || negActual.TITLE;
-        const proyecto = negActual.UF_CRM_1741392978542 || partes[partes.length - 1] || empresa;
         let nombreVend = 'el vendedor';
         try { nombreVend = JSON.parse(localStorage.getItem('solart_user'))?.nombre || nombreVend; } catch {}
+        const { empresa, proyecto } = empresaYProyecto(negActual, nombreVend);
         const liga = `Negociación: https://crm-solart.bitrix24.mx/crm/deal/details/${negActual.ID}/`;
         const kwp = fields['UF_CRM_1741208352117'] || negActual.UF_CRM_1741208352117;
         const energia = fields['UF_CRM_1753209254287'] || negActual.UF_CRM_1753209254287;
