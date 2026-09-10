@@ -535,6 +535,65 @@
     const m = (txt || '').match(new RegExp('^' + campo + ':\\s*(.+)$', 'mi'));
     return m ? m[1].trim() : '';
   };
+  // Webhook técnico (con permiso de Disk) solo para leer nombres/ligas de archivos
+  const WEBHOOK_DISK = 'https://crm-solart.bitrix24.mx/rest/12/1hh732gngri1wfwt/';
+  const bxD = (m, p) => fetch(WEBHOOK_DISK + m, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }).then(r => r.json());
+  function parseBitacora(descr) {
+    const m = (descr || '').match(rxMarca('BITACORA')); if (!m) return [];
+    return m[1].split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+      const p = l.split('|'); if (p.length < 3) return null;
+      return { fecha: p[0], autor: p[1], texto: p.slice(2).join('|').replace(/⏎/g, '\n') };
+    }).filter(Boolean);
+  }
+  async function anotarBitacora(tareaId, autor, texto) {
+    try {
+      const tr = await fetch(WEBHOOK + 'tasks.task.get.json', { method: 'POST', body: new URLSearchParams({ taskId: tareaId, 'select[]': 'DESCRIPTION' }) }).then(r => r.json());
+      let d = tr.result?.task?.description || '';
+      const lista = parseBitacora(d);
+      const dt = new Date(), z = x => String(x).padStart(2, '0');
+      lista.push({ fecha: `${dt.getFullYear()}-${z(dt.getMonth()+1)}-${z(dt.getDate())} ${z(dt.getHours())}:${z(dt.getMinutes())}`, autor: autor || 'Vendedor', texto: String(texto || '') });
+      d = d.replace(rxMarcaG('BITACORA'), '').trim() + '\n\n===BITACORA===\n' +
+        lista.slice(-40).map(e => `${e.fecha}|${String(e.autor).replace(/\|/g,'¦')}|${String(e.texto).replace(/\r?\n/g,'⏎').replace(/\|/g,'¦')}`).join('\n') + '\n===FIN BITACORA===';
+      await fetch(WEBHOOK + 'tasks.task.update.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId: tareaId, fields: { DESCRIPTION: d } }) });
+    } catch (e) { console.warn('[bitacora]', e); }
+  }
+  // Seguimiento (bitácora de la tarea y sus subtareas) + archivos de ingeniería
+  async function seccionSeguimiento(tareaId, descr) {
+    const NOM = { '36': 'Javier Olmos', '86': 'Gerardo Vite', '34': 'Arturo Chávez', '8': 'Daniel González', '390': 'Samantha Miranda', '40': 'Carlos Mariscal' };
+    let entradas = parseBitacora(descr).map(e => ({ ...e, de: '' }));
+    const archivos = [];
+    try {
+      const subs = (await bxD('tasks.task.list.json', { filter: { PARENT_ID: tareaId }, select: ['ID','TITLE','RESPONSIBLE_ID','DESCRIPTION','UF_TASK_WEBDAV_FILES'] })).result?.tasks || [];
+      for (const st of subs) {
+        const quien = NOM[String(st.responsibleId)] || 'ingeniería';
+        parseBitacora(st.description || '').forEach(e => entradas.push({ ...e, de: quien }));
+        for (const fid of (st.ufTaskWebdavFiles || []).filter(Boolean)) {
+          try {
+            const ao = await bxD('disk.attachedObject.get.json', { id: fid });
+            const fr = await bxD('disk.file.get.json', { id: ao.result?.OBJECT_ID || fid });
+            if (fr.result && !archivos.some(a => a.n === fr.result.NAME)) archivos.push({ n: fr.result.NAME, u: fr.result.DOWNLOAD_URL || fr.result.DETAIL_URL || '', quien });
+          } catch {}
+        }
+      }
+    } catch {}
+    entradas.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    const pdfs = archivos.filter(a => /\.pdf$/i.test(a.n)), otros = archivos.filter(a => !/\.pdf$/i.test(a.n));
+    const fila = a => `<div style="display:flex;align-items:center;gap:8px;margin:5px 0"><span>${/\.pdf$/i.test(a.n) ? '📕' : '📎'}</span>
+        <span style="flex:1;font-size:12px;color:#374151;word-break:break-word">${a.n}${a.quien ? ` <span style="font-size:10px;color:#9ca3af">· de ${a.quien}</span>` : ''}</span>
+        ${a.u ? `<a href="${a.u}" target="_blank" style="background:#16a34a;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;text-decoration:none">⬇️ Abrir</a>` : ''}</div>`;
+    let html = '';
+    if (pdfs.length || otros.length) {
+      html += `<div style="margin-top:10px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px">
+        <div style="font-size:11px;font-weight:800;color:#0369a1;margin-bottom:4px">📎 ARCHIVOS DE INGENIERÍA</div>${pdfs.map(fila).join('')}${otros.map(fila).join('')}</div>`;
+    }
+    html += `<div style="margin-top:10px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px">
+      <div style="font-size:11px;font-weight:800;color:#6b7280;margin-bottom:6px">💬 SEGUIMIENTO</div>
+      ${entradas.length ? entradas.map(e => `<div style="margin-bottom:6px"><div style="font-size:10px;color:#9ca3af">${e.autor}${e.de ? ' · ' + e.de : ''} · ${e.fecha}</div><div style="font-size:12px;color:#374151;white-space:pre-line">${e.texto}</div></div>`).join('')
+        : '<div style="font-size:11.5px;color:#9ca3af">Aún no hay seguimiento registrado desde la app.</div>'}
+      <div style="font-size:10px;color:#9ca3af;margin-top:6px">Aquí aparece lo que se comenta desde la app. Lo escrito directamente en Bitrix no se puede leer desde aquí.</div>
+    </div>`;
+    return html;
+  }
   const TAREA_ETAPA = {
     visita: 'EXECUTING',
     formal: 'UC_OF6DF0',
@@ -1225,11 +1284,12 @@
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskId: tareaId, fields: { TITLE: titulo, DESCRIPTION: descr, STAGE_ID: '258' } })
       });
+      const msjDato = `✅ DATO ENVIADO por ${quien}\n\nLo que faltaba: ${queFalta}\nRespuesta: ${val}\n\nYa se puede continuar con la propuesta.`;
       await fetch(WEBHOOK + 'task.commentitem.add.json', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ TASKID: tareaId, FIELDS: { POST_MESSAGE:
-          `✅ DATO ENVIADO por ${quien}\n\nLo que faltaba: ${queFalta}\nRespuesta: ${val}\n\nYa se puede continuar con la propuesta.` } })
+        body: JSON.stringify({ TASKID: tareaId, FIELDS: { POST_MESSAGE: msjDato } })
       });
+      await anotarBitacora(tareaId, quien, msjDato);
       btn.textContent = '✅ Enviado';
       msg.style.color = '#15803d';
       msg.textContent = '✅ Listo: ingeniería ya tiene el dato y la tarea regresó al flujo.';
@@ -1258,9 +1318,10 @@
       // ¿Ingeniería la regresó porque falta un dato? Eso manda sobre todo lo demás
       const dep = descr.match(rxMarca('DEPENDENCIA'));
       if (dep) { el.innerHTML = cajaDependencia(tareaId, dep[1]); return; }
+      const extra = await seccionSeguimiento(tareaId, descr);
       const m = descr.match(/===APROBADA===\s*([\s\S]*?)\s*===FIN APROBADA===/i);
       if (!m) {
-        el.innerHTML = '<div style="font-size:12px;color:#9ca3af">Sin propuesta adjunta.</div>';
+        el.innerHTML = (extra.includes('ARCHIVOS DE INGENIERÍA') ? '' : '<div style="font-size:12px;color:#9ca3af">Aún no hay propuesta publicada.</div>') + extra;
         return;
       }
       const lineas = m[1].trim().split('\n').filter(Boolean);
@@ -1294,7 +1355,7 @@
               📤 Compartir
             </button>
           </div>` : '<div style="font-size:12px;color:#9ca3af;margin-bottom:10px">Link no disponible.</div>'}`).join('')}
-        </div>`;
+        </div>` + extra;
     } catch {
       el.innerHTML = '<div style="font-size:12px;color:#ef4444">Error al cargar.</div>';
     }

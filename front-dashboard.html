@@ -452,22 +452,13 @@
     try {
       const [rTarea, rCom] = await Promise.all([
         bx('tasks.task.get.json', { taskId: tareaId, select: ['ID','TITLE','STATUS','DEADLINE','RESPONSIBLE_ID','CREATED_BY','DESCRIPTION','UF_TASK_WEBDAV_FILES','GROUP_ID','CREATED_DATE','CHANGED_DATE','CLOSED_DATE','UF_CRM_TASK'] }),
-        bx('tasks.task.comments.getList.json', { TASK_ID: tareaId, order: { ID: 'ASC' }, select: ['ID','AUTHOR_ID','TEXT','ADD_IN_TIME'] })
+        comentariosTarea(tareaId)
       ]);
       const t = rTarea?.result?.task || {};
       const st = String(t.status || t.STATUS || '');
       document.getElementById('modal-tit').textContent = t.title || t.TITLE || 'Tarea';
       // Archivos: UF nativos + links en comentarios
-      const ufIds = (t.ufTaskWebdavFiles || t.UF_TASK_WEBDAV_FILES || []).filter(Boolean);
-      let archivos = [];
-      for (const fid of ufIds) {
-        try {
-          const ao = await bxD('disk.attachedObject.get.json', { id: fid });
-          const oid = ao.result?.OBJECT_ID || fid;
-          const fr = await bxD('disk.file.get.json', { id: oid });
-          if (fr.result) archivos.push({ n: fr.result.NAME, u: fr.result.DOWNLOAD_URL || fr.result.DETAIL_URL || '' });
-        } catch {}
-      }
+      let archivos = await archivosDeTarea(tareaId);
       const comentarios = rCom?.result || [];
       // links de archivos en comentarios (formato del flujo de ingeniería)
       comentarios.forEach(c => {
@@ -476,13 +467,13 @@
         const nom = (msg.match(/([^\s\/]+\.\w{2,5})\b/)||[])[1];
         if (url && nom && !archivos.some(a => a.n === nom)) archivos.push({ n: nom, u: url });
       });
-      const desc = ((t.description || t.DESCRIPTION || '').replace(/\[[^\]]*\]/g,'').replace(/<[^>]*>/g,'')).trim();
+      const desc = ((t.description || t.DESCRIPTION || '').replace(RX_BIT_G, '').replace(/\[[^\]]*\]/g,'').replace(/<[^>]*>/g,'')).trim();
       const emojiArch = n => { const e=(n.split('.').pop()||'').toUpperCase(); return e==='PDF'?'📕':['PPTX','PPT'].includes(e)?'📊':['XLSX','XLS'].includes(e)?'📗':['JPG','JPEG','PNG'].includes(e)?'🖼️':'📎'; };
       const comHtml = comentarios.length ? comentarios.map(c => {
         const fecha = c.ADD_IN_TIME ? new Date(c.ADD_IN_TIME*1000).toLocaleString('es-MX',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
         const txt = (c.TEXT||'').replace(/<[^>]*>/g,'').trim();
         if (!txt) return '';
-        return `<div style="background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px"><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">${USER_NOMBRES[String(c.AUTHOR_ID)]||''} · ${fecha}</div><div style="font-size:12px;color:#374151;white-space:pre-line">${txt}</div></div>`;
+        return `<div style="background:#f9fafb;border-radius:10px;padding:8px 10px;margin-bottom:6px"><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">${c.AUTHOR_NAME || USER_NOMBRES[String(c.AUTHOR_ID)] || ''} · ${fecha}</div><div style="font-size:12px;color:#374151;white-space:pre-line">${txt}</div></div>`;
       }).join('') : '<div style="font-size:12px;color:#9ca3af">Sin comentarios.</div>';
 
       const fCorta = f => f ? new Date(f).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '';
@@ -552,6 +543,61 @@
   // El webhook principal no tiene scope "disk"; para archivos usamos el del panel técnico
   const WEBHOOK_DISK = 'https://crm-solart.bitrix24.mx/rest/12/1hh732gngri1wfwt/';
   const bxD = (m, p) => fetch(WEBHOOK_DISK + m, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }).then(r => r.json());
+
+  // ── Bitácora de la tarea (los comentarios no se pueden leer por API; la app los guarda aquí) ──
+  const RX_BIT = /===BITACORA===\s*([\s\S]*?)\s*===FIN BITACORA===/i;
+  const RX_BIT_G = /\n*===BITACORA===[\s\S]*?===FIN BITACORA===/gi;
+  function parseBitacora(descr) {
+    const m = (descr || '').match(RX_BIT); if (!m) return [];
+    return m[1].split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+      const p = l.split('|'); if (p.length < 3) return null;
+      return { fecha: p[0], autor: p[1], texto: p.slice(2).join('|').replace(/⏎/g, '\n') };
+    }).filter(Boolean);
+  }
+  async function anotarBitacora(tareaId, autor, texto) {
+    try {
+      const tr = await bx('tasks.task.get.json', { taskId: tareaId, select: ['DESCRIPTION'] });
+      let d = tr.result?.task?.description || '';
+      const lista = parseBitacora(d);
+      const dt = new Date(), z = x => String(x).padStart(2, '0');
+      lista.push({ fecha: `${dt.getFullYear()}-${z(dt.getMonth()+1)}-${z(dt.getDate())} ${z(dt.getHours())}:${z(dt.getMinutes())}`, autor: autor || 'Portal', texto: String(texto || '') });
+      d = d.replace(RX_BIT_G, '').trim() + '\n\n===BITACORA===\n' +
+        lista.slice(-40).map(e => `${e.fecha}|${String(e.autor).replace(/\|/g,'¦')}|${String(e.texto).replace(/\r?\n/g,'⏎').replace(/\|/g,'¦')}`).join('\n') +
+        '\n===FIN BITACORA===';
+      await bx('tasks.task.update.json', { taskId: tareaId, fields: { DESCRIPTION: d } });
+    } catch (e) { console.warn('[bitacora]', e); }
+  }
+  async function comentarTarea(tareaId, texto) {
+    await bx('tasks.task.commentadd.json', { TASK_ID: tareaId, fields: { POST_MESSAGE: texto } });
+    await anotarBitacora(tareaId, usuarioActual?.nombre || 'Portal', texto);
+  }
+  // Comentarios de una tarea en el formato que usan las vistas (desde la bitácora)
+  async function comentariosTarea(tareaId) {
+    try {
+      const tr = await bx('tasks.task.get.json', { taskId: tareaId, select: ['DESCRIPTION'] });
+      return { result: parseBitacora(tr.result?.task?.description || '').map((e, i) =>
+        ({ ID: 'b' + i, AUTHOR_ID: null, AUTHOR_NAME: e.autor, TEXT: e.texto, ADD_IN_TIME: Math.round(new Date(e.fecha.replace(' ', 'T')).getTime() / 1000) || null })) };
+    } catch { return { result: [] }; }
+  }
+  // Archivos de la tarea y de sus subtareas (los PDF de ingeniería viven en las subtareas)
+  async function archivosDeTarea(tareaId) {
+    const out = [], entradas = [];
+    try {
+      const t = (await bx('tasks.task.get.json', { taskId: tareaId, select: ['UF_TASK_WEBDAV_FILES'] })).result?.task || {};
+      (t.ufTaskWebdavFiles || t.UF_TASK_WEBDAV_FILES || []).filter(Boolean).forEach(fid => entradas.push({ fid, quien: '' }));
+      const subs = (await bx('tasks.task.list.json', { filter: { PARENT_ID: tareaId }, select: ['ID','RESPONSIBLE_ID','UF_TASK_WEBDAV_FILES'] })).result?.tasks || [];
+      subs.forEach(st => (st.ufTaskWebdavFiles || []).filter(Boolean).forEach(fid => entradas.push({ fid, quien: USER_NOMBRES[String(st.responsibleId)] || 'ingeniería' })));
+    } catch {}
+    for (const { fid, quien } of entradas) {
+      try {
+        const ao = await bxD('disk.attachedObject.get.json', { id: fid });
+        const oid = ao.result?.OBJECT_ID || fid;
+        const fr = await bxD('disk.file.get.json', { id: oid });
+        if (fr.result && !out.some(a => a.n === fr.result.NAME)) out.push({ n: fr.result.NAME, u: fr.result.DOWNLOAD_URL || fr.result.DETAIL_URL || '', quien });
+      } catch {}
+    }
+    return out;
+  }
   const _fileB64 = f => new Promise((ok, err) => {
     const r = new FileReader();
     r.onload = () => ok(String(r.result).split(',')[1]);
@@ -593,7 +639,7 @@
         // Liga en el chat para que todos lo vean sin buscar
         const url = up.result.DOWNLOAD_URL || up.result.DETAIL_URL || '';
         const autor = usuarioActual?.nombre || 'Portal';
-        await bx('tasks.task.commentadd.json', { TASK_ID: tareaId, fields: { POST_MESSAGE: `📎 ${autor} adjuntó: ${f.name}${url ? '\nDescargar: ' + url : ''}` } });
+        await comentarTarea(tareaId, `📎 ${autor} adjuntó: ${f.name}${url ? '\nDescargar: ' + url : ''}`);
       }
       input.value = '';
       prog.textContent = 'Actualizando la tarea…';
@@ -612,7 +658,7 @@
     const inp = document.getElementById('modal-chat-inp');
     const txt = inp?.value?.trim(); if (!txt) return;
     inp.disabled = true;
-    try { await bx('tasks.task.commentadd.json', { TASK_ID: tareaId, fields: { POST_MESSAGE: txt } }); abrirTareaModal(tareaId); }
+    try { await comentarTarea(tareaId, txt); abrirTareaModal(tareaId); }
     catch { inp.disabled = false; alert('No se pudo enviar.'); }
   }
   async function completarDesdeModal(tareaId) {
@@ -729,10 +775,10 @@
       const comTareas = [];
       for (const t of tareas.slice(0, 6)) {
         try {
-          const rc = await bx('tasks.task.comments.getList.json', { TASK_ID: t.id, order: { ID: 'ASC' }, select: ['ID','AUTHOR_ID','TEXT','ADD_IN_TIME'] });
+          const rc = await comentariosTarea(t.id);
           (rc.result || []).forEach(c => {
             const txt = _limpiarHtml(c.TEXT || c.POST_MESSAGE || '');
-            if (txt && !txt.startsWith('Descargar:')) comTareas.push({ f: c.ADD_IN_TIME ? new Date(c.ADD_IN_TIME * 1000) : null, icono: '🗨️', tit: `En tarea: ${(t.title||'').slice(0,60)}`, txt: txt.slice(0, 240), autor: USER_NOMBRES[String(c.AUTHOR_ID)] || '' });
+            if (txt && !txt.startsWith('Descargar:')) comTareas.push({ f: c.ADD_IN_TIME ? new Date(c.ADD_IN_TIME * 1000) : null, icono: '🗨️', tit: `En tarea: ${(t.title||'').slice(0,60)}`, txt: txt.slice(0, 240), autor: c.AUTHOR_NAME || USER_NOMBRES[String(c.AUTHOR_ID)] || '' });
           });
         } catch {}
       }
@@ -1915,28 +1961,16 @@
       // Traer tarea completa (archivos) y comentarios en paralelo
       const [rTarea, rComentarios] = await Promise.all([
         bx('tasks.task.get.json', { taskId: tareaId, select: ['ID','TITLE','UF_TASK_WEBDAV_FILES'] }),
-        bx('tasks.task.comments.getList.json', { TASK_ID: tareaId, order: { ID: 'ASC' }, select: ['ID','AUTHOR_ID','TEXT','ADD_IN_TIME'] })
+        comentariosTarea(tareaId)
       ]);
 
-      const archivosIds = rTarea?.result?.task?.UF_TASK_WEBDAV_FILES || [];
-      let archivosHtml = '';
-
-      if (archivosIds.length) {
-        const rArchivos = await Promise.all(
-          archivosIds.map(fid => bx('disk.file.get.json', { id: fid }))
-        );
-        archivosHtml = rArchivos
-          .filter(r => r.result)
-          .map(r => {
-            const f = r.result;
-            const dlUrl = f.DOWNLOAD_URL || '#';
-            return `<div class="archivo-item">
-              <span style="font-size:18px">📄</span>
-              <span class="archivo-nombre">${f.NAME}</span>
-              <a href="${dlUrl}" class="btn-descargar" download="${f.NAME}">⬇ Descargar</a>
-            </div>`;
-          }).join('');
-      }
+      const archivosLista = await archivosDeTarea(tareaId);
+      const archivosIds = archivosLista;
+      const archivosHtml = archivosLista.map(f => `<div class="archivo-item">
+              <span style="font-size:18px">${(f.n.split('.').pop()||'').toUpperCase()==='PDF' ? '📕' : '📄'}</span>
+              <span class="archivo-nombre">${f.n}${f.quien ? ` <span style="font-size:10px;color:#9ca3af">· de ${f.quien}</span>` : ''}</span>
+              ${f.u ? `<a href="${f.u}" class="btn-descargar" target="_blank">⬇ Descargar</a>` : ''}
+            </div>`).join('');
 
       const comentarios = rComentarios?.result || [];
       const comentariosHtml = comentarios.length
@@ -1970,9 +2004,9 @@
     inp.value = '';
     inp.disabled = true;
     try {
-      await bx('tasks.task.commentadd.json', { TASK_ID: tareaId, fields: { POST_MESSAGE: texto } });
+      await comentarTarea(tareaId, texto);
       // Recargar comentarios
-      const rC = await bx('tasks.task.comments.getList.json', { TASK_ID: tareaId, order: { ID: 'ASC' }, select: ['ID','AUTHOR_ID','TEXT','ADD_IN_TIME'] });
+      const rC = await comentariosTarea(tareaId);
       const comentarios = rC?.result || [];
       const html = comentarios.map(c => {
         const fecha = c.ADD_IN_TIME ? new Date(c.ADD_IN_TIME * 1000).toLocaleString('es-MX', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';

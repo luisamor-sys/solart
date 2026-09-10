@@ -409,13 +409,17 @@ async function _conReintentoVIEJO(fn, intentos = 3) {
 }
 
 async function bx(endpoint, params = {}) {
-  return _conReintento(async () => {
+  const res = await _conReintento(async () => {
     const r = await fetch(WEBHOOK + endpoint, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)
     });
     return r.json();
   });
+  if (endpoint === 'task.commentitem.add' && params?.TASKID && params?.FIELDS?.POST_MESSAGE) {
+    await anotarBitacora(params.TASKID, nombreYo(), params.FIELDS.POST_MESSAGE);
+  }
+  return res;
 }
 
 // Para métodos de tasks que necesitan form-encoded con bracket notation
@@ -862,7 +866,7 @@ async function cargarResumenDrawer(id) {
   const cont = document.getElementById(`dr-resumen-ap-${id}`);
   if (!cont) return;
   try {
-    const r = await bx('task.commentitem.getlist', { TASKID: id, ORDER: { ID: 'DESC' }, FILTER: {} });
+    const r = await leerComentarios(id, 'DESC');
     const comments = Array.isArray(r.result) ? r.result : [];
     console.log('[resumen drawer] comentarios:', comments.length, comments.map(c=>c.POST_MESSAGE?.substring(0,60)));
     const msg = extraerResumenDeComentarios(comments);
@@ -1121,6 +1125,49 @@ function rxMarcaG(tag) {
   return new RegExp(`\\n*===${tag}===[\\s\\S]*?===FIN ${tag}===`, 'gi');
 }
 function limpiarUrlBB(u) { return (u||'').replace(/\[\/?url\]/gi,'').trim(); }
+
+// ── Bitácora: los comentarios de las tareas NO se pueden leer por API, así que todo lo que
+//    la app comenta queda también en la descripción (===BITACORA===), que sí es legible.
+const BITACORA_MAX = 40;
+function parseBitacora(descr) {
+  const m = (descr || '').match(rxMarca('BITACORA'));
+  if (!m) return [];
+  return m[1].split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const p = l.split('|'); if (p.length < 3) return null;
+    return { fecha: p[0], autor: p[1], texto: p.slice(2).join('|').replace(/⏎/g, '\n') };
+  }).filter(Boolean);
+}
+function ahoraBitacora() {
+  const d = new Date(), z = x => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;
+}
+async function anotarBitacora(taskId, autor, texto) {
+  try {
+    const tr = await bxTask('tasks.task.get', { taskId, select: ['DESCRIPTION'] });
+    let d = tr.result?.task?.description || '';
+    const lista = parseBitacora(d);
+    lista.push({ fecha: ahoraBitacora(), autor: autor || 'Equipo', texto: String(texto || '') });
+    const ult = lista.slice(-BITACORA_MAX);
+    d = d.replace(rxMarcaG('BITACORA'), '').trim();
+    d += `\n\n${marcaAbre('BITACORA')}\n` +
+      ult.map(e => `${e.fecha}|${String(e.autor).replace(/\|/g,'¦')}|${String(e.texto).replace(/\r?\n/g,'⏎').replace(/\|/g,'¦')}`).join('\n') +
+      `\n${marcaCierra('BITACORA')}`;
+    await bxTask('tasks.task.update', { taskId, fields: { DESCRIPTION: d } });
+  } catch (e) { console.warn('[bitacora]', e); }
+}
+// Comentarios reales (si el API los da) + bitácora, en el mismo formato
+async function leerComentarios(taskId, orden) {
+  let lista = [];
+  try { const r = await leerComentarios(taskId, 'ASC'); if (Array.isArray(r.result)) lista = r.result.slice(); } catch {}
+  try {
+    const tr = await bxTask('tasks.task.get', { taskId, select: ['DESCRIPTION'] });
+    parseBitacora(tr.result?.task?.description || '').forEach((e, i) =>
+      lista.push({ ID: 'b' + i, AUTHOR_ID: null, AUTHOR_NAME: e.autor, POST_MESSAGE: e.texto, POST_DATE: e.fecha }));
+  } catch {}
+  if (orden === 'DESC') lista.reverse();
+  return { result: lista };
+}
+function nombreYo() { return USER_NAMES[String(usuarioActual?.id)] || usuarioActual?.nombre || 'Equipo'; }
 
 // ── HISTORIAL COMERCIAL (modal para directores) ─────────────────────────
 const _limpiarHtmlIng = h => String(h || '')
@@ -2211,7 +2258,7 @@ async function cargarRefIngenieria(subtareaArthurId, parentTaskId) {
 function cardEjecutor(t, parentMap = {}, esAdhoc = false) {
   const id = t.id || t.ID;
   const titulo = t.title || t.TITLE;
-  const desc = ((t.description||t.DESCRIPTION||'').replace(rxMarcaG('DEVOLUCION'),'').replace(/<[^>]*>/g,'')).trim();
+  const desc = ((t.description||t.DESCRIPTION||'').replace(rxMarcaG('DEVOLUCION'),'').replace(rxMarcaG('BITACORA'),'').replace(/<[^>]*>/g,'')).trim();
   const deadline = t.deadline || t.DEADLINE;
   const createdDate = t.createdDate || t.CREATED_DATE;
   const createdBy = t.createdBy || t.CREATED_BY;
@@ -2333,7 +2380,7 @@ async function cargarResumenAp(tareaId) {
   const cont = document.getElementById(`resumen-ap-${tareaId}`);
   if (!cont) return;
   try {
-    const r = await bx('task.commentitem.getlist', { TASKID: tareaId, ORDER: { ID: 'DESC' }, FILTER: {} });
+    const r = await leerComentarios(tareaId, 'DESC');
     const comments = Array.isArray(r.result) ? r.result : [];
     const msg = extraerResumenDeComentarios(comments);
     if (!msg) { cont.textContent = 'Sin resumen del ejecutor aún.'; cont.style.color='#9ca3af'; return; }
@@ -2438,7 +2485,7 @@ async function aprobarPropuestaArturo(subtareaId, parentTaskId, pdfs) {
 // ===APROBADA=== que la app del vendedor lee para mostrarle los PDFs.
 async function publicarAlVendedor(subtareaId, archivos, comentario) {
   const quien = USER_NOMBRES[String(usuarioActual?.id)] || 'Ingeniería';
-  const pdfs = (archivos || []).map(a => ({ name: a.name, url: a.downloadUrl || '', fileId: a.fileId }));
+  const pdfs = (archivos || []).map(a => ({ name: a.name, url: a.downloadUrl || '', fileId: a.fileId || a.id || null }));
   let parentId = null;
   try {
     const tg = await bxTask('tasks.task.get', { taskId: subtareaId, select: ['PARENT_ID'] });
@@ -4146,7 +4193,7 @@ async function cargarArchivosRevision(tareaId, prefijo = 'archivos-rev') {
     // Buscar en comentarios archivos subidos vía disk.folder.uploadfile (siempre, para complementar UF)
     {
       try {
-        const cr = await bx('task.commentitem.getlist', { TASKID: tareaId, ORDER: { ID: 'ASC' }, FILTER: {} });
+        const cr = await leerComentarios(tareaId, 'ASC');
         const comments = cr.result || [];
         for (const c of comments) {
           const msg = c.POST_MESSAGE || c.postMessage || '';
@@ -4256,7 +4303,7 @@ async function cargarChatDrawer(tareaId) {
   const el = document.getElementById(`dr-chat-${tareaId}`);
   if (!el) return;
   try {
-    const r = await bx('task.commentitem.getlist', { TASKID: tareaId, ORDER: { ID: 'ASC' }, FILTER: {} });
+    const r = await leerComentarios(tareaId, 'ASC');
     const comments = r.result || [];
     if (!comments.length) {
       el.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:8px 0">Sin comentarios aún.</div>';
@@ -4264,7 +4311,7 @@ async function cargarChatDrawer(tareaId) {
     }
 
     const rows = await Promise.all(comments.map(async c => {
-      const autor = userName(c.AUTHOR_ID || c.authorId);
+      const autor = c.AUTHOR_NAME || userName(c.AUTHOR_ID || c.authorId);
       const inicial = autor.charAt(0).toUpperCase();
       const fecha = fmtFecha(c.POST_DATE || c.postDate || '');
       // Limpiar BBCode del mensaje
@@ -4363,21 +4410,30 @@ async function cargarArchivosTask(tareaId, prefijo) {
   try {
     const r = await bxTask('tasks.task.get', { taskId: tareaId, select: ['UF_TASK_WEBDAV_FILES'] });
     const task = r.result?.task || {};
-    const ufIds = (task.ufTaskWebdavFiles || task.UF_TASK_WEBDAV_FILES || []).filter(Boolean);
-    if (!ufIds.length) { el.innerHTML = '<div style="font-size:12px;color:#9ca3af">Sin archivos aún.</div>'; return; }
-    const rows = await Promise.all(ufIds.map(async fid => {
+    const propios = (task.ufTaskWebdavFiles || task.UF_TASK_WEBDAV_FILES || []).filter(Boolean);
+    const entradas = propios.map(fid => ({ fid, tid: tareaId, quien: '' }));
+    // Los entregables viven en las subtareas (Arturo / Gerardo): se muestran también
+    try {
+      const rs = await bxTask('tasks.task.list', { filter: { PARENT_ID: tareaId }, select: ['ID','RESPONSIBLE_ID','UF_TASK_WEBDAV_FILES'] });
+      (rs.result?.tasks || []).forEach(st => {
+        const quien = USER_NAMES[String(st.responsibleId || st.RESPONSIBLE_ID)] || 'subtarea';
+        (st.ufTaskWebdavFiles || st.UF_TASK_WEBDAV_FILES || []).filter(Boolean).forEach(fid => entradas.push({ fid, tid: st.id || st.ID, quien }));
+      });
+    } catch {}
+    if (!entradas.length) { el.innerHTML = '<div style="font-size:12px;color:#9ca3af">Sin archivos aún.</div>'; return; }
+    const rows = await Promise.all(entradas.map(async ({ fid, tid, quien }) => {
       try {
         const ao = await bx('disk.attachedObject.get', { id: fid });
         if (ao.result?.OBJECT_ID) {
           const entityId = ao.result.ENTITY_ID || ao.result.entityId;
-          if (String(entityId) !== String(tareaId)) return null;
+          if (String(entityId) !== String(tid)) return null;
           const fr = await bx('disk.file.get', { id: ao.result.OBJECT_ID });
           const f = fr.result; if (!f) return null;
           const nombre = f.NAME || `Archivo #${ao.result.OBJECT_ID}`;
           const url = f.DOWNLOAD_URL || f.DETAIL_URL || '';
           const ext = (nombre.split('.').pop() || '').toUpperCase();
           const icono = ext==='PDF'?'📕':['PPTX','PPT'].includes(ext)?'📊':['XLSX','XLS'].includes(ext)?'📗':['DOCX','DOC'].includes(ext)?'📘':'📄';
-          return `<div class="archivo-item"><span style="font-size:18px">${icono}</span><span class="archivo-nombre" ${url?`onclick="window.open('${url}','_blank')"`:``}>${nombre}</span>${url?`<span style="font-size:11px;color:#0369a1;flex-shrink:0">↓</span>`:''}</div>`;
+          return `<div class="archivo-item"><span style="font-size:18px">${icono}</span><span class="archivo-nombre" ${url?`onclick="window.open('${url}','_blank')"`:``}>${nombre}${quien ? ` <span style="font-size:10px;color:#9ca3af">· de ${quien}</span>` : ''}</span>${url?`<span style="font-size:11px;color:#0369a1;flex-shrink:0">↓</span>`:''}</div>`;
         }
         const fr = await bx('disk.file.get', { id: fid });
         if (fr.result) {
