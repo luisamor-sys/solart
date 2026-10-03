@@ -268,12 +268,12 @@
     if (bv) { bv.value = ''; filtrarVend(''); }
     pinta(1);
   };
-  const ESPECIALES = [ ['prio','🎯 Prioridad (150+ kW y 50%+)'], ['prio_cp','　🟢 con precio'], ['prio_sp','　🟡 sin precio'], ['prio_sc','　🔴 sin contacto'], ['dudoso','⚠️ Dato dudoso'],
+  const ESPECIALES = [ ['prio','🎯 Prioridad (150+ kW y 50%+)'], ['prio_cp','　🟢 con precio'], ['prio_sp','　🟡 sin precio'], ['prio_se','　🔵 sin % de energía'], ['prio_sc','　🔴 sin contacto'], ['dudoso','⚠️ Dato dudoso'],
     ['conprop','📁 Con propuesta en OneDrive'], ['sincrm','🆕 Propuesta sin registro en CRM'], ['pendiente','⏳ Carpeta sin descargar'],
     ['conmdy','🟣 Tiene ficha en Monday'], ['nocuadra','⚖️ No cuadra con Monday'], ['enbx','🔁 Repetidos con Bitrix'] ];
   const tieneProp = r => !!(r.od && (r.od.nPropuestas > 0 || r.od.excel || r.od.carpeta));
   const cumpleEsp = (r, e) => e === 'prio' ? esPrio(r)
-    : e === 'prio_cp' ? clasePrio(r) === 'conprecio' : e === 'prio_sp' ? clasePrio(r) === 'sinprecio' : e === 'prio_sc' ? clasePrio(r) === 'sincontacto'
+    : e === 'prio_cp' ? clasePrio(r) === 'conprecio' : e === 'prio_sp' ? clasePrio(r) === 'sinprecio' : e === 'prio_se' ? clasePrio(r) === 'sinenergia' : e === 'prio_sc' ? clasePrio(r) === 'sincontacto'
     : e === 'dudoso' ? sospechoso(r)
     : e === 'conprop' ? tieneProp(r) : e === 'sincrm' ? r.origen === 'onedrive'
     : e === 'pendiente' ? !!(r.od && r.od.pendienteDescarga)
@@ -442,8 +442,10 @@
   const tienePrecio = r => usdDe(r) >= PRECIO_MIN_USD;
   const precioRelleno = r => usdDe(r) > 0 && usdDe(r) < PRECIO_MIN_USD;
   const tieneContacto = r => !!(String(r.tel || '').trim() || String(r.email || '').trim());
-  const clasePrio = r => !esPrio(r) ? '' : !tieneContacto(r) ? 'sincontacto' : tienePrecio(r) ? 'conprecio' : 'sinprecio';
-  const ORDEN_PRIO = { conprecio: 3, sinprecio: 2, sincontacto: 1, '': 0 };
+  const tieneEnergia = r => (parseFloat(r.energia) || 0) > 0;
+  // Una sola clase por proyecto, según el primer dato que le falte: contacto → % de energía → precio
+  const clasePrio = r => !esPrio(r) ? '' : !tieneContacto(r) ? 'sincontacto' : !tieneEnergia(r) ? 'sinenergia' : tienePrecio(r) ? 'conprecio' : 'sinprecio';
+  const ORDEN_PRIO = { conprecio: 4, sinprecio: 3, sinenergia: 2, sincontacto: 1, '': 0 };
   function filtrados() {
     let arr = baseQ().filter(r => pasaF(r, null));
     if (ordCol) {
@@ -472,7 +474,7 @@
       const nProp = r.od ? (r.od.nPropuestas || 0) : 0;
       const cc = r.completitud >= 7 ? 'c-alta' : r.completitud >= 4 ? 'c-media' : 'c-baja';
       return `<tr onclick="detalle('${r.id}')">
-        <td>${tag}${sospechoso(r) ? ' <span class="tag" style="background:#fee2e2;color:#991b1b">⚠️ DATO DUDOSO</span>' : ''}${({ conprecio: ' <span class="tag" style="background:#dcfce7;color:#15803d" title="Prioridad con precio y contacto: lista para trabajarse">🎯 PRIORIDAD · CON PRECIO</span>', sinprecio: ' <span class="tag" style="background:#fef3c7;color:#92400e" title="Prioridad por tamaño, pero falta cotizar">🎯 PRIORIDAD · SIN PRECIO</span>', sincontacto: ' <span class="tag" style="background:#fee2e2;color:#991b1b" title="Prioridad por tamaño, pero no hay teléfono ni correo">🎯 PRIORIDAD · SIN CONTACTO</span>' })[clasePrio(r)] || ''}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${nProp ? ` <span class="tag t-od" title="propuestas en OneDrive">📁 ${nProp}</span>` : ''}${r.od && r.od.pendienteDescarga ? ' <span class="tag" style="background:#fef9c3;color:#854d0e" title="la carpeta está en la nube pero los archivos no se han descargado">⏳ sin descargar</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
+        <td>${tag}${sospechoso(r) ? ' <span class="tag" style="background:#fee2e2;color:#991b1b">⚠️ DATO DUDOSO</span>' : ''}${({ conprecio: ' <span class="tag" style="background:#dcfce7;color:#15803d" title="Prioridad con precio y contacto: lista para trabajarse">🎯 PRIORIDAD · CON PRECIO</span>', sinprecio: ' <span class="tag" style="background:#fef3c7;color:#92400e" title="Prioridad por tamaño, pero falta cotizar">🎯 PRIORIDAD · SIN PRECIO</span>', sinenergia: ' <span class="tag" style="background:#e0e7ff;color:#3730a3" title="Entra por tamaño, pero no sabemos qué % de su energía cubrimos">🎯 PRIORIDAD · SIN % DE ENERGÍA</span>', sincontacto: ' <span class="tag" style="background:#fee2e2;color:#991b1b" title="Prioridad por tamaño, pero no hay teléfono ni correo">🎯 PRIORIDAD · SIN CONTACTO</span>' })[clasePrio(r)] || ''}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${nProp ? ` <span class="tag t-od" title="propuestas en OneDrive">📁 ${nProp}</span>` : ''}${r.od && r.od.pendienteDescarga ? ' <span class="tag" style="background:#fef9c3;color:#854d0e" title="la carpeta está en la nube pero los archivos no se han descargado">⏳ sin descargar</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
         <td style="font-weight:700;max-width:200px">${r.empresa || '—'}</td>
         <td style="max-width:180px">${r.proyecto || '—'}</td>
         <td>${r.contacto || '—'}</td>
