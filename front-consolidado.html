@@ -436,7 +436,11 @@
   };
   // Las prioridades se separan en tres: con precio (listas para cerrar), sin precio (falta cotizar)
   // y sin contacto (no hay teléfono ni correo: primero hay que conseguir a quién llamar).
-  const tienePrecio = r => (parseFloat(r.precioUSD) || 0) > 0 || (parseFloat(r.precio) || 0) > 0;
+  // Precio en USD del registro; un valor de relleno (ej. "$1 MXN") no cuenta como precio
+  const PRECIO_MIN_USD = 1000;
+  const usdDe = r => (parseFloat(r.precioUSD) || 0) || ((parseFloat(r.precio) || 0) / (r.moneda === 'USD' ? 1 : 17.22));
+  const tienePrecio = r => usdDe(r) >= PRECIO_MIN_USD;
+  const precioRelleno = r => usdDe(r) > 0 && usdDe(r) < PRECIO_MIN_USD;
   const tieneContacto = r => !!(String(r.tel || '').trim() || String(r.email || '').trim());
   const clasePrio = r => !esPrio(r) ? '' : !tieneContacto(r) ? 'sincontacto' : tienePrecio(r) ? 'conprecio' : 'sinprecio';
   const ORDEN_PRIO = { conprecio: 3, sinprecio: 2, sincontacto: 1, '': 0 };
@@ -473,7 +477,9 @@
         <td style="max-width:180px">${r.proyecto || '—'}</td>
         <td>${r.contacto || '—'}</td>
         <td>${r.kwp ? r.kwp.toLocaleString() : '—'}</td>
-        <td>${r.precio ? '$' + Math.round(r.precio).toLocaleString() + ' ' + (r.moneda||'') : '—'}</td>
+        <td>${precioRelleno(r) ? `<span style="color:#b45309" title="Precio de relleno: no es una cotización real">$${Math.round(r.precio || r.precioUSD).toLocaleString()} ${r.moneda||''} ⚠️</span>`
+          : r.precio ? '$' + Math.round(r.precio).toLocaleString() + ' ' + (r.moneda||'')
+          : r.precioUSD ? '$' + Math.round(r.precioUSD).toLocaleString() + ' USD' : '—'}</td>
         <td style="font-weight:700;color:#006099">${fUSD(r.precioUSD)}</td>
         <td>${r.retorno ? r.retorno + ' años' : '—'}</td>
         <td>${r.energia ? r.energia + '%' : '—'}</td>
@@ -570,7 +576,7 @@
       ${fila('Contacto', r.contacto ? r.contacto + (r.tel ? ' · 📱 ' + r.tel : '') + (r.email ? ' · ✉️ ' + r.email : '') : null)}
       ${fila('Situación', r.descripcion)}
       ${fila('Tamaño (kW)', r.kwp ? r.kwp.toLocaleString() + ' kW' : null)}
-      ${fila('Precio', r.precio ? '$' + Math.round(r.precio).toLocaleString() + ' ' + r.moneda : null)}
+      ${fila('Precio', precioRelleno(r) ? '$' + Math.round(r.precio || r.precioUSD).toLocaleString() + ' ' + (r.moneda||'') + ' ⚠️ precio de relleno, falta cotizar' : r.precio ? '$' + Math.round(r.precio).toLocaleString() + ' ' + r.moneda : r.precioUSD ? '$' + Math.round(r.precioUSD).toLocaleString() + ' USD' : null)}
       ${fila('Precio USD', r.precioUSD ? fUSD(r.precioUSD) : null)}
       ${fila('Retorno', r.retorno ? r.retorno + ' años' : null)}
       ${fila('% Energía cubierta', r.energia ? r.energia + '%' : null)}
