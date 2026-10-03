@@ -25,6 +25,7 @@
   tr:hover td { background:#f8fafc; cursor:pointer; }
   .tag { font-size:9.5px; font-weight:800; border-radius:20px; padding:2px 8px; white-space:nowrap; }
   .t-bx { background:#eef6fb; color:#006099; } .t-pd { background:#fef3c7; color:#92400e; } .t-md { background:#f3e8ff; color:#7c3aed; }
+  .t-od { background:#e0f2fe; color:#075985; }
   .comp { font-weight:800; }
   .c-alta { color:#15803d; } .c-media { color:#d97706; } .c-baja { color:#dc2626; }
   .tabla-wrap { overflow-x:auto; border-radius:14px; }
@@ -175,8 +176,54 @@
   const fUSD = n => n ? '$' + Math.round(n).toLocaleString('es-MX') : '—';
   const asignados = new Set(JSON.parse(localStorage.getItem('rifa_asignados') || '[]'));
 
-  fetch('consolidado.json?v=' + Date.now()).then(r => r.json()).then(d => {
+  // Engancha a cada registro del CRM el detalle extraído de OneDrive (propuestas
+  // en PowerPoint y hojas de cálculo) usando el id del CRM, que es cruce exacto.
+  // Los clientes que SOLO existen en las propuestas entran como filas nuevas.
+  function enlazarOneDrive(uni) {
+    const porId = new Map();
+    // El consolidado trae ficha de TODOS los clientes, también de los que no
+    // tienen nada en OneDrive: solo interesan los que sí traen material.
+    (uni.clientes || []).forEach(c => {
+      if (c.idCRM && (c.nPropuestas > 0 || c.excel)) porId.set(c.idCRM, c);
+    });
+    let enganchados = 0;
+    DATA.forEach(r => {
+      const c = porId.get(r.id);
+      if (!c) return;
+      r.od = c; enganchados++;
+      // Solo se rellenan huecos: lo capturado en el CRM manda sobre lo deducido
+      if (!r.kwp && c.kwp) r.kwp = c.kwp;
+      if (!r.precioUSD && c.precioUSD) r.precioUSD = c.precioUSD;
+      if (!r.energia && c.pctEnergia) r.energia = String(c.pctEnergia);
+      if (!r.retorno && c.retornoAnios) r.retorno = c.retornoAnios;
+      if (!r.descripcion && c.situacion) r.descripcion = c.situacion;
+    });
+    const CAMPOS_OD = ['kwp','pctEnergia','precioUSD','precioMXN','retornoAnios','ahorroAnual','tarifa','ubicacion','ultimaFecha','rpu'];
+    let huerfanos = 0;
+    (uni.clientes || []).filter(c => !c.idCRM && (c.nPropuestas > 0 || c.excel)).forEach(c => {
+      huerfanos++;
+      DATA.push({
+        id: 'OD-' + huerfanos, origen: 'onedrive', bitrixId: null,
+        empresa: c.cliente, proyecto: c.cliente, contacto: null, tel: null, email: null,
+        descripcion: c.situacion || null,
+        kwp: c.kwp || null, precio: c.precioMXN || null, moneda: 'MXN',
+        precioUSD: c.precioUSD || null, retorno: c.retornoAnios || null,
+        energia: c.pctEnergia != null ? String(c.pctEnergia) : null,
+        ultContacto: c.ultimaFecha || null, estado: 'abierto', dueno: '',
+        pipeline: 'Propuestas OneDrive', etapa: null, enBitrix: false, od: c,
+        completitud: CAMPOS_OD.filter(k => c[k]).length
+      });
+    });
+    return { enganchados, huerfanos };
+  }
+
+  Promise.all([
+    fetch('consolidado.json?v=' + Date.now()).then(r => r.json()),
+    // Si todavía no se ha generado, la página sigue funcionando sin él
+    fetch('consolidado-unico.json?v=' + Date.now()).then(r => r.json()).catch(() => null)
+  ]).then(([d, uni]) => {
     DATA = d.registros;
+    const od = uni ? enlazarOneDrive(uni) : { enganchados: 0, huerfanos: 0 };
     const nBx = DATA.filter(r => r.origen === 'bitrix').length;
     const nDup = DATA.filter(esDuplicado).length;
     const nPd = DATA.filter(r => r.origen === 'pipedrive').length - nDup;
@@ -186,6 +233,8 @@
       `${(DATA.length - nDup).toLocaleString()} clientes distintos · Bitrix ${nBx} · Pipedrive ${nPd} · Monday ${nMdy}` +
       (nDup ? ` · ${nDup} repetidos (se cuentan una vez)` : '') +
       (nComp ? ` · ${nComp} con ficha de Monday para comparar` : '') +
+      (od.enganchados ? ` · 📁 ${od.enganchados} con propuestas de OneDrive` : '') +
+      (od.huerfanos ? ` · 🆕 ${od.huerfanos} con propuesta pero sin registro en el CRM` : '') +
       ` · actualizado ${d.generado.replace('T',' ').substring(0,16)}`;
     document.getElementById('rifa-vend').innerHTML = VENDEDORES.map(v => `<option value="${v.id}">${v.n}</option>`).join('');
     renderLateral();
@@ -217,8 +266,11 @@
     pinta(1);
   };
   const ESPECIALES = [ ['prio','🎯 Prioridad (150+ kW y 50%+)'], ['dudoso','⚠️ Dato dudoso'],
+    ['conprop','📁 Con propuesta en OneDrive'], ['sincrm','🆕 Propuesta sin registro en CRM'],
     ['conmdy','🟣 Tiene ficha en Monday'], ['nocuadra','⚖️ No cuadra con Monday'], ['enbx','🔁 Repetidos con Bitrix'] ];
+  const tieneProp = r => !!(r.od && (r.od.nPropuestas > 0 || r.od.excel));
   const cumpleEsp = (r, e) => e === 'prio' ? esPrio(r) : e === 'dudoso' ? sospechoso(r)
+    : e === 'conprop' ? tieneProp(r) : e === 'sincrm' ? r.origen === 'onedrive'
     : e === 'conmdy' ? !!r.monday : e === 'nocuadra' ? noCuadra(r) : esDuplicado(r);
   // Aplica todos los filtros laterales, con opción de saltarse un grupo (para los conteos por opción)
   function pasaF(r, saltar) {
@@ -283,7 +335,7 @@
     const listaD = Object.entries(duenos).sort((a, b) => b[1] - a[1]);
     document.getElementById('lateral').innerHTML = `
       <details open><summary>Origen</summary>
-        ${cb('origen','bitrix','Bitrix')}${cb('origen','pipedrive','Pipedrive')}${cb('origen','monday','Monday')}
+        ${cb('origen','bitrix','Bitrix')}${cb('origen','pipedrive','Pipedrive')}${cb('origen','monday','Monday')}${cb('origen','onedrive','📁 OneDrive')}
       </details>
       <details open><summary>Estado</summary>
         ${cb('estado','abierto','🟢 Abiertos')}${cb('estado','ganado','🏆 Ganados')}${cb('estado','perdido','❌ Perdidos')}
@@ -293,7 +345,7 @@
       </details>
       <details><summary>Embudo / pipeline</summary>
         <div style="max-height:230px;overflow-y:auto;margin-top:4px">
-          ${['bitrix','pipedrive','monday'].map(o => {
+          ${['bitrix','pipedrive','monday','onedrive'].map(o => {
             const props = [...new Set(DATA.filter(r => r.origen === o).map(r => r.pipeline || 'Sin embudo'))].sort();
             if (!props.length) return '';
             return `<div style="font-size:10px;font-weight:800;color:#9ca3af;text-transform:uppercase;margin:6px 0 2px">${o}</div>` +
@@ -303,7 +355,7 @@
       </details>
       <details><summary>Etapa</summary>
         <div style="max-height:230px;overflow-y:auto;margin-top:4px">
-          ${['bitrix','pipedrive','monday'].map(o => {
+          ${['bitrix','pipedrive','monday','onedrive'].map(o => {
             const ets = [...new Set(DATA.filter(r => r.origen === o).map(r => r.etapa || 'Sin etapa'))].sort();
             if (!ets.length) return '';
             return `<div style="font-size:10px;font-weight:800;color:#9ca3af;text-transform:uppercase;margin:6px 0 2px">${o}</div>` +
@@ -399,10 +451,12 @@
     const arr = filtrados();
     const ini = (pagina-1) * POR_PAG;
     document.getElementById('cuerpo').innerHTML = arr.slice(ini, ini + POR_PAG).map((r, i) => {
-      const tag = r.origen === 'bitrix' ? '<span class="tag t-bx">BITRIX</span>' : r.origen === 'monday' ? '<span class="tag t-md">MONDAY</span>' : '<span class="tag t-pd">PIPEDRIVE</span>';
+      const tag = r.origen === 'bitrix' ? '<span class="tag t-bx">BITRIX</span>' : r.origen === 'monday' ? '<span class="tag t-md">MONDAY</span>'
+        : r.origen === 'onedrive' ? '<span class="tag t-od">ONEDRIVE</span>' : '<span class="tag t-pd">PIPEDRIVE</span>';
+      const nProp = r.od ? (r.od.nPropuestas || 0) : 0;
       const cc = r.completitud >= 7 ? 'c-alta' : r.completitud >= 4 ? 'c-media' : 'c-baja';
       return `<tr onclick="detalle('${r.id}')">
-        <td>${tag}${sospechoso(r) ? ' <span class="tag" style="background:#fee2e2;color:#991b1b">⚠️ DATO DUDOSO</span>' : ''}${esPrio(r) ? ' <span class="tag" style="background:#fef3c7;color:#92400e">🎯 PRIORIDAD</span>' : ''}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
+        <td>${tag}${sospechoso(r) ? ' <span class="tag" style="background:#fee2e2;color:#991b1b">⚠️ DATO DUDOSO</span>' : ''}${esPrio(r) ? ' <span class="tag" style="background:#fef3c7;color:#92400e">🎯 PRIORIDAD</span>' : ''}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${nProp ? ` <span class="tag t-od" title="propuestas en OneDrive">📁 ${nProp}</span>` : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
         <td style="font-weight:700;max-width:200px">${r.empresa || '—'}</td>
         <td style="max-width:180px">${r.proyecto || '—'}</td>
         <td>${r.contacto || '—'}</td>
@@ -444,6 +498,48 @@
       <button onclick="pinta(${Math.min(tot,pagina+1)})">→</button>`;
   }
 
+  // Ficha de lo que se extrajo del archivo de OneDrive: la propuesta más completa,
+  // el histórico de revisiones y lo que aporta la hoja de cálculo de costos.
+  function bloqueOneDrive(r) {
+    const c = r.od;
+    if (!c || (!c.nPropuestas && !c.excel)) return '';
+    const mx = n => n ? '$' + Math.round(n).toLocaleString('es-MX') : '—';
+    const dato = (k, v) => v == null || v === '' ? '' : `<div style="font-size:12px"><span style="color:#6b7280">${k}:</span> <b>${v}</b></div>`;
+    const props = (c.propuestas || []).slice(0, 8).map(p => `
+      <tr><td style="font-size:11px">${p.fecha || '—'}</td>
+          <td style="font-size:11px;max-width:200px">${p.carpeta || p.archivo || '—'}</td>
+          <td class="num" style="font-size:11px">${p.kwp ? Math.round(p.kwp) + ' kW' : '—'}</td>
+          <td class="num" style="font-size:11px">${p.pctEnergia ? p.pctEnergia + '%' : '—'}</td>
+          <td class="num" style="font-size:11px">${p.precioUSD ? fUSD(p.precioUSD) : '—'}</td></tr>`).join('');
+    const e = c.excel;
+    return `
+      <div style="margin-top:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:12px">
+        <div style="font-size:11px;font-weight:800;color:#075985;text-transform:uppercase;margin-bottom:8px">
+          📁 Archivo de OneDrive${c.nPropuestas ? ' · ' + c.nPropuestas + ' propuesta' + (c.nPropuestas > 1 ? 's' : '') : ''}${e ? ' · ' + e.archivos + ' hojas de cálculo' : ''}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px 12px;margin-bottom:8px">
+          ${dato('Tamaño', c.kwp ? Math.round(c.kwp).toLocaleString('es-MX') + ' kWp' : null)}
+          ${dato('% de energía', c.pctEnergia ? c.pctEnergia + '%' : null)}
+          ${dato('Tarifa', c.tarifa)}
+          ${dato('Precio USD', c.precioUSD ? fUSD(c.precioUSD) : null)}
+          ${dato('Precio MXN', c.precioMXN ? mx(c.precioMXN) + (c.tcEstimado ? ' <span style="font-weight:400;color:#9ca3af">(convertido a ' + c.tipoCambio + ')</span>' : '') : null)}
+          ${dato('Ahorro anual', c.ahorroAnual ? mx(c.ahorroAnual) : null)}
+          ${dato('Retorno', c.retornoAnios ? c.retornoAnios + ' años' : null)}
+          ${dato('Ubicación', c.ubicacion)}
+          ${dato('RPU', c.rpu)}
+          ${e ? dato('Costo por W', e.costoPorW ? e.costoPorW + ' USD/W' : null) : ''}
+          ${e ? dato('Tasa / enganche', e.tasaAnual ? Math.round(e.tasaAnual * 100) + '% · ' + Math.round((e.enganche || 0) * 100) + '%' : null) : ''}
+        </div>
+        ${props ? `<table style="box-shadow:none;margin-top:4px">
+          <tr><th style="background:none;color:#075985">Fecha</th><th style="background:none;color:#075985">Propuesta</th>
+              <th style="background:none;color:#075985;text-align:right">kW</th><th style="background:none;color:#075985;text-align:right">%</th>
+              <th style="background:none;color:#075985;text-align:right">USD</th></tr>${props}
+        </table>${c.nPropuestas > 8 ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px">…y ${c.nPropuestas - 8} más</div>` : ''}` : ''}
+        ${e && e.tipos ? `<div style="font-size:11px;color:#6b7280;margin-top:6px">Hojas: ${Object.entries(e.tipos).map(([k, v]) => v + ' ' + k).join(' · ')}</div>` : ''}
+        ${r.origen === 'onedrive' ? '<div style="font-size:11.5px;color:#9a3412;font-weight:700;margin-top:8px">🆕 Este cliente tiene propuesta trabajada pero no existe en el CRM: no hay contacto registrado ni dueño asignado.</div>' : ''}
+      </div>`;
+  }
+
   function detalle(id) {
     const r = DATA.find(x => x.id === id); if (!r) return;
     const fila = (k, v) => v ? `<div class="m-fila"><b>${k}</b><span>${v}</span></div>` : `<div class="m-fila"><b>${k}</b><span style="color:#d1d5db">— por poblar</span></div>`;
@@ -462,6 +558,7 @@
       ${fila('% Energía cubierta', r.energia ? r.energia + '%' : null)}
       ${fila('Último contacto', r.ultContacto)}
       ${fila('Estado', r.estado)}
+      ${bloqueOneDrive(r)}
       ${r.monday ? `
       <div style="margin-top:12px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:12px">
         <div style="font-size:11px;font-weight:800;color:#6b21a8;text-transform:uppercase;margin-bottom:8px">🟣 Ficha de Monday${r.monday.tablero ? ' · ' + r.monday.tablero : ''}</div>
