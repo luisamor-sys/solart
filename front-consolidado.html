@@ -65,6 +65,8 @@
   .sub-prio { margin: 2px 0 8px 9px; padding: 4px 0 4px 12px; border-left: 2px solid #fcd34d; }
   .sub-prio .sub-tit { font-size: 10px; font-weight: 800; color: #b45309; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 2px; }
   .sub-prio .fop { font-size: 11.5px; padding: 3px 0; }
+  #lateral details.mas-f { border-bottom: none; padding: 2px 0 0; }
+  #lateral details.mas-f > summary { font-size: 11px; font-weight: 700; color: #9ca3af; }
 </style>
 </head>
 <body>
@@ -351,14 +353,14 @@
         ${cb('estado','abierto','🟢 Abiertos')}${cb('estado','ganado','🏆 Ganados')}${cb('estado','perdido','❌ Perdidos')}
       </details>
       <details open><summary>Especiales</summary>
-        ${ESPECIALES.map(([v, t]) => {
-          if (v.startsWith('prio_')) return '';
-          if (v !== 'prio') return cb('esp', v, t);
-          return cb('esp', v, t) + `<div class="sub-prio">
-            <div class="sub-tit">De esas prioridades:</div>
-            ${ESPECIALES.filter(([x]) => x.startsWith('prio_')).map(([x, tx]) => cb('esp', x, tx)).join('')}
-          </div>`;
-        }).join('')}
+        ${cb('esp', 'prio', ESPECIALES.find(([x]) => x === 'prio')[1])}
+        <div class="sub-prio">
+          <div class="sub-tit">De esas prioridades:</div>
+          ${ESPECIALES.filter(([x]) => x.startsWith('prio_')).map(([x, tx]) => cb('esp', x, tx)).join('')}
+        </div>
+        <details class="mas-f"><summary>Más filtros (revisión de datos)</summary>
+          ${ESPECIALES.filter(([x]) => x !== 'prio' && !x.startsWith('prio_')).map(([x, tx]) => cb('esp', x, tx)).join('')}
+        </details>
       </details>
       <details><summary>Embudo / pipeline</summary>
         <div style="max-height:230px;overflow-y:auto;margin-top:4px">
