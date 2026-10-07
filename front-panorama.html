@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panorama de propuestas — SOLART</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0b1b2b; color: #f8fafc; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 28px 24px 60px; }
+  .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 26px; }
+  h1 { font-size: 34px; margin: 0; letter-spacing: -.01em; }
+  .sub { font-size: 14px; color: #94a3b8; margin-top: 6px; }
+  .volver { font-size: 13px; color: #cbd5e1; text-decoration: none; border: 1px solid #334155; border-radius: 10px; padding: 9px 14px; }
+  .fila { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 18px; }
+  .caja { background: #112a44; border: 1px solid #1e3a5f; border-radius: 20px; padding: 22px 24px; }
+  .caja .v { font-size: 46px; font-weight: 900; line-height: 1; letter-spacing: -.02em; }
+  .caja .l { font-size: 14px; color: #cbd5e1; margin-top: 8px; font-weight: 600; }
+  .caja .s { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+  .dorado .v { color: #f5c042; } .verde .v { color: #4ade80; } .azul .v { color: #7dd3fc; } .blanco .v { color: #fff; }
+  .panel { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; margin-bottom: 18px; }
+  @media (max-width: 860px) { .panel { grid-template-columns: 1fr; } h1 { font-size: 26px; } .caja .v { font-size: 36px; } }
+  .tit { font-size: 13px; font-weight: 800; color: #f5c042; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+  .donut-wrap { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; }
+  .leyenda { flex: 1; min-width: 220px; }
+  .ley { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #1e3a5f; font-size: 15px; }
+  .ley:last-child { border-bottom: none; }
+  .pt { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+  .ley b { margin-left: auto; font-size: 18px; }
+  .ley small { color: #94a3b8; font-size: 12px; margin-left: 6px; }
+  .barra { display: flex; align-items: center; gap: 12px; margin: 10px 0; font-size: 15px; }
+  .barra .lb { width: 150px; color: #cbd5e1; }
+  .barra .tr { flex: 1; background: #0b1b2b; border-radius: 10px; height: 30px; overflow: hidden; }
+  .barra .fl { height: 100%; border-radius: 10px; background: linear-gradient(90deg, #0ea5e9, #7dd3fc); display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-weight: 900; color: #0b1b2b; min-width: 34px; }
+  .mensaje { background: linear-gradient(120deg, #f5c042, #e0a526); color: #1a1a2e; border-radius: 20px; padding: 24px 28px; font-size: 20px; font-weight: 800; line-height: 1.45; }
+  .mensaje small { display: block; font-size: 13px; font-weight: 600; margin-top: 8px; opacity: .8; }
+  .nota { font-size: 12px; color: #64748b; margin-top: 22px; line-height: 1.6; }
+  .cargando { text-align: center; padding: 60px; color: #94a3b8; }
+  .pie-donut text { fill: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>🥧 Panorama de propuestas</h1>
+      <div class="sub" id="sub">Todo lo que hemos propuesto, en una sola gráfica · datos en vivo</div>
+    </div>
+    <a class="volver" href="front-consolidado.html" target="_top">Ver la base completa →</a>
+  </div>
+  <div id="contenido" class="cargando">Mezclando los ingredientes…</div>
+  <div class="nota" id="nota"></div>
+</div>
+
+<script>
+  const f = v => { const n = parseFloat(String(v ?? '').replace('%', '')); return isNaN(n) ? 0 : n; };
+  const fmt = n => Math.round(n).toLocaleString('es-MX');
+  const fM = n => '$' + (n / 1e6).toFixed(1) + ' M';
+
+  Promise.all([
+    fetch('consolidado.json?v=' + Date.now()).then(r => r.json()),
+    fetch('consolidado-unico.json?v=' + Date.now()).then(r => r.json())
+  ]).then(([base, uni]) => {
+    const porId = new Map(base.registros.map(r => [r.id, r]));
+    const cl = uni.clientes || [];
+    const conMat = cl.filter(c => (c.nPropuestas || 0) > 0 || c.excel);
+    const soloCarpeta = cl.filter(c => c.carpeta && !((c.nPropuestas || 0) > 0 || c.excel));
+    const nProp = conMat.reduce((s, c) => s + (c.nPropuestas || 0), 0);
+
+    // Estado de cada cliente con propuesta, según el CRM
+    const est = { ganado: 0, abierto: 0, perdido: 0, sinCRM: 0 };
+    let usd = 0, kw = 0, kwN = 0;
+    const dist = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+    conMat.forEach(c => {
+      const r = porId.get(c.idCRM);
+      est[r ? r.estado : 'sinCRM']++;
+      dist[Math.min(c.nPropuestas || 0, 4)]++;
+      // Valor: la última propuesta de cada sitio (no se suman versiones del mismo proyecto)
+      const props = (c.propuestas || []).filter(p => p.precioUSD).sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')));
+      const porSitio = new Map();
+      props.forEach(p => { const k = String(p.carpeta || ''); const st = k.includes(' / ') ? k.split(' / ')[0].trim() : ''; if (!porSitio.has(st)) porSitio.set(st, p); });
+      let kws = 0, hayKw = false;
+      porSitio.forEach(p => { usd += p.precioUSD; if (p.kwp) { kws += p.kwp; hayKw = true; } });
+      if (hayKw) { kw += kws; kwN++; }
+    });
+    const vivos = est.abierto + est.sinCRM;
+    const total = conMat.length;
+
+    // Pastel
+    const segs = [
+      { k: 'abierto', t: 'En proceso', n: est.abierto, c: '#7dd3fc', d: 'con negociación abierta en el CRM' },
+      { k: 'sinCRM', t: 'Sin seguimiento', n: est.sinCRM, c: '#f5c042', d: 'tienen propuesta, pero no están en el CRM' },
+      { k: 'ganado', t: 'Ganados', n: est.ganado, c: '#4ade80', d: 'proyectos cerrados' },
+      { k: 'perdido', t: 'Perdidos', n: est.perdido, c: '#475569', d: 'cerrados sin venta' },
+    ];
+    const R = 110, C = 2 * Math.PI * R; let acc = 0;
+    const arcos = segs.map(s => {
+      const len = total ? s.n / total * C : 0;
+      const el = `<circle r="${R}" cx="150" cy="150" fill="none" stroke="${s.c}" stroke-width="44" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-acc}" transform="rotate(-90 150 150)"></circle>`;
+      acc += len; return el;
+    }).join('');
+    const donut = `<svg class="pie-donut" viewBox="0 0 300 300" width="300" height="300" style="flex-shrink:0">
+        ${arcos}
+        <text x="150" y="142" text-anchor="middle" font-size="54" font-weight="900">${total}</text>
+        <text x="150" y="172" text-anchor="middle" font-size="14" fill="#cbd5e1" style="fill:#cbd5e1">clientes con propuesta</text>
+      </svg>`;
+
+    const maxD = Math.max(...Object.values(dist), 1);
+    const barras = [['1 propuesta', dist[1]], ['2 propuestas', dist[2]], ['3 propuestas', dist[3]], ['4 o más', dist[4]], ['Solo hoja de cálculo', dist[0]]]
+      .map(([l, n]) => `<div class="barra"><div class="lb">${l}</div><div class="tr"><div class="fl" style="width:${Math.max(n / maxD * 100, 6)}%">${n}</div></div></div>`).join('');
+
+    document.getElementById('contenido').className = '';
+    document.getElementById('contenido').innerHTML = `
+      <div class="fila">
+        <div class="caja blanco"><div class="v">${fmt(conMat.length + soloCarpeta.length)}</div><div class="l">clientes a los que les hemos propuesto</div><div class="s">${total} con propuesta leída · ${soloCarpeta.length} con carpeta aún sin descargar</div></div>
+        <div class="caja azul"><div class="v">${fmt(nProp)}</div><div class="l">propuestas elaboradas</div><div class="s">${(nProp / total).toFixed(1)} por cliente en promedio</div></div>
+        <div class="caja dorado"><div class="v">${fM(usd)}</div><div class="l">USD en propuestas vigentes</div><div class="s">última propuesta de cada sitio, sin duplicar versiones</div></div>
+        <div class="caja verde"><div class="v">${fmt(kw)}</div><div class="l">kW propuestos</div><div class="s">en los ${kwN} clientes con tamaño legible</div></div>
+      </div>
+      <div class="panel">
+        <div class="caja">
+          <div class="tit">Nuestro mercado: ¿en qué está cada cliente?</div>
+          <div class="donut-wrap">${donut}
+            <div class="leyenda">${segs.map(s => `<div class="ley"><span class="pt" style="background:${s.c}"></span><span>${s.t}<small>${s.d}</small></span><b>${s.n} <small>${total ? Math.round(s.n / total * 100) : 0}%</small></b></div>`).join('')}</div>
+          </div>
+        </div>
+        <div class="caja">
+          <div class="tit">Insistimos: clientes por número de propuestas</div>
+          ${barras}
+          <div class="s" style="margin-top:12px;font-size:12px;color:#94a3b8">${dist[2] + dist[3] + dist[4]} clientes (${Math.round((dist[2] + dist[3] + dist[4]) / total * 100)}%) ya recibieron 2 o más propuestas: hay interés real, falta cerrar.</div>
+        </div>
+      </div>
+      <div class="mensaje">
+        ${vivos} clientes con propuesta siguen vivos: ${est.abierto} en negociación y ${est.sinCRM} a los que hay que retomar.
+        Solo hemos ganado ${est.ganado} de ${total}. El potencial está sobre la mesa.
+        <small>Si cerráramos 1 de cada 10 vivos, serían ${Math.round(vivos / 10)} proyectos más.</small>
+      </div>`;
+    document.getElementById('sub').textContent = `Todo lo que hemos propuesto, en una sola gráfica · ${total} clientes · ${fmt(nProp)} propuestas · actualizado ${String(uni.generado || '').slice(0, 10)}`;
+    document.getElementById('nota').innerHTML = `Cómo se calcula: el universo son los clientes con al menos una propuesta leída en OneDrive. El estado sale del CRM (Bitrix o Pipedrive); "sin seguimiento" son propuestas que no tienen registro ahí. El valor suma la propuesta más reciente de cada sitio de cada cliente, sin contar versiones anteriores del mismo proyecto. Las ${soloCarpeta.length} carpetas sin descargar no entran al pastel hasta que se bajen sus archivos.`;
+  }).catch(e => { document.getElementById('contenido').innerHTML = 'No se pudieron cargar los datos: ' + e.message; });
+</script>
+</body>
+</html>
