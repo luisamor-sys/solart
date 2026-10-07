@@ -114,6 +114,9 @@
         <th style="background:#faf5ff;color:#6b21a8">kW Monday</th>
         <th style="background:#faf5ff;color:#6b21a8">% en. Monday</th>
         <th style="background:#faf5ff;color:#6b21a8">USD Monday</th>
+        <th style="background:#ecfeff;color:#0e7490">kW OneDrive</th>
+        <th style="background:#ecfeff;color:#0e7490">% en. OneDrive</th>
+        <th style="background:#ecfeff;color:#0e7490">USD OneDrive</th>
       </tr>
       <tr class="fila-filtros">
         <td></td>
@@ -130,6 +133,7 @@
         <td></td>
         <td><input class="col-f" type="number" oninput="setColF('completitud',this.value)" placeholder="mín"></td>
         <td colspan="3" style="background:#faf5ff;font-size:10px;color:#6b21a8;font-weight:700;text-align:center">lo que decía Monday</td>
+        <td colspan="3" style="background:#ecfeff;font-size:10px;color:#0e7490;font-weight:700;text-align:center">lo que dice la propuesta en OneDrive</td>
       </tr></thead>
       <tbody id="cuerpo"></tbody>
     </table>
@@ -192,18 +196,36 @@
       if (c.idCRM && (c.nPropuestas > 0 || c.excel || c.carpeta)) porId.set(c.idCRM, c);
     });
     let enganchados = 0, pendientes = 0;
+    const colgar = (r, c) => {
+      r.od = c;
+      // Se recuerda qué huecos se rellenaron con OneDrive, para no "comparar" un dato consigo mismo
+      r.odRelleno = {};
+      if (!r.kwp && c.kwp) { r.kwp = c.kwp; r.odRelleno.kwp = true; }
+      if (!r.precioUSD && c.precioUSD) { r.precioUSD = c.precioUSD; r.odRelleno.precioUSD = true; }
+      if (!r.energia && c.pctEnergia) { r.energia = String(c.pctEnergia); r.odRelleno.energia = true; }
+      if (!r.retorno && c.retornoAnios) { r.retorno = c.retornoAnios; r.odRelleno.retorno = true; }
+      if (!r.descripcion && c.situacion) r.descripcion = c.situacion;
+    };
     DATA.forEach(r => {
       const c = porId.get(r.id);
       if (!c) return;
-      r.od = c; enganchados++;
+      colgar(r, c); enganchados++;
       if (c.pendienteDescarga) pendientes++;
-      // Solo se rellenan huecos: lo capturado en el CRM manda sobre lo deducido
-      if (!r.kwp && c.kwp) r.kwp = c.kwp;
-      if (!r.precioUSD && c.precioUSD) r.precioUSD = c.precioUSD;
-      if (!r.energia && c.pctEnergia) r.energia = String(c.pctEnergia);
-      if (!r.retorno && c.retornoAnios) r.retorno = c.retornoAnios;
-      if (!r.descripcion && c.situacion) r.descripcion = c.situacion;
     });
+    // Si el material quedó en un registro repetido (Pipedrive ya existente en Bitrix), que se vea en la fila de Bitrix
+    const claveEmp = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+      .replace(/\b(s\.?a\.?p\.?i\.?|s\.?a\.?|de\s+c\.?v\.?|s\.?\s*de\s*r\.?l\.?|s\.?c\.?|sapi|cv|srl)\b/g, ' ')
+      .replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    const bitrixPorClave = new Map();
+    DATA.filter(r => r.origen === 'bitrix').forEach(r => {
+      [r.empresa, r.proyecto].forEach(x => { const k = claveEmp(x); if (k.length >= 3 && !bitrixPorClave.has(k)) bitrixPorClave.set(k, r); });
+    });
+    let traspasados = 0;
+    DATA.filter(r => r.od && r.origen !== 'bitrix' && r.enBitrix).forEach(r => {
+      const gemelo = bitrixPorClave.get(claveEmp(r.empresa)) || bitrixPorClave.get(claveEmp(r.proyecto));
+      if (gemelo && !gemelo.od) { colgar(gemelo, r.od); gemelo.odViaRepetido = r.id; traspasados++; }
+    });
+    if (traspasados) console.info('[onedrive] material traspasado a su fila de Bitrix:', traspasados);
     const CAMPOS_OD = ['kwp','pctEnergia','precioUSD','precioMXN','retornoAnios','ahorroAnual','tarifa','ubicacion','ultimaFecha','rpu'];
     let huerfanos = 0;
     (uni.clientes || []).filter(c => !c.idCRM && (c.nPropuestas > 0 || c.excel || c.carpeta)).forEach(c => {
@@ -275,7 +297,7 @@
   };
   const ESPECIALES = [ ['prio','🎯 Prioridad (150+ kW y 50%+)'], ['prio_cp','🟢 Completas (con precio)'], ['prio_sp','🟡 Falta precio'], ['prio_se','🔵 Falta % de energía'], ['prio_sc','🔴 Falta contacto'], ['dudoso','⚠️ Dato dudoso'],
     ['conprop','📁 Con propuesta descargada'], ['sincrm','🆕 Propuesta sin registro en CRM'], ['pendiente','⏳ Carpeta sin descargar'],
-    ['conmdy','🟣 Tiene ficha en Monday'], ['nocuadra','⚖️ No cuadra con Monday'], ['enbx','🔁 Repetidos con Bitrix'] ];
+    ['conmdy','🟣 Tiene ficha en Monday'], ['nocuadra','⚖️ No cuadra con Monday'], ['nocuadraod','⚖️ No cuadra con OneDrive'], ['enbx','🔁 Repetidos con Bitrix'] ];
   // "Con propuesta" = hay material ya descargado (PDF de propuesta u hoja de cálculo).
   // Una carpeta que solo existe en la nube va aparte, en "Carpeta sin descargar".
   const tieneProp = r => !!(r.od && (r.od.nPropuestas > 0 || r.od.excel));
@@ -284,7 +306,7 @@
     : e === 'dudoso' ? sospechoso(r)
     : e === 'conprop' ? tieneProp(r) : e === 'sincrm' ? r.origen === 'onedrive'
     : e === 'pendiente' ? !!(r.od && r.od.pendienteDescarga)
-    : e === 'conmdy' ? !!r.monday : e === 'nocuadra' ? noCuadra(r) : esDuplicado(r);
+    : e === 'conmdy' ? !!r.monday : e === 'nocuadra' ? noCuadra(r) : e === 'nocuadraod' ? noCuadraOD(r) : esDuplicado(r);
   // Aplica todos los filtros laterales, con opción de saltarse un grupo (para los conteos por opción)
   function pasaF(r, saltar) {
     if (saltar !== 'origen' && F.origen.size && !F.origen.has(r.origen)) return false;
@@ -324,6 +346,29 @@
     return cel(m.kwp, r.kwp, x => Math.round(x).toLocaleString('es-MX')) +
            cel(m.energia, r.energia, x => Math.round(x) + '%') +
            cel(m.precioUSD, r.precioUSD, x => '$' + Math.round(x).toLocaleString('es-MX'));
+  }
+
+  // ── Comparativo con OneDrive (lo que dicen las propuestas vs lo capturado en el CRM) ──
+  // Si el dato del CRM se rellenó desde OneDrive, no hay con qué comparar: se muestra como "sin dato en CRM".
+  const baseOD = (r, campo) => (r.odRelleno && r.odRelleno[campo]) ? null : r[campo];
+  const odTieneDatos = r => !!(r.od && (r.od.kwp || r.od.pctEnergia || r.od.precioUSD || r.od.retornoAnios));
+  const noCuadraOD = r => {
+    const c = r.od; if (!c || r.origen === 'onedrive') return false;
+    return difiere(c.kwp, baseOD(r, 'kwp')) || difiere(c.precioUSD, baseOD(r, 'precioUSD')) ||
+           difiere(c.pctEnergia, baseOD(r, 'energia')) || difiere(c.retornoAnios, baseOD(r, 'retorno'));
+  };
+  function celdasOneDrive(r) {
+    const c = r.od;
+    if (!c || r.origen === 'onedrive' || !odTieneDatos(r)) return '<td colspan="3" style="background:#fafafa;color:#d1d5db;font-size:10.5px;text-align:center">' + (c && c.pendienteDescarga ? 'carpeta sin descargar' : 'sin propuesta en OneDrive') + '</td>';
+    const cel = (val, actual, fmt) => {
+      if (val == null || val === '') return '<td style="background:#ecfeff;color:#d1d5db">—</td>';
+      const mal = difiere(val, actual);
+      return '<td class="num" style="background:#ecfeff;font-weight:' + (mal ? '800' : '600') +
+        ';color:' + (mal ? '#dc2626' : '#0e7490') + '">' + fmt(val) + (mal ? ' ⚠️' : '') + '</td>';
+    };
+    return cel(c.kwp, baseOD(r, 'kwp'), x => Math.round(x).toLocaleString('es-MX')) +
+           cel(c.pctEnergia, baseOD(r, 'energia'), x => Math.round(x) + '%') +
+           cel(c.precioUSD, baseOD(r, 'precioUSD'), x => '$' + Math.round(x).toLocaleString('es-MX'));
   }
 
   // Un proyecto de Pipedrive cuya empresa ya existe en Bitrix es el MISMO cliente: no se cuenta dos veces
@@ -505,8 +550,9 @@
         <td>${r.estado === 'ganado' ? '🏆' : r.estado === 'perdido' ? '❌' : '🟢'} ${r.estado}</td>
         <td class="comp ${cc}">${r.completitud}/10</td>
         ${celdasMonday(r)}
+        ${celdasOneDrive(r)}
       </tr>`;
-    }).join('') || '<tr><td colspan="16" style="text-align:center;color:#9ca3af;padding:20px">Sin resultados.</td></tr>';
+    }).join('') || '<tr><td colspan="19" style="text-align:center;color:#9ca3af;padding:20px">Sin resultados.</td></tr>';
     const tot = Math.max(1, Math.ceil(arr.length / POR_PAG));
     const limpios = arr.filter(r => !sospechoso(r));
     const nDud = arr.length - limpios.length;
@@ -600,6 +646,26 @@
       ${fila('Último contacto', r.ultContacto)}
       ${fila('Estado', r.estado)}
       ${bloqueOneDrive(r)}
+      ${r.od && r.origen !== 'onedrive' && odTieneDatos(r) ? `
+      <div style="margin-top:12px;background:#ecfeff;border:1px solid #a5f3fc;border-radius:12px;padding:12px">
+        <div style="font-size:11px;font-weight:800;color:#0e7490;text-transform:uppercase;margin-bottom:8px">📁 CRM vs propuesta en OneDrive${r.odViaRepetido ? ' <span style="font-weight:600;text-transform:none;color:#6b7280">· material encontrado en su registro repetido de Pipedrive</span>' : ''}</div>
+        <table style="box-shadow:none">
+          <tr><th style="background:none;color:#0e7490">Dato</th><th style="background:none;color:#0e7490;text-align:right">En el CRM</th><th style="background:none;color:#0e7490;text-align:right">En OneDrive</th></tr>
+          ${[['Tamaño (kW)', baseOD(r, 'kwp'), r.od.kwp, x => Math.round(x).toLocaleString('es-MX')],
+             ['% de energía', baseOD(r, 'energia'), r.od.pctEnergia, x => Math.round(x) + '%'],
+             ['Precio USD', baseOD(r, 'precioUSD'), r.od.precioUSD, x => '$' + Math.round(x).toLocaleString('es-MX')],
+             ['Precio MXN', r.moneda === 'MXN' ? r.precio : null, r.od.precioMXN, x => '$' + Math.round(x).toLocaleString('es-MX')],
+             ['Retorno (años)', baseOD(r, 'retorno'), r.od.retornoAnios, x => (+x).toFixed(1)],
+             ['Ahorro anual MXN', null, r.od.ahorroAnual, x => '$' + Math.round(x).toLocaleString('es-MX')],
+             ['Tarifa', null, r.od.tarifa, x => x]]
+            .filter(f => (f[1] != null && f[1] !== '') || (f[2] != null && f[2] !== ''))
+            .map(f => `<tr><td>${f[0]}</td>
+              <td class="num">${f[1] != null && f[1] !== '' ? f[3](f[1]) : '<span style="color:#9ca3af">sin dato en CRM</span>'}</td>
+              <td class="num" style="font-weight:700;color:${difiere(f[2], f[1]) ? '#dc2626' : '#0e7490'}">${f[2] != null && f[2] !== '' ? f[3](f[2]) : '—'}${difiere(f[2], f[1]) ? ' ⚠️' : ''}</td></tr>`).join('')}
+        </table>
+        ${noCuadraOD(r) ? '<div style="font-size:11.5px;color:#991b1b;font-weight:700;margin-top:8px">⚠️ El CRM y la propuesta no dicen lo mismo: confirma cuál es el dato bueno y actualiza el CRM.</div>'
+          : '<div style="font-size:11px;color:#15803d;font-weight:700;margin-top:8px">✓ Lo que hay en el CRM coincide con la propuesta.</div>'}
+      </div>` : ''}
       ${r.monday ? `
       <div style="margin-top:12px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:12px">
         <div style="font-size:11px;font-weight:800;color:#6b21a8;text-transform:uppercase;margin-bottom:8px">🟣 Ficha de Monday${r.monday.tablero ? ' · ' + r.monday.tablero : ''}</div>
