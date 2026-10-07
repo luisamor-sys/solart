@@ -343,25 +343,46 @@
 
   // ── Comparativo con OneDrive (lo que dicen las propuestas vs lo capturado en el CRM) ──
   // Si el dato del CRM se rellenó desde OneDrive, no hay con qué comparar: se muestra como "sin dato en CRM".
-  const baseOD = (r, campo) => (r.odRelleno && r.odRelleno[campo]) ? null : r[campo];
-  const odTieneDatos = r => !!(r.od && (r.od.kwp || r.od.pctEnergia || r.od.precioUSD || r.od.retornoAnios));
+  const baseOD = (r, campo) => r[campo];
+  // OJO: los campos sueltos del archivo de OneDrive (od.kwp, od.precioUSD…) traen copiado el valor del CRM.
+  // Lo que de verdad dice OneDrive está en od.propuestas[] (leído de cada infografía) y, si la carpeta
+  // no se ha descargado, en od.carpeta (kW que dice el nombre de la subcarpeta).
+  function odDatos(r) {
+    const c = r.od; if (!c) return null;
+    const props = (c.propuestas || []).filter(p => p && (p.kwp || p.precioUSD || p.pctEnergia));
+    if (props.length) {
+      const p = props.slice().sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')))[0];
+      return { fuente: 'propuesta', n: props.length, archivo: p.archivo, fecha: p.fecha || p.fechaTexto,
+        kwp: p.kwp, pctEnergia: p.pctEnergia, precioUSD: p.precioUSD, precioMXN: p.precioMXN,
+        retornoAnios: p.retornoAnios, ahorroAnual: p.ahorroAnual, tarifa: p.tarifa, tipoCambio: p.tipoCambio };
+    }
+    const k = c.carpeta;
+    if (k && (k.kwp || k.pctEnergia)) {
+      return { fuente: 'carpeta', n: k.nPropuestas || 0, archivo: k.nombre, fecha: k.ultimaFecha,
+        kwp: k.kwp, pctEnergia: k.pctEnergia, precioUSD: null, precioMXN: null, retornoAnios: null, ahorroAnual: null, tarifa: null };
+    }
+    return null;
+  }
+  const odTieneDatos = r => !!odDatos(r);
   const noCuadraOD = r => {
-    const c = r.od; if (!c || r.origen === 'onedrive') return false;
-    return difiere(c.kwp, baseOD(r, 'kwp')) || difiere(c.precioUSD, baseOD(r, 'precioUSD')) ||
-           difiere(c.pctEnergia, baseOD(r, 'energia')) || difiere(c.retornoAnios, baseOD(r, 'retorno'));
+    if (!r.od || r.origen === 'onedrive') return false;
+    const d = odDatos(r); if (!d) return false;
+    return difiere(d.kwp, r.kwp) || difiere(d.precioUSD, r.precioUSD) ||
+           difiere(d.pctEnergia, r.energia) || difiere(d.retornoAnios, r.retorno);
   };
   function celdasOneDrive(r) {
-    const c = r.od;
-    if (!c || r.origen === 'onedrive' || !odTieneDatos(r)) return '<td colspan="3" style="background:#fafafa;color:#d1d5db;font-size:10.5px;text-align:center">' + (c && c.pendienteDescarga ? 'carpeta sin descargar' : 'sin propuesta en OneDrive') + '</td>';
+    const c = r.od, d = odDatos(r);
+    if (!c || r.origen === 'onedrive' || !d) return '<td colspan="3" style="background:#fafafa;color:#d1d5db;font-size:10.5px;text-align:center">' + (c && c.pendienteDescarga ? 'carpeta sin descargar' : 'sin propuesta en OneDrive') + '</td>';
+    const titulo = d.fuente === 'propuesta' ? `De la infografía ${d.archivo || ''} (${d.fecha || 's/f'})${d.n > 1 ? ' · la más reciente de ' + d.n : ''}` : `Del nombre de la subcarpeta "${d.archivo || ''}" (carpeta sin descargar)`;
     const cel = (val, actual, fmt) => {
-      if (val == null || val === '') return '<td style="background:#ecfeff;color:#d1d5db">—</td>';
+      if (val == null || val === '') return '<td style="background:#ecfeff;color:#d1d5db" title="' + titulo + '">—</td>';
       const mal = difiere(val, actual);
-      return '<td class="num" style="background:#ecfeff;font-weight:' + (mal ? '800' : '600') +
-        ';color:' + (mal ? '#dc2626' : '#0e7490') + '">' + fmt(val) + (mal ? ' ⚠️' : '') + '</td>';
+      return '<td class="num" title="' + titulo.replace(/"/g, '&quot;') + '" style="background:#ecfeff;font-weight:' + (mal ? '800' : '600') +
+        ';color:' + (mal ? '#dc2626' : '#0e7490') + '">' + fmt(val) + (mal ? ' ⚠️' : '') + (d.fuente === 'carpeta' ? ' <span style="font-size:9px;color:#9ca3af">📂</span>' : '') + '</td>';
     };
-    return cel(c.kwp, baseOD(r, 'kwp'), x => Math.round(x).toLocaleString('es-MX')) +
-           cel(c.pctEnergia, baseOD(r, 'energia'), x => Math.round(x) + '%') +
-           cel(c.precioUSD, baseOD(r, 'precioUSD'), x => '$' + Math.round(x).toLocaleString('es-MX'));
+    return cel(d.kwp, r.kwp, x => Math.round(x).toLocaleString('es-MX')) +
+           cel(d.pctEnergia, r.energia, x => Math.round(x) + '%') +
+           cel(d.precioUSD, r.precioUSD, x => '$' + Math.round(x).toLocaleString('es-MX'));
   }
 
   // Un proyecto de Pipedrive cuya empresa ya existe en Bitrix es el MISMO cliente: no se cuenta dos veces
@@ -641,16 +662,19 @@
       ${bloqueOneDrive(r)}
       ${r.od && r.origen !== 'onedrive' && odTieneDatos(r) ? `
       <div style="margin-top:12px;background:#ecfeff;border:1px solid #a5f3fc;border-radius:12px;padding:12px">
-        <div style="font-size:11px;font-weight:800;color:#0e7490;text-transform:uppercase;margin-bottom:8px">📁 CRM vs propuesta en OneDrive${r.odViaRepetido ? ' <span style="font-weight:600;text-transform:none;color:#6b7280">· material encontrado en su registro repetido de Pipedrive</span>' : ''}</div>
+        <div style="font-size:11px;font-weight:800;color:#0e7490;text-transform:uppercase;margin-bottom:4px">📁 CRM vs propuesta en OneDrive${r.odViaRepetido ? ' <span style="font-weight:600;text-transform:none;color:#6b7280">· material encontrado en su registro repetido de Pipedrive</span>' : ''}</div>
+        ${(() => { const d = odDatos(r); return `<div style="font-size:11px;color:#6b7280;margin-bottom:8px">${d.fuente === 'propuesta'
+          ? `Leído de la infografía <b>${d.archivo || ''}</b>${d.fecha ? ' (' + d.fecha + ')' : ''}${d.n > 1 ? `, la más reciente de ${d.n} propuestas en la carpeta` : ''}.`
+          : `La carpeta <b>${d.archivo || ''}</b> aún no se descarga: el tamaño se toma del nombre de su subcarpeta${d.n ? ` (tiene ${d.n} propuesta${d.n > 1 ? 's' : ''} por bajar)` : ''}.`}</div>`; })()}
         <table style="box-shadow:none">
           <tr><th style="background:none;color:#0e7490">Dato</th><th style="background:none;color:#0e7490;text-align:right">En el CRM</th><th style="background:none;color:#0e7490;text-align:right">En OneDrive</th></tr>
-          ${[['Tamaño (kW)', baseOD(r, 'kwp'), r.od.kwp, x => Math.round(x).toLocaleString('es-MX')],
-             ['% de energía', baseOD(r, 'energia'), r.od.pctEnergia, x => Math.round(x) + '%'],
-             ['Precio USD', baseOD(r, 'precioUSD'), r.od.precioUSD, x => '$' + Math.round(x).toLocaleString('es-MX')],
-             ['Precio MXN', r.moneda === 'MXN' ? r.precio : null, r.od.precioMXN, x => '$' + Math.round(x).toLocaleString('es-MX')],
-             ['Retorno (años)', baseOD(r, 'retorno'), r.od.retornoAnios, x => (+x).toFixed(1)],
-             ['Ahorro anual MXN', null, r.od.ahorroAnual, x => '$' + Math.round(x).toLocaleString('es-MX')],
-             ['Tarifa', null, r.od.tarifa, x => x]]
+          ${(() => { const d = odDatos(r); return [['Tamaño (kW)', r.kwp, d.kwp, x => Math.round(x).toLocaleString('es-MX')],
+             ['% de energía', r.energia, d.pctEnergia, x => Math.round(x) + '%'],
+             ['Precio USD', r.precioUSD, d.precioUSD, x => '$' + Math.round(x).toLocaleString('es-MX')],
+             ['Precio MXN', r.moneda === 'MXN' ? r.precio : null, d.precioMXN, x => '$' + Math.round(x).toLocaleString('es-MX')],
+             ['Retorno (años)', r.retorno, d.retornoAnios, x => (+x).toFixed(1)],
+             ['Ahorro anual MXN', null, d.ahorroAnual, x => '$' + Math.round(x).toLocaleString('es-MX')],
+             ['Tarifa', null, d.tarifa, x => x]]; })()
             .filter(f => (f[1] != null && f[1] !== '') || (f[2] != null && f[2] !== ''))
             .map(f => `<tr><td>${f[0]}</td>
               <td class="num">${f[1] != null && f[1] !== '' ? f[3](f[1]) : '<span style="color:#9ca3af">sin dato en CRM</span>'}</td>
