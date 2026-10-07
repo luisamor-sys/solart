@@ -351,7 +351,23 @@
     const c = r.od; if (!c) return null;
     const props = (c.propuestas || []).filter(p => p && (p.kwp || p.precioUSD || p.pctEnergia));
     if (props.length) {
-      const p = props.slice().sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')))[0];
+      const orden = props.slice().sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')));
+      // Un cliente puede tener varios SITIOS (subcarpetas "01_CLUB / Propuesta…", "02_Carcamo / …"):
+      // el CRM suele traer el total, así que se compara contra la suma de la última propuesta de cada sitio.
+      const sitioDe = p => { const k = String(p.carpeta || ''); return k.includes(' / ') ? k.split(' / ')[0].trim() : ''; };
+      const porSitio = new Map();
+      orden.forEach(p => { const st = sitioDe(p); if (st && !porSitio.has(st)) porSitio.set(st, p); });
+      const sitios = [...porSitio.values()].filter(p => p.precioUSD);
+      if (porSitio.size >= 2 && sitios.length >= 2) {
+        const sum = k => sitios.every(p => p[k] != null) ? sitios.reduce((t, p) => t + (+p[k] || 0), 0) : null;
+        const ens = sitios.map(p => p.pctEnergia).filter(x => x != null);
+        return { fuente: 'suma', n: props.length, sitios: sitios.map(p => ({ sitio: sitioDe(p), fecha: p.fecha, usd: p.precioUSD, kwp: p.kwp })),
+          archivo: sitios.map(sitioDe).join(' + '), fecha: sitios[0].fecha,
+          kwp: sum('kwp'), pctEnergia: ens.length && ens.every(x => x === ens[0]) ? ens[0] : null,
+          precioUSD: sum('precioUSD'), precioMXN: sum('precioMXN'), retornoAnios: null,
+          ahorroAnual: sum('ahorroAnual'), tarifa: sitios[0].tarifa, tipoCambio: sitios[0].tipoCambio };
+      }
+      const p = orden[0];
       return { fuente: 'propuesta', n: props.length, archivo: p.archivo, fecha: p.fecha || p.fechaTexto,
         kwp: p.kwp, pctEnergia: p.pctEnergia, precioUSD: p.precioUSD, precioMXN: p.precioMXN,
         retornoAnios: p.retornoAnios, ahorroAnual: p.ahorroAnual, tarifa: p.tarifa, tipoCambio: p.tipoCambio };
@@ -373,7 +389,7 @@
   function celdasOneDrive(r) {
     const c = r.od, d = odDatos(r);
     if (!c || r.origen === 'onedrive' || !d) return '<td colspan="3" style="background:#fafafa;color:#d1d5db;font-size:10.5px;text-align:center">' + (c && c.pendienteDescarga ? 'carpeta sin descargar' : 'sin propuesta en OneDrive') + '</td>';
-    const titulo = d.fuente === 'propuesta' ? `De la infografía ${d.archivo || ''} (${d.fecha || 's/f'})${d.n > 1 ? ' · la más reciente de ' + d.n : ''}` : `Del nombre de la subcarpeta "${d.archivo || ''}" (carpeta sin descargar)`;
+    const titulo = d.fuente === 'suma' ? `Suma de la última propuesta de cada sitio: ${d.archivo}` : d.fuente === 'propuesta' ? `De la infografía ${d.archivo || ''} (${d.fecha || 's/f'})${d.n > 1 ? ' · la más reciente de ' + d.n : ''}` : `Del nombre de la subcarpeta "${d.archivo || ''}" (carpeta sin descargar)`;
     const cel = (val, actual, fmt) => {
       if (val == null || val === '') return '<td style="background:#ecfeff;color:#d1d5db" title="' + titulo + '">—</td>';
       const mal = difiere(val, actual);
@@ -663,7 +679,9 @@
       ${r.od && r.origen !== 'onedrive' && odTieneDatos(r) ? `
       <div style="margin-top:12px;background:#ecfeff;border:1px solid #a5f3fc;border-radius:12px;padding:12px">
         <div style="font-size:11px;font-weight:800;color:#0e7490;text-transform:uppercase;margin-bottom:4px">📁 CRM vs propuesta en OneDrive${r.odViaRepetido ? ' <span style="font-weight:600;text-transform:none;color:#6b7280">· material encontrado en su registro repetido de Pipedrive</span>' : ''}</div>
-        ${(() => { const d = odDatos(r); return `<div style="font-size:11px;color:#6b7280;margin-bottom:8px">${d.fuente === 'propuesta'
+        ${(() => { const d = odDatos(r); return `<div style="font-size:11px;color:#6b7280;margin-bottom:8px">${d.fuente === 'suma'
+          ? `El cliente tiene <b>${d.sitios.length} sitios</b> en su carpeta; se compara contra la <b>suma de la última propuesta de cada uno</b>: ${d.sitios.map(x => `${x.sitio} $${Math.round(x.usd).toLocaleString('es-MX')} (${x.fecha || 's/f'})`).join(' · ')}.`
+          : d.fuente === 'propuesta'
           ? `Leído de la infografía <b>${d.archivo || ''}</b>${d.fecha ? ' (' + d.fecha + ')' : ''}${d.n > 1 ? `, la más reciente de ${d.n} propuestas en la carpeta` : ''}.`
           : `La carpeta <b>${d.archivo || ''}</b> aún no se descarga: el tamaño se toma del nombre de su subcarpeta${d.n ? ` (tiene ${d.n} propuesta${d.n > 1 ? 's' : ''} por bajar)` : ''}.`}</div>`; })()}
         <table style="box-shadow:none">
