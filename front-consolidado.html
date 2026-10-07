@@ -274,9 +274,11 @@
     pinta(1);
   };
   const ESPECIALES = [ ['prio','🎯 Prioridad (150+ kW y 50%+)'], ['prio_cp','🟢 Completas (con precio)'], ['prio_sp','🟡 Falta precio'], ['prio_se','🔵 Falta % de energía'], ['prio_sc','🔴 Falta contacto'], ['dudoso','⚠️ Dato dudoso'],
-    ['conprop','📁 Con propuesta en OneDrive'], ['sincrm','🆕 Propuesta sin registro en CRM'], ['pendiente','⏳ Carpeta sin descargar'],
+    ['conprop','📁 Con propuesta descargada'], ['sincrm','🆕 Propuesta sin registro en CRM'], ['pendiente','⏳ Carpeta sin descargar'],
     ['conmdy','🟣 Tiene ficha en Monday'], ['nocuadra','⚖️ No cuadra con Monday'], ['enbx','🔁 Repetidos con Bitrix'] ];
-  const tieneProp = r => !!(r.od && (r.od.nPropuestas > 0 || r.od.excel || r.od.carpeta));
+  // "Con propuesta" = hay material ya descargado (PDF de propuesta u hoja de cálculo).
+  // Una carpeta que solo existe en la nube va aparte, en "Carpeta sin descargar".
+  const tieneProp = r => !!(r.od && (r.od.nPropuestas > 0 || r.od.excel));
   const cumpleEsp = (r, e) => e === 'prio' ? esPrio(r)
     : e === 'prio_cp' ? clasePrio(r) === 'conprecio' : e === 'prio_sp' ? clasePrio(r) === 'sinprecio' : e === 'prio_se' ? clasePrio(r) === 'sinenergia' : e === 'prio_sc' ? clasePrio(r) === 'sincontacto'
     : e === 'dudoso' ? sospechoso(r)

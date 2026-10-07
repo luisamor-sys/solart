@@ -3,3 +3,5 @@ solart-propuestas*/
 # Materia prima extraida de OneDrive (13 MB y 72 MB): se quedan locales
 propuestas-historico.json
 excels-historico.json
+tmp/
+output/
