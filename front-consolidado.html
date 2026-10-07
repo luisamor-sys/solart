@@ -357,7 +357,11 @@
       const sitioDe = p => { const k = String(p.carpeta || ''); return k.includes(' / ') ? k.split(' / ')[0].trim() : ''; };
       const porSitio = new Map();
       orden.forEach(p => { const st = sitioDe(p); if (st && !porSitio.has(st)) porSitio.set(st, p); });
-      const sitios = [...porSitio.values()].filter(p => p.precioUSD);
+      const sitios = [...porSitio.values()].filter(p => p.precioUSD).map(p => {
+        if (p.kwp != null) return p;
+        const q = orden.find(x => sitioDe(x) === sitioDe(p) && x.kwp != null);
+        return q ? { ...p, kwp: q.kwp } : p;
+      });
       if (porSitio.size >= 2 && sitios.length >= 2) {
         const sum = k => sitios.every(p => p[k] != null) ? sitios.reduce((t, p) => t + (+p[k] || 0), 0) : null;
         const ens = sitios.map(p => p.pctEnergia).filter(x => x != null);
@@ -368,8 +372,15 @@
           ahorroAnual: sum('ahorroAnual'), tarifa: sitios[0].tarifa, tipoCambio: sitios[0].tipoCambio };
       }
       const p = orden[0];
-      return { fuente: 'propuesta', n: props.length, archivo: p.archivo, fecha: p.fecha || p.fechaTexto,
-        kwp: p.kwp, pctEnergia: p.pctEnergia, precioUSD: p.precioUSD, precioMXN: p.precioMXN,
+      // Si a la infografía más reciente no se le pudo leer el kW o el %, se toma de la anterior que sí lo traiga
+      // (o del nombre de la carpeta), y se deja dicho de dónde salió.
+      const respaldo = (k) => { const q = orden.find(x => x[k] != null && x[k] !== ''); return q ? { v: q[k], de: `de "${q.archivo || ''}" (${q.fecha || 's/f'})` } : null; };
+      const notas = [];
+      let kwp = p.kwp, pct = p.pctEnergia;
+      if (kwp == null) { const rk = respaldo('kwp'); if (rk) { kwp = rk.v; notas.push('kW ' + rk.de); } else if (c.carpeta && c.carpeta.kwp) { kwp = c.carpeta.kwp; notas.push('kW del nombre de la carpeta'); } }
+      if (pct == null) { const re = respaldo('pctEnergia'); if (re) { pct = re.v; notas.push('% ' + re.de); } }
+      return { fuente: 'propuesta', n: props.length, archivo: p.archivo, fecha: p.fecha || p.fechaTexto, notas,
+        kwp, pctEnergia: pct, precioUSD: p.precioUSD, precioMXN: p.precioMXN,
         retornoAnios: p.retornoAnios, ahorroAnual: p.ahorroAnual, tarifa: p.tarifa, tipoCambio: p.tipoCambio };
     }
     const k = c.carpeta;
@@ -389,7 +400,7 @@
   function celdasOneDrive(r) {
     const c = r.od, d = odDatos(r);
     if (!c || r.origen === 'onedrive' || !d) return '<td colspan="3" style="background:#fafafa;color:#d1d5db;font-size:10.5px;text-align:center">' + (c && c.pendienteDescarga ? 'carpeta sin descargar' : 'sin propuesta en OneDrive') + '</td>';
-    const titulo = d.fuente === 'suma' ? `Suma de la última propuesta de cada sitio: ${d.archivo}` : d.fuente === 'propuesta' ? `De la infografía ${d.archivo || ''} (${d.fecha || 's/f'})${d.n > 1 ? ' · la más reciente de ' + d.n : ''}` : `Del nombre de la subcarpeta "${d.archivo || ''}" (carpeta sin descargar)`;
+    const titulo = (d.fuente === 'suma' ? `Suma de la última propuesta de cada sitio: ${d.archivo}` : d.fuente === 'propuesta' ? `De la infografía ${d.archivo || ''} (${d.fecha || 's/f'})${d.n > 1 ? ' · la más reciente de ' + d.n : ''}` : `Del nombre de la subcarpeta "${d.archivo || ''}" (carpeta sin descargar)`) + (d.notas && d.notas.length ? ' · ' + d.notas.join(' · ') : '');
     const cel = (val, actual, fmt) => {
       if (val == null || val === '') return '<td style="background:#ecfeff;color:#d1d5db" title="' + titulo + '">—</td>';
       const mal = difiere(val, actual);
@@ -682,7 +693,7 @@
         ${(() => { const d = odDatos(r); return `<div style="font-size:11px;color:#6b7280;margin-bottom:8px">${d.fuente === 'suma'
           ? `El cliente tiene <b>${d.sitios.length} sitios</b> en su carpeta; se compara contra la <b>suma de la última propuesta de cada uno</b>: ${d.sitios.map(x => `${x.sitio} $${Math.round(x.usd).toLocaleString('es-MX')} (${x.fecha || 's/f'})`).join(' · ')}.`
           : d.fuente === 'propuesta'
-          ? `Leído de la infografía <b>${d.archivo || ''}</b>${d.fecha ? ' (' + d.fecha + ')' : ''}${d.n > 1 ? `, la más reciente de ${d.n} propuestas en la carpeta` : ''}.`
+          ? `Leído de la infografía <b>${d.archivo || ''}</b>${d.fecha ? ' (' + d.fecha + ')' : ''}${d.n > 1 ? `, la más reciente de ${d.n} propuestas en la carpeta` : ''}.${d.notas && d.notas.length ? ` <span style="color:#b45309">No se pudo leer todo de esa infografía: ${d.notas.join('; ')}.</span>` : ''}`
           : `La carpeta <b>${d.archivo || ''}</b> aún no se descarga: el tamaño se toma del nombre de su subcarpeta${d.n ? ` (tiene ${d.n} propuesta${d.n > 1 ? 's' : ''} por bajar)` : ''}.`}</div>`; })()}
         <table style="box-shadow:none">
           <tr><th style="background:none;color:#0e7490">Dato</th><th style="background:none;color:#0e7490;text-align:right">En el CRM</th><th style="background:none;color:#0e7490;text-align:right">En OneDrive</th></tr>
