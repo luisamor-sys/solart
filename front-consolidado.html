@@ -196,16 +196,9 @@
       if (c.idCRM && (c.nPropuestas > 0 || c.excel || c.carpeta)) porId.set(c.idCRM, c);
     });
     let enganchados = 0, pendientes = 0;
-    const colgar = (r, c) => {
-      r.od = c;
-      // Se recuerda qué huecos se rellenaron con OneDrive, para no "comparar" un dato consigo mismo
-      r.odRelleno = {};
-      if (!r.kwp && c.kwp) { r.kwp = c.kwp; r.odRelleno.kwp = true; }
-      if (!r.precioUSD && c.precioUSD) { r.precioUSD = c.precioUSD; r.odRelleno.precioUSD = true; }
-      if (!r.energia && c.pctEnergia) { r.energia = String(c.pctEnergia); r.odRelleno.energia = true; }
-      if (!r.retorno && c.retornoAnios) { r.retorno = c.retornoAnios; r.odRelleno.retorno = true; }
-      if (!r.descripcion && c.situacion) r.descripcion = c.situacion;
-    };
+    // Las columnas principales muestran SOLO lo que hay en el CRM; lo de OneDrive va en sus
+    // propias columnas, para que las diferencias se vean. No se rellena ningún hueco.
+    const colgar = (r, c) => { r.od = c; r.odRelleno = {}; };
     DATA.forEach(r => {
       const c = porId.get(r.id);
       if (!c) return;
