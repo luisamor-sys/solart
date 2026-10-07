@@ -15,10 +15,13 @@ def bx(method, params):
     return json.load(urllib.request.urlopen(req))
 
 def bx_all(method, params):
-    out, start = [], 0
+    # Sin un orden fijo, Bitrix pagina de forma inestable: repite unos registros y se salta otros.
+    out, start, vistos = [], 0, set()
     while True:
-        r = bx(method, {**params, 'start': start})
-        out += r.get('result', [])
+        r = bx(method, {**params, 'order': {'ID': 'ASC'}, 'start': start})
+        for x in r.get('result', []):
+            if x.get('ID') not in vistos:
+                vistos.add(x.get('ID')); out.append(x)
         if r.get('next') is None: break
         start = r['next']
     return out
