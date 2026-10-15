@@ -1,7 +1,9 @@
 .DS_Store
 solart-propuestas*/
-# Materia prima extraida de OneDrive (13 MB y 72 MB): se quedan locales
+# Materia prima extraida de OneDrive (32 MB y 186 MB): se quedan locales
 propuestas-historico.json
 excels-historico.json
 tmp/
 output/
+extraer_*.log
+resumen-carpetas-onedrive.md
