@@ -27,6 +27,19 @@ python3 consolidar_bbdd.py     # Bitrix (API) + respaldo Pipedrive (xlsx) → co
 python3 consolidar_monday.py [ruta_respaldo]   # suma Monday a consolidado.json (correr DESPUÉS del anterior)
 ```
 
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File extraer_propuestas.ps1   # OneDrive: pptx → propuestas-historico.json
+powershell -NoProfile -ExecutionPolicy Bypass -File extraer_excels.ps1       # OneDrive: xlsx → excels-historico.json
+powershell -NoProfile -ExecutionPolicy Bypass -File consolidar_unico.ps1     # + consolidado.json → consolidado-unico.json
+```
+
+Los tres de OneDrive van en ese orden. Leen `~/OneDrive/Comerciales e Industriales` (sincronizada "solo en línea":
+**no** marcarla "Siempre disponible", son ~140 GB y llena el disco). Cada archivo se baja al leerlo y se devuelve a la
+nube; reanudan por ruta+fecha, así que una segunda corrida solo procesa lo nuevo. `extraer_propuestas.ps1 -SoloRededucir`
+re-aplica las reglas de `Deducir` sobre el texto ya guardado sin tocar OneDrive. Los dos `*-historico.json` (materia
+prima, 32 y 186 MB) están en `.gitignore`; `consolidado-unico.json` sí se versiona porque `front-consolidado.html` lo
+carga y engancha a cada registro por `idCRM`.
+
 No hay tests ni linter. La verificación es manual: abrir la página en el navegador y revisar la consola.
 
 Advertencias de entorno en esta máquina Windows: `git` y `python` no están en el PATH del shell, y los scripts

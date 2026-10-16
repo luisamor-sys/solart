@@ -5,6 +5,10 @@
 #   powershell -NoProfile -ExecutionPolicy Bypass -File extraer_propuestas.ps1
 #
 # Tarda ~1 min por cada 150 archivos. Deja avance en extraer_propuestas.log.
+#
+#   -SoloRededucir : no toca OneDrive; vuelve a deducir los campos a partir del texto ya guardado
+#                    (para cuando cambian las reglas de Deducir).
+param([switch]$SoloRededucir)
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $raiz   = "$env:USERPROFILE\OneDrive\Comerciales e Industriales"
@@ -63,7 +67,11 @@ function MontoTrasEtiqueta($linea, $patron) {
 function Deducir($texto) {
   $d = [ordered]@{}
   $lineas = $texto -split "`n"
-  $m = [regex]::Match($texto, '([\d][\d,\.]*)\s*kWp', 'IgnoreCase');                 if ($m.Success) { $d.kwp = Num $m.Groups[1].Value }
+  # kWp: el de la diapositiva "La Solucion" manda (a veces numero y unidad vienen en celdas
+  # separadas: "97 | kWp"). Si no esta, el primer "N kWp" del documento.
+  $m = [regex]::Match($texto, 'La Soluci.n[^\n]{0,40}?([\d][\d,\.]*)\s*(?:\|\s*)?kWp', 'IgnoreCase')
+  if (-not $m.Success) { $m = [regex]::Match($texto, '([\d][\d,\.]*)\s*(?:\|\s*)?kWp', 'IgnoreCase') }
+  if ($m.Success) { $d.kwp = Num $m.Groups[1].Value }
   $m = [regex]::Match($texto, '([\d][\d,\.]*)\s*kWh', 'IgnoreCase');                 if ($m.Success) { $d.kwh = Num $m.Groups[1].Value }
   $m = [regex]::Match($texto, 'RPU[:\s|]+([\d\s]{8,})', 'IgnoreCase');               if ($m.Success) { $d.rpu = ($m.Groups[1].Value).Trim() }
   $m = [regex]::Match($texto, '\b(GDMTH|GDMTO|PDBT|GDBT|DIST|DIT|APBT|APMT)\b');     if ($m.Success) { $d.tarifa = $m.Groups[1].Value }
@@ -79,9 +87,19 @@ function Deducir($texto) {
     }
   }
   if ($pares.Count) {
-    $cand = @($pares | Where-Object { $_.total }); if (-not $cand.Count) { $cand = $pares }
-    $best = $cand | Sort-Object usd -Descending | Select-Object -First 1
+    # Un mismo documento puede traer varias propuestas (y repetir el precio con recargo en la
+    # diapositiva de financiamiento). El kWp se toma de la PRIMERA propuesta, asi que el precio
+    # tambien: el primer par en orden de documento, y entre los de "precio total" si los hay.
+    # Como salvaguarda, si con el kWp ese precio da un costo por watt increible (fuera de
+    # 0.3-2.0 USD/W) y otro par si lo da, se prefiere el creible.
+    $cand = @($pares | Where-Object { $_.total }); if (-not $cand.Count) { $cand = @($pares) }
+    $best = $cand[0]
+    if ($d.Contains('kwp') -and $d.kwp -ge 5) {
+      $plaus = @($cand | Where-Object { $upw = $_.usd / ($d.kwp * 1000); $upw -ge 0.3 -and $upw -le 2.0 })
+      if ($plaus.Count) { $best = $plaus[0] }
+    }
     $d.precioUSD = $best.usd; $d.precioMXN = $best.mxn; $d.tipoCambio = [math]::Round($best.mxn / $best.usd, 2)
+    if ($pares.Count -gt 1) { $d.nOpcionesPrecio = @($pares | Select-Object -ExpandProperty usd -Unique).Count }
   }
   foreach ($l in $lineas) {
     if (-not $d.Contains('ahorroAnual'))    { $v = MontoTrasEtiqueta $l 'Ahorro Anual[^:]{0,30}:'; if ($v -and $v -ge 1000) { $d.ahorroAnual = $v } }
@@ -115,6 +133,19 @@ function Deducir($texto) {
   $tels = [regex]::Matches($texto, '(?<![\d\-\.])(?:\+?52[\s\-]?)?(?:\(?\d{2,3}\)?[\s\-]){1,2}\d{3,4}[\s\-]?\d{4}(?![\d\-])') | ForEach-Object { $_.Value.Trim() } | Sort-Object -Unique
   if ($tels) { $d.telefonos = @($tels | Select-Object -First 5) }
   return $d
+}
+
+if ($SoloRededucir) {
+  $j = Get-Content $salida -Raw -Encoding UTF8 | ConvertFrom-Json
+  $n = 0
+  foreach ($p in $j.propuestas) {
+    if ($p.texto) { $p.datos = Deducir $p.texto; $n++ }
+  }
+  $j.generado = (Get-Date).ToString('s')
+  [System.IO.File]::WriteAllText($salida, ($j | ConvertTo-Json -Depth 8 -Compress), (New-Object System.Text.UTF8Encoding $false))
+  Log "REDEDUCIDO: $n propuestas desde el texto guardado"
+  "REDEDUCIDO: $n propuestas"
+  exit
 }
 
 # Lo ya extraido en una corrida anterior (misma ruta y fecha, sin error) no se vuelve a leer
