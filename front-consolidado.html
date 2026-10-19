@@ -289,14 +289,14 @@
     if (bv) { bv.value = ''; filtrarVend(''); }
     pinta(1);
   };
-  const ESPECIALES = [ ['prio','🎯 Prioridad (150+ kW y 50%+)'], ['prio_cp','🟢 Completas (con precio)'], ['prio_sp','🟡 Falta precio'], ['prio_se','🔵 Falta % de energía'], ['prio_sc','🔴 Falta contacto'], ['dudoso','⚠️ Dato dudoso'],
+  const ESPECIALES = [ ['prio','🎯 Prioridad (150+ kW y 50%+)'], ['prio_cp','🟢 Completas (con precio)'], ['prio_sp','🟡 Falta precio'], ['prio_se','🔵 Falta % de energía'], ['prio_sc','🔴 Falta contacto'], ['prio_od','📁 Con datos en OneDrive'], ['dudoso','⚠️ Dato dudoso'],
     ['conprop','📁 Con propuesta descargada'], ['sincrm','🆕 Propuesta sin registro en CRM'], ['pendiente','⏳ Carpeta sin descargar'],
     ['conmdy','🟣 Tiene ficha en Monday'], ['nocuadra','⚖️ No cuadra con Monday'], ['nocuadraod','⚖️ No cuadra con OneDrive'], ['enbx','🔁 Repetidos con Bitrix'] ];
   // "Con propuesta" = hay material ya descargado (PDF de propuesta u hoja de cálculo).
   // Una carpeta que solo existe en la nube va aparte, en "Carpeta sin descargar".
   const tieneProp = r => !!(r.od && (r.od.nPropuestas > 0 || r.od.excel));
   const cumpleEsp = (r, e) => e === 'prio' ? esPrio(r)
-    : e === 'prio_cp' ? clasePrio(r) === 'conprecio' : e === 'prio_sp' ? clasePrio(r) === 'sinprecio' : e === 'prio_se' ? clasePrio(r) === 'sinenergia' : e === 'prio_sc' ? clasePrio(r) === 'sincontacto'
+    : e === 'prio_cp' ? clasePrio(r) === 'conprecio' : e === 'prio_sp' ? clasePrio(r) === 'sinprecio' : e === 'prio_se' ? clasePrio(r) === 'sinenergia' : e === 'prio_sc' ? clasePrio(r) === 'sincontacto' : e === 'prio_od' ? esPrio(r) && odTieneDatos(r)
     : e === 'dudoso' ? sospechoso(r)
     : e === 'conprop' ? tieneProp(r) : e === 'sincrm' ? r.origen === 'onedrive'
     : e === 'pendiente' ? !!(r.od && r.od.pendienteDescarga)
@@ -305,7 +305,7 @@
   function pasaF(r, saltar) {
     if (saltar !== 'origen' && F.origen.size && !F.origen.has(r.origen)) return false;
     if (saltar !== 'estado' && F.estado.size && !F.estado.has(r.estado)) return false;
-    if (saltar !== 'esp' && F.esp.size && !(() => { const sel = [...F.esp], subs = sel.filter(e => e.startsWith('prio_')), otros = sel.filter(e => !e.startsWith('prio_'));
+    if (saltar !== 'esp' && F.esp.size && !(() => { const sel = [...F.esp], subs = sel.filter(e => e.startsWith('prio_') && e !== 'prio_od'), otros = sel.filter(e => !e.startsWith('prio_') || e === 'prio_od');
       return otros.every(e => cumpleEsp(r, e)) && (!subs.length || subs.some(e => cumpleEsp(r, e))); })()) return false;
     if (saltar !== 'dueno' && F.dueno.size && !F.dueno.has(r.dueno || 'Sin vendedor')) return false;
     if (saltar !== 'pipeline' && F.pipeline.size && !F.pipeline.has((r.pipeline || 'Sin embudo').replace(/'/g, ''))) return false;
@@ -445,7 +445,9 @@
         ${cb('esp', 'prio', ESPECIALES.find(([x]) => x === 'prio')[1])}
         <div class="sub-prio">
           <div class="sub-tit">De esas prioridades:</div>
-          ${ESPECIALES.filter(([x]) => x.startsWith('prio_')).map(([x, tx]) => cb('esp', x, tx)).join('')}
+          ${ESPECIALES.filter(([x]) => x.startsWith('prio_') && x !== 'prio_od').map(([x, tx]) => cb('esp', x, tx)).join('')}
+          <div class="sub-tit" style="margin-top:6px">Y además:</div>
+          ${cb('esp', 'prio_od', '📁 Con datos en OneDrive')}
         </div>
         <details class="mas-f"><summary>Más filtros (revisión de datos)</summary>
           ${ESPECIALES.filter(([x]) => x !== 'prio' && !x.startsWith('prio_')).map(([x, tx]) => cb('esp', x, tx)).join('')}
