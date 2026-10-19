@@ -79,6 +79,7 @@
     <div style="display:flex;gap:8px;align-items:center">
       <a href="front-panorama.html" style="background:#0b1b2b;color:#f5c042;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:800;text-decoration:none">🥧 Panorama</a>
       <button onclick="vistaVendedores()" style="background:#006099;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer">👥 Detalle por vendedor</button>
+      <button id="btn-dup" onclick="vistaDuplicados()" style="background:#7c2d12;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer;display:none">🔍 Posibles duplicados</button>
       <button class="btn-rifa" onclick="abrirRifa()">🎰 Rifa de proyectos</button>
       <a class="volver" href="front-ingenieria.html">← Volver al panel</a>
     </div>
@@ -414,7 +415,114 @@
   }
 
   // Un proyecto de Pipedrive cuya empresa ya existe en Bitrix es el MISMO cliente: no se cuenta dos veces
-  const esDuplicado = r => r.origen !== 'bitrix' && !!r.enBitrix;
+  const esDuplicado = r => (r.origen !== 'bitrix' && !!r.enBitrix) || DUP_OCULTOS.has(r.id);
+
+  // ── Posibles duplicados (duplicados.json, generado por detectar_duplicados.py) ──
+  let DUPS = null;
+  const DUP_DEC = (() => { try { return JSON.parse(localStorage.getItem('dup_decisiones') || '{}'); } catch { return {}; } })();
+  const DUP_OCULTOS = new Set();
+  const dupClave = p => p.a + '|' + p.b;
+  function dupRecalcularOcultos() {
+    DUP_OCULTOS.clear();
+    if (!DUPS) return;
+    const byId = new Map(DATA.map(r => [r.id, r]));
+    DUPS.pares.forEach(p => {
+      if (DUP_DEC[dupClave(p)] !== 'mismo') return;
+      const a = byId.get(p.a), b = byId.get(p.b); if (!a || !b) return;
+      // Se queda el de Bitrix; si ambos son del mismo sistema, el más completo
+      const pierde = a.origen === 'bitrix' && b.origen !== 'bitrix' ? b : b.origen === 'bitrix' && a.origen !== 'bitrix' ? a
+        : (a.completitud || 0) >= (b.completitud || 0) ? b : a;
+      DUP_OCULTOS.add(pierde.id);
+    });
+  }
+  fetch('duplicados.json?v=' + Date.now()).then(r => r.json()).then(d => {
+    DUPS = d; dupRecalcularOcultos();
+    const btn = document.getElementById('btn-dup');
+    const pend = d.pares.filter(p => !DUP_DEC[dupClave(p)]).length;
+    btn.textContent = `🔍 Posibles duplicados · ${pend.toLocaleString()}`; btn.style.display = '';
+    if (DUP_OCULTOS.size && typeof pinta === 'function') pinta(1);
+  }).catch(() => {});
+
+  let dupFiltro = { nivel: 'alta', estado: 'pendientes', q: '' };
+  window.dupSet = (k, v) => { dupFiltro[k] = v; vistaDuplicados(); };
+  function vistaDuplicados() {
+    if (!DUPS) return;
+    const byId = new Map(DATA.map(r => [r.id, r]));
+    const lista = DUPS.pares.filter(p => {
+      const dec = DUP_DEC[dupClave(p)];
+      if (dupFiltro.nivel !== 'todas' && p.nivel !== dupFiltro.nivel) return false;
+      if (dupFiltro.estado === 'pendientes' && dec) return false;
+      if (dupFiltro.estado === 'mismo' && dec !== 'mismo') return false;
+      if (dupFiltro.estado === 'distinto' && dec !== 'distinto') return false;
+      if (dupFiltro.q) { const t = ((byId.get(p.a) || {}).empresa + ' ' + (byId.get(p.b) || {}).empresa).toLowerCase(); if (!t.includes(dupFiltro.q)) return false; }
+      return byId.has(p.a) && byId.has(p.b);
+    });
+    const chip = (k, v, t) => `<button onclick="dupSet('${k}','${v}')" style="border:1px solid ${dupFiltro[k] === v ? '#7c2d12' : '#e5e7eb'};background:${dupFiltro[k] === v ? '#7c2d12' : '#fff'};color:${dupFiltro[k] === v ? '#fff' : '#374151'};border-radius:20px;padding:5px 11px;font-size:11.5px;font-weight:800;cursor:pointer">${t}</button>`;
+    const tag = r => `<span class="tag ${r.origen === 'bitrix' ? 't-bx' : r.origen === 'monday' ? 't-md' : r.origen === 'onedrive' ? 't-od' : 't-pd'}">${r.origen.toUpperCase()}</span>`;
+    const nPend = DUPS.pares.filter(p => !DUP_DEC[dupClave(p)]).length, nMismo = Object.values(DUP_DEC).filter(x => x === 'mismo').length, nDist = Object.values(DUP_DEC).filter(x => x === 'distinto').length;
+    document.getElementById('m-det').innerHTML = `
+      <button class="m-cerrar" onclick="document.getElementById('ov-det').style.display='none'">✕</button>
+      <div class="m-tit">🔍 Posibles duplicados</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Pares de registros que comparten señales (teléfono, correo, RPU, nombre, kWp y vendedor, precio…). Sospecha <b>alta</b> = 4 puntos o más. Al confirmar "es el mismo cliente", uno de los dos deja de contarse en la base (se queda el de Bitrix o el más completo). Nada se borra: la decisión se guarda en este navegador.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+        ${chip('nivel','alta','🔴 Sospecha alta')}${chip('nivel','media','🟠 Media')}${chip('nivel','todas','Todas')}
+        <span style="width:8px"></span>
+        ${chip('estado','pendientes','Por revisar ' + nPend)}${chip('estado','mismo','✔ Mismo cliente ' + nMismo)}${chip('estado','distinto','✖ Distintos ' + nDist)}
+        <input placeholder="buscar empresa…" value="${dupFiltro.q}" oninput="dupFiltro.q=this.value.toLowerCase();clearTimeout(window._dq);window._dq=setTimeout(vistaDuplicados,350)" style="margin-left:auto;border:1.5px solid #e5e7eb;border-radius:8px;padding:6px 9px;font-size:12px;min-width:160px">
+      </div>
+      <div style="font-size:11px;color:#6b7280;margin-bottom:6px">${lista.length.toLocaleString()} pares · toca uno para compararlos</div>
+      <div style="max-height:60vh;overflow-y:auto">
+      ${lista.slice(0, 300).map((p, i) => { const a = byId.get(p.a), b = byId.get(p.b); const dec = DUP_DEC[dupClave(p)];
+        return `<div onclick="vistaParDup(${DUPS.pares.indexOf(p)})" style="display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:6px;cursor:pointer;background:${dec === 'mismo' ? '#f0fdf4' : dec === 'distinto' ? '#f9fafb' : '#fff'}">
+          <div style="font-size:16px;font-weight:900;color:${p.nivel === 'alta' ? '#b91c1c' : '#c2410c'};width:34px;text-align:center" title="puntos">${p.puntos}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:#111827">${tag(a)} ${a.empresa || a.proyecto || a.id} <span style="color:#9ca3af;font-weight:400">↔</span> ${tag(b)} ${b.empresa || b.proyecto || b.id}</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:2px">${p.senales.join(' · ')}</div>
+          </div>
+          <div style="font-size:11px;font-weight:800;white-space:nowrap;color:${dec === 'mismo' ? '#15803d' : dec === 'distinto' ? '#6b7280' : '#b45309'}">${dec === 'mismo' ? '✔ mismo' : dec === 'distinto' ? '✖ distintos' : 'por revisar'}</div>
+        </div>`; }).join('') || '<div style="font-size:12px;color:#9ca3af">Nada que revisar con estos filtros.</div>'}
+      ${lista.length > 300 ? `<div style="font-size:11px;color:#9ca3af;margin-top:6px">Se muestran 300 de ${lista.length}; usa el buscador para acotar.</div>` : ''}
+      </div>`;
+    document.getElementById('ov-det').style.display = 'flex';
+  }
+  function vistaParDup(ix) {
+    const p = DUPS.pares[ix]; const byId = new Map(DATA.map(r => [r.id, r]));
+    const a = byId.get(p.a), b = byId.get(p.b); if (!a || !b) return;
+    const dec = DUP_DEC[dupClave(p)];
+    const f = (r, k, fmt) => { const v = r[k]; return (v == null || v === '' || v === 0) ? '<span style="color:#d1d5db">—</span>' : (fmt ? fmt(v) : v); };
+    const campos = [['Origen', r => r.origen.toUpperCase() + ' · ' + r.id], ['Empresa', r => f(r, 'empresa')], ['Proyecto', r => f(r, 'proyecto')],
+      ['Contacto', r => f(r, 'contacto')], ['Teléfono', r => f(r, 'tel')], ['Correo', r => f(r, 'email')],
+      ['kWp', r => f(r, 'kwp', x => (+x).toLocaleString('es-MX'))], ['Precio USD', r => f(r, 'precioUSD', x => '$' + Math.round(x).toLocaleString('es-MX'))],
+      ['% energía', r => f(r, 'energia', x => x + '%')], ['Vendedor', r => f(r, 'dueno')], ['Estado', r => f(r, 'estado')], ['Etapa', r => f(r, 'etapa')],
+      ['Último contacto', r => f(r, 'ultContacto')], ['Datos capturados', r => (r.completitud || 0) + '/10']];
+    const igual = (x, y) => x && y && x === y;
+    document.getElementById('m-det').innerHTML = `
+      <button class="m-cerrar" onclick="document.getElementById('ov-det').style.display='none'">✕</button>
+      <button onclick="vistaDuplicados()" style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:800;cursor:pointer;margin-bottom:8px">← Volver a la lista</button>
+      <div class="m-tit">¿Son el mismo cliente?</div>
+      <div style="font-size:12px;color:#374151;margin-bottom:10px"><b style="color:${p.nivel === 'alta' ? '#b91c1c' : '#c2410c'}">${p.puntos} puntos · sospecha ${p.nivel}</b> · ${p.senales.join(' · ')}</div>
+      <div style="overflow-x:auto"><table style="box-shadow:none">
+        <tr><th>Dato</th><th>A</th><th>B</th></tr>
+        ${campos.map(([t, g]) => { const va = g(a), vb = g(b); const same = igual(va, vb) && !va.includes('color:#d1d5db') && t !== 'Datos capturados';
+          return `<tr${same ? ' style="background:#fef3c7"' : ''}><td style="font-weight:700;color:#6b7280">${t}${same ? ' <span title="coincide">⚑</span>' : ''}</td><td>${va}</td><td>${vb}</td></tr>`; }).join('')}
+      </table></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button onclick="dupDecidir(${ix},'mismo')" style="flex:1;background:${dec === 'mismo' ? '#15803d' : '#fff'};color:${dec === 'mismo' ? '#fff' : '#15803d'};border:2px solid #15803d;border-radius:10px;padding:11px;font-size:13px;font-weight:900;cursor:pointer">✔ Es el mismo cliente</button>
+        <button onclick="dupDecidir(${ix},'distinto')" style="flex:1;background:${dec === 'distinto' ? '#374151' : '#fff'};color:${dec === 'distinto' ? '#fff' : '#374151'};border:2px solid #9ca3af;border-radius:10px;padding:11px;font-size:13px;font-weight:900;cursor:pointer">✖ Son distintos</button>
+        ${dec ? `<button onclick="dupDecidir(${ix},null)" style="background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:10px;padding:11px 14px;font-size:12px;font-weight:700;cursor:pointer">Deshacer</button>` : ''}
+      </div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:8px">Si confirmas que es el mismo, se oculta ${(a.origen === 'bitrix') !== (b.origen === 'bitrix') ? 'el que no es de Bitrix' : 'el que tiene menos datos'} para que el cliente cuente una sola vez. Puedes deshacerlo cuando quieras.</div>`;
+    document.getElementById('ov-det').style.display = 'flex';
+  }
+  window.dupDecidir = (ix, dec) => {
+    const p = DUPS.pares[ix];
+    if (dec) DUP_DEC[dupClave(p)] = dec; else delete DUP_DEC[dupClave(p)];
+    try { localStorage.setItem('dup_decisiones', JSON.stringify(DUP_DEC)); } catch {}
+    dupRecalcularOcultos(); pinta(1);
+    const pend = DUPS.pares.filter(q => !DUP_DEC[dupClave(q)]).length;
+    document.getElementById('btn-dup').textContent = `🔍 Posibles duplicados · ${pend.toLocaleString()}`;
+    vistaDuplicados();
+  };
   function baseQ() {
     const q = (document.getElementById('buscar').value || '').toLowerCase();
     let arr = DATA.filter(r => !q || [r.empresa, r.proyecto, r.contacto, r.dueno].join(' ').toLowerCase().includes(q));
