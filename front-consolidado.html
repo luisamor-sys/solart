@@ -497,7 +497,7 @@
     const campos = [['Origen', r => r.origen.toUpperCase() + ' · ' + r.id], ['Tipo de proyecto', r => (r.tipo || []).length ? r.tipo.join(' + ') : '<span style="color:#d1d5db">—</span>'], ['Empresa', r => f(r, 'empresa')], ['Proyecto', r => f(r, 'proyecto')],
       ['Contacto', r => f(r, 'contacto')], ['Teléfono', r => f(r, 'tel')], ['Correo', r => f(r, 'email')],
       ['kWp', r => f(r, 'kwp', x => (+x).toLocaleString('es-MX'))], ['Precio USD', r => f(r, 'precioUSD', x => '$' + Math.round(x).toLocaleString('es-MX'))],
-      ['% energía', r => f(r, 'energia', x => x + '%')], ['Vendedor', r => f(r, 'dueno')], ['Estado', r => f(r, 'estado')], ['Etapa', r => f(r, 'etapa')],
+      ['% energía', r => f(r, 'energia', x => x + '%')], ['Vendedor', r => f(r, 'dueno')], ['Vendedores anteriores', r => (r.duenosAnteriores || []).length ? r.duenosAnteriores.join(', ') : '<span style="color:#d1d5db">—</span>'], ['Estado', r => f(r, 'estado')], ['Etapa', r => f(r, 'etapa')],
       ['Último contacto', r => f(r, 'ultContacto')], ['Datos capturados', r => (r.completitud || 0) + '/10']];
     const igual = (x, y) => x && y && x === y;
     document.getElementById('m-det').innerHTML = `
@@ -710,7 +710,7 @@
         <td>${r.retorno ? r.retorno + ' años' : '—'}</td>
         <td>${r.energia ? r.energia + '%' : '—'}</td>
         <td>${r.ultContacto || '—'}</td>
-        <td style="max-width:130px;font-size:11px;color:#6b7280">${r.dueno || '—'}</td>
+        <td style="max-width:130px;font-size:11px;color:#6b7280" title="${(r.duenosAnteriores || []).length ? 'Antes: ' + r.duenosAnteriores.join(', ') : ''}">${r.dueno || '—'}${(r.duenosAnteriores || []).length ? ` <span style="color:#b45309" title="antes: ${r.duenosAnteriores.join(', ')}">🔁</span><div style="font-size:10px;color:#9ca3af">antes: ${r.duenosAnteriores.join(', ')}</div>` : ''}</td>
         <td>${r.estado === 'ganado' ? '🏆' : r.estado === 'perdido' ? '❌' : '🟢'} ${r.estado}</td>
         <td class="comp ${cc}">${r.completitud}/10</td>
         ${celdasMonday(r)}
@@ -808,6 +808,7 @@
       ${fila('Retorno', r.retorno ? r.retorno + ' años' : null)}
       ${fila('% Energía cubierta', r.energia ? r.energia + '%' : null)}
       ${fila('Último contacto', r.ultContacto)}
+      ${fila('Vendedores anteriores', (r.duenosAnteriores || []).length ? r.duenosAnteriores.join(', ') : null)}
       ${fila('Tipo de proyecto', (r.tipo || []).length ? r.tipo.join(' + ') : null)}
       ${fila('Estado', r.estado)}
       ${bloqueOneDrive(r)}
