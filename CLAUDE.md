@@ -255,6 +255,36 @@ de dos dígitos. Regla sostenida en todo ese trabajo: **renombrar nunca implica 
 responsables ni campos.** Los enlaces internos de esos documentos apuntan a rutas macOS viejas
 (`/Users/luisamor/Documents/BITRIX_SOLART/`) aunque los archivos ya viven en este repo.
 
+## Asistente conversacional sobre Bitrix (`solart.py`)
+
+Cuando alguien pregunte en lenguaje natural por actividad de vendedores, proyectos viables, datos de una negociación,
+o pida crear un cliente o mover una etapa, **usa `python3 solart.py`** en vez de improvisar llamadas al API:
+
+```bash
+python3 solart.py actividad --vendedor samuel [--fecha 2026-10-19 | --dias 7]   # qué hizo (etapas, prospectos, llamadas, comentarios, tareas)
+python3 solart.py viables [--top 20] [--vendedor christian] [--detalle]        # selección ⭐ con datos vivos de Bitrix
+python3 solart.py negociacion --buscar "grupo dafna"                           # ficha de una negociación
+python3 solart.py cliente --empresa "X" --contacto "Nombre Apellido" --tel ... --email ... --vendedor samuel --tipo FV [--como negociacion] --por dani
+python3 solart.py mover --deal 724 --etapa "Propuesta Formal" --por dani [--justificacion "..."]
+python3 solart.py etapas
+```
+
+Reglas:
+- **Lecturas** (`actividad`, `viables`, `negociacion`, `etapas`): ejecútalas directo y resume el resultado en español; no
+  inventes datos que el comando no haya devuelto. Si la persona pregunta "hoy", usa la fecha de hoy; si no hay
+  movimiento, dilo tal cual.
+- **Escrituras** (`cliente`, `mover`): corre primero el comando **sin** `--confirmar`, muestra el plan a la persona y
+  solo si responde que sí lo repites con `--confirmar`. Nunca confirmes por tu cuenta. Pasa siempre `--por <quien pide>`
+  para que quede la autoría en el comentario (todo corre con el webhook de Luis, id 12). Marcar PERDIDA exige
+  `--justificacion`.
+- Un cliente nuevo entra como **prospecto** (lead) salvo que pidan explícitamente negociación (`--como negociacion`:
+  crea compañía + contacto + deal en 1_Generación de propuesta). Los robots de Bitrix reasignan lo recién creado; el
+  script vuelve a asignar al vendedor y lo verifica.
+- Las fechas de Bitrix vienen en `+03:00`; `actividad` ya lo contempla. Las actividades creadas desde la app tienen
+  `AUTHOR_ID 12` y `RESPONSIBLE_ID` del vendedor: el comando busca por ambos.
+- Este script es la base de la fase 2 (conector MCP para Claude Team): si agregas comandos, mantén la misma forma
+  (lectura directa / escritura con `--confirmar`).
+
 ## Pendientes conocidos
 
 - Proxy de IA sin desplegar (falta tarjeta/RFC para la llave de Anthropic).
