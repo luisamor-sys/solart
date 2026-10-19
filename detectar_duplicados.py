@@ -165,18 +165,23 @@ def main():
         puntos = sum(PESOS[s] for s in ss)
         if puntos < UMBRAL_MEDIA:
             continue
+        # Mismo cliente pero servicios distintos (FV vs SC vs BESS): no es duplicado, es otra propuesta
+        ta, tb = set(a.get('tipo') or []), set(b.get('tipo') or [])
+        otro_servicio = bool(ta and tb and not (ta & tb))
         pares.append({
             'a': ia, 'b': ib, 'puntos': puntos,
-            'nivel': 'alta' if puntos >= UMBRAL_ALTA else 'media',
+            'nivel': 'otro servicio' if otro_servicio else ('alta' if puntos >= UMBRAL_ALTA else 'media'),
+            'tipos': [sorted(ta), sorted(tb)],
             'senales': sorted(ss, key=lambda s: -PESOS[s]),
             'origenes': [a['origen'], b['origen']],
         })
     pares.sort(key=lambda p: (-p['puntos'], p['a']))
     salida = {'generado': datetime.now().isoformat(timespec='seconds'), 'pesos': PESOS,
               'umbrales': {'alta': UMBRAL_ALTA, 'media': UMBRAL_MEDIA},
-              'total': len(pares), 'alta': sum(1 for p in pares if p['nivel'] == 'alta'), 'pares': pares}
+              'total': len(pares), 'alta': sum(1 for p in pares if p['nivel'] == 'alta'),
+              'otroServicio': sum(1 for p in pares if p['nivel'] == 'otro servicio'), 'pares': pares}
     json.dump(salida, open(os.path.join(AQUI, 'duplicados.json'), 'w'), ensure_ascii=False)
-    print(f"pares: {len(pares)} (alta {salida['alta']}, media {len(pares) - salida['alta']})")
+    print(f"pares: {len(pares)} (alta {salida['alta']}, media {len(pares) - salida['alta'] - salida['otroServicio']}, mismo cliente/otro servicio {salida['otroServicio']})")
     cuenta = defaultdict(int)
     for p in pares:
         for s in p['senales']:

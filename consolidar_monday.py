@@ -60,6 +60,13 @@ def limpiar_vendedor(txt):
     return primero or None
 
 
+def tipo_proyecto(*textos, ids=None):
+    txt = ' ' + ' '.join(str(x or '') for x in textos).upper() + ' '
+    reglas = [('FV', r'\bFV\b|FOTOVOLT|\bPV\b|\bPVT\b|SOLAR'), ('SC', r'\bSC\b|SUMINISTRO CALIF|\bSUMINISTRO\b'),
+              ('BESS', r'\bBESS\b|BATER[IÍ]A|ALMACENAMIENTO'), ('MANT', r'MANTENIMIENTO|\bO&M\b')]
+    return [t for t, rx in reglas if re.search(rx, txt)]
+
+
 def norm(s):
     s = unicodedata.normalize('NFD', str(s or ''))
     s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
@@ -217,6 +224,7 @@ def main():
                 'ultContacto': m['ultContacto'], 'estado': 'abierto',
                 'dueno': m['dueno'] or '', 'enBitrix': False,
                 'pipeline': m['tablero'], 'etapa': m['estatus'] or None,
+                'tipo': tipo_proyecto(m['empresa'], m.get('nota'), m['tablero']),
                 'monday': bloque,
             })
 

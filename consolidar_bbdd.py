@@ -47,7 +47,7 @@ users = {u['ID']: (u.get('NAME','') + ' ' + (u.get('LAST_NAME') or '')).strip()
          for u in bx('user.get', {'ADMIN_MODE': 'True'}).get('result', [])}
 sel = ['ID','TITLE','CATEGORY_ID','STAGE_ID','ASSIGNED_BY_ID','OPPORTUNITY','CURRENCY_ID','CONTACT_ID',
        'DATE_CREATE','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_TITLE',
-       'UF_CRM_1741392978542','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1758676152864']
+       'UF_CRM_1741392978542','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1758676152864','UF_CRM_1743795019024']
 bit = []
 for cat in [0, 2, 4, 6]:
     bit += bx_all('crm.deal.list', {'filter': {'CATEGORY_ID': cat}, 'select': sel})
@@ -61,6 +61,22 @@ for cat in [0, 2, 4, 6]:
     ent = 'DEAL_STAGE' if cat == 0 else f'DEAL_STAGE_{cat}'
     for st in bx('crm.status.list', {'filter[ENTITY_ID]': ent}).get('result', []):
         ETAPAS[st['STATUS_ID']] = st['NAME']
+
+TIPO_BX = {'312': 'FV', '310': 'BESS', '336': 'SC', '526': 'MANT'}
+def tipo_proyecto(*textos, ids=None):
+    """Tipo(s) de servicio: FV (fotovoltaico), SC (suministro calificado), BESS (baterías), MANT.
+    Primero el campo de Bitrix; si no, siglas y palabras clave en título/proyecto/empresa."""
+    tipos = []
+    for i in (ids or []):
+        t = TIPO_BX.get(str(i))
+        if t and t not in tipos: tipos.append(t)
+    if tipos: return tipos
+    txt = ' ' + ' '.join(str(x or '') for x in textos).upper() + ' '
+    reglas = [('FV', r'\bFV\b|FOTOVOLT|\bPV\b|\bPVT\b|SOLAR'), ('SC', r'\bSC\b|SUMINISTRO CALIF|\bSUMINISTRO\b'),
+              ('BESS', r'\bBESS\b|BATER[IÍ]A|ALMACENAMIENTO'), ('MANT', r'MANTENIMIENTO|\bO&M\b')]
+    for t, rx in reglas:
+        if re.search(rx, txt): tipos.append(t)
+    return tipos
 
 def empresa_bitrix(title):
     partes = [p.strip() for p in str(title or '').split('_') if p.strip()]
@@ -103,6 +119,7 @@ for d in bit:
         'estado': 'ganado' if str(d.get('STAGE_ID','')).endswith('WON') or str(d.get('CATEGORY_ID')) in ('4','6')
                   else ('perdido' if str(d.get('STAGE_ID','')).endswith('LOSE') else 'abierto'),
         'dueno': users.get(str(d.get('ASSIGNED_BY_ID')), ''),
+        'tipo': tipo_proyecto(d.get('TITLE'), d.get('UF_CRM_1741392978542'), ids=(d.get('UF_CRM_1743795019024') or [])),
         'pipeline': PIPELINES.get(str(d.get('CATEGORY_ID')), 'Embudo ' + str(d.get('CATEGORY_ID'))),
         'etapa': ETAPAS.get(str(d.get('STAGE_ID')), str(d.get('STAGE_ID') or '')),
     })
@@ -158,6 +175,7 @@ for d in deals_pd:
         'ultContacto': ult,
         'estado': {'Ganado': 'ganado', 'Perdido': 'perdido'}.get(d.get('Estado'), 'abierto'),
         'dueno': d.get('Propietario') or '',
+        'tipo': tipo_proyecto(d.get('Título'), d.get('Organización'), desc),
         'pipeline': d.get('Embudo') or None,
         'etapa': d.get('Etapa') or None,
         'enBitrix': norm(emp) in emp_bitrix if emp else False,

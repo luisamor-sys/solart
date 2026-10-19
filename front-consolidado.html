@@ -182,7 +182,7 @@
   ];
   let DATA = [], pagina = 1, seleccionRifa = null;
   // Filtros laterales (multi-selección estilo buscador de vuelos)
-  const F = { origen: new Set(), estado: new Set(), esp: new Set(), dueno: new Set(), pipeline: new Set(), etapa: new Set(), usdMin:'', usdMax:'', kwMin:'', kwMax:'', enMin:'', compMin:'' };
+  const F = { origen: new Set(), estado: new Set(), esp: new Set(), dueno: new Set(), pipeline: new Set(), etapa: new Set(), tipo: new Set(), usdMin:'', usdMax:'', kwMin:'', kwMax:'', enMin:'', compMin:'' };
   const POR_PAG = 60;
   const fUSD = n => n ? '$' + Math.round(n).toLocaleString('es-MX') : '—';
   const asignados = new Set(JSON.parse(localStorage.getItem('rifa_asignados') || '[]'));
@@ -282,7 +282,7 @@
   };
   window.setRango = (campo, val) => { F[campo] = val; pinta(1); };
   window.limpiarF = () => {
-    ['origen','estado','esp','dueno','pipeline','etapa'].forEach(g => F[g].clear());
+    ['origen','estado','esp','dueno','pipeline','etapa','tipo'].forEach(g => F[g].clear());
     ['usdMin','usdMax','kwMin','kwMax','enMin','compMin'].forEach(c => F[c] = '');
     document.querySelectorAll('#lateral input[type=checkbox]').forEach(c => c.checked = false);
     document.querySelectorAll('#lateral input[type=number]').forEach(c => c.value = '');
@@ -309,6 +309,7 @@
     if (saltar !== 'esp' && F.esp.size && !(() => { const sel = [...F.esp], subs = sel.filter(e => e.startsWith('prio_') && e !== 'prio_od'), otros = sel.filter(e => !e.startsWith('prio_') || e === 'prio_od');
       return otros.every(e => cumpleEsp(r, e)) && (!subs.length || subs.some(e => cumpleEsp(r, e))); })()) return false;
     if (saltar !== 'dueno' && F.dueno.size && !F.dueno.has(r.dueno || 'Sin vendedor')) return false;
+    if (saltar !== 'tipo' && F.tipo.size && !(r.tipo || ['Sin tipo']).some(t => F.tipo.has(t)) && !(F.tipo.has('Sin tipo') && !(r.tipo || []).length)) return false;
     if (saltar !== 'pipeline' && F.pipeline.size && !F.pipeline.has((r.pipeline || 'Sin embudo').replace(/'/g, ''))) return false;
     if (saltar !== 'etapa' && F.etapa.size && !F.etapa.has((r.etapa || 'Sin etapa').replace(/'/g, ''))) return false;
     const usd = parseFloat(r.precioUSD) || 0, kw = parseFloat(r.kwp) || 0, en = parseFloat(r.energia) || 0;
@@ -438,48 +439,51 @@
   fetch('duplicados.json?v=' + Date.now()).then(r => r.json()).then(d => {
     DUPS = d; dupRecalcularOcultos();
     const btn = document.getElementById('btn-dup');
-    const pend = d.pares.filter(p => !DUP_DEC[dupClave(p)]).length;
+    const pend = d.pares.filter(p => !dupDecision(p)).length;
     btn.textContent = `🔍 Posibles duplicados · ${pend.toLocaleString()}`; btn.style.display = '';
     if (DUP_OCULTOS.size && typeof pinta === 'function') pinta(1);
   }).catch(() => {});
 
   let dupFiltro = { nivel: 'alta', estado: 'pendientes', q: '' };
+  const dupDecision = p => DUP_DEC[dupClave(p)] || (p.nivel === 'otro servicio' ? 'otro' : null);
   window.dupSet = (k, v) => { dupFiltro[k] = v; vistaDuplicados(); };
   function vistaDuplicados() {
     if (!DUPS) return;
     const byId = new Map(DATA.map(r => [r.id, r]));
     const lista = DUPS.pares.filter(p => {
-      const dec = DUP_DEC[dupClave(p)];
+      const dec = dupDecision(p);
       if (dupFiltro.nivel !== 'todas' && p.nivel !== dupFiltro.nivel) return false;
       if (dupFiltro.estado === 'pendientes' && dec) return false;
       if (dupFiltro.estado === 'mismo' && dec !== 'mismo') return false;
       if (dupFiltro.estado === 'distinto' && dec !== 'distinto') return false;
+      if (dupFiltro.estado === 'otro' && dec !== 'otro') return false;
       if (dupFiltro.q) { const t = ((byId.get(p.a) || {}).empresa + ' ' + (byId.get(p.b) || {}).empresa).toLowerCase(); if (!t.includes(dupFiltro.q)) return false; }
       return byId.has(p.a) && byId.has(p.b);
     });
     const chip = (k, v, t) => `<button onclick="dupSet('${k}','${v}')" style="border:1px solid ${dupFiltro[k] === v ? '#7c2d12' : '#e5e7eb'};background:${dupFiltro[k] === v ? '#7c2d12' : '#fff'};color:${dupFiltro[k] === v ? '#fff' : '#374151'};border-radius:20px;padding:5px 11px;font-size:11.5px;font-weight:800;cursor:pointer">${t}</button>`;
     const tag = r => `<span class="tag ${r.origen === 'bitrix' ? 't-bx' : r.origen === 'monday' ? 't-md' : r.origen === 'onedrive' ? 't-od' : 't-pd'}">${r.origen.toUpperCase()}</span>`;
-    const nPend = DUPS.pares.filter(p => !DUP_DEC[dupClave(p)]).length, nMismo = Object.values(DUP_DEC).filter(x => x === 'mismo').length, nDist = Object.values(DUP_DEC).filter(x => x === 'distinto').length;
+    const nPend = DUPS.pares.filter(p => !dupDecision(p)).length, nMismo = DUPS.pares.filter(p => dupDecision(p) === 'mismo').length, nDist = DUPS.pares.filter(p => dupDecision(p) === 'distinto').length, nOtro = DUPS.pares.filter(p => dupDecision(p) === 'otro').length;
     document.getElementById('m-det').innerHTML = `
       <button class="m-cerrar" onclick="document.getElementById('ov-det').style.display='none'">✕</button>
       <div class="m-tit">🔍 Posibles duplicados</div>
-      <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Pares de registros que comparten señales (teléfono, correo, RPU, nombre, kWp y vendedor, precio…). Sospecha <b>alta</b> = 4 puntos o más. Al confirmar "es el mismo cliente", uno de los dos deja de contarse en la base (se queda el de Bitrix o el más completo). Nada se borra: la decisión se guarda en este navegador.</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:10px">Pares de registros que comparten señales (teléfono, correo, RPU, nombre, kWp y vendedor, precio…). Sospecha <b>alta</b> = 4 puntos o más. Si los dos registros son del mismo cliente pero de <b>servicios distintos</b> (FV, SC, BESS), no es duplicado: se clasifican solos como "otro servicio" y los dos siguen contando. Al confirmar un duplicado, uno deja de contarse (se queda el de Bitrix o el más completo). Nada se borra: la decisión se guarda en este navegador.</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
-        ${chip('nivel','alta','🔴 Sospecha alta')}${chip('nivel','media','🟠 Media')}${chip('nivel','todas','Todas')}
+        ${chip('nivel','alta','🔴 Sospecha alta')}${chip('nivel','media','🟠 Media')}${chip('nivel','otro servicio','🔀 Otro servicio')}${chip('nivel','todas','Todas')}
         <span style="width:8px"></span>
-        ${chip('estado','pendientes','Por revisar ' + nPend)}${chip('estado','mismo','✔ Mismo cliente ' + nMismo)}${chip('estado','distinto','✖ Distintos ' + nDist)}
+        ${chip('estado','pendientes','Por revisar ' + nPend)}${chip('estado','mismo','✔ Duplicado ' + nMismo)}${chip('estado','otro','🔀 Mismo cliente, otro servicio ' + nOtro)}${chip('estado','distinto','✖ Distintos ' + nDist)}
         <input placeholder="buscar empresa…" value="${dupFiltro.q}" oninput="dupFiltro.q=this.value.toLowerCase();clearTimeout(window._dq);window._dq=setTimeout(vistaDuplicados,350)" style="margin-left:auto;border:1.5px solid #e5e7eb;border-radius:8px;padding:6px 9px;font-size:12px;min-width:160px">
       </div>
       <div style="font-size:11px;color:#6b7280;margin-bottom:6px">${lista.length.toLocaleString()} pares · toca uno para compararlos</div>
       <div style="max-height:60vh;overflow-y:auto">
-      ${lista.slice(0, 300).map((p, i) => { const a = byId.get(p.a), b = byId.get(p.b); const dec = DUP_DEC[dupClave(p)];
-        return `<div onclick="vistaParDup(${DUPS.pares.indexOf(p)})" style="display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:6px;cursor:pointer;background:${dec === 'mismo' ? '#f0fdf4' : dec === 'distinto' ? '#f9fafb' : '#fff'}">
-          <div style="font-size:16px;font-weight:900;color:${p.nivel === 'alta' ? '#b91c1c' : '#c2410c'};width:34px;text-align:center" title="puntos">${p.puntos}</div>
+      ${lista.slice(0, 300).map((p, i) => { const a = byId.get(p.a), b = byId.get(p.b); const dec = dupDecision(p);
+        const tp = r => (r.tipo || []).map(t => `<span class="tag" style="background:#e0f2fe;color:#075985">${t}</span>`).join('');
+        return `<div onclick="vistaParDup(${DUPS.pares.indexOf(p)})" style="display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:6px;cursor:pointer;background:${dec === 'mismo' ? '#f0fdf4' : dec === 'otro' ? '#eff6ff' : dec === 'distinto' ? '#f9fafb' : '#fff'}">
+          <div style="font-size:16px;font-weight:900;color:${p.nivel === 'alta' ? '#b91c1c' : p.nivel === 'otro servicio' ? '#1d4ed8' : '#c2410c'};width:34px;text-align:center" title="puntos">${p.puntos}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:700;color:#111827">${tag(a)} ${a.empresa || a.proyecto || a.id} <span style="color:#9ca3af;font-weight:400">↔</span> ${tag(b)} ${b.empresa || b.proyecto || b.id}</div>
+            <div style="font-size:13px;font-weight:700;color:#111827">${tag(a)}${tp(a)} ${a.empresa || a.proyecto || a.id} <span style="color:#9ca3af;font-weight:400">↔</span> ${tag(b)}${tp(b)} ${b.empresa || b.proyecto || b.id}</div>
             <div style="font-size:11px;color:#6b7280;margin-top:2px">${p.senales.join(' · ')}</div>
           </div>
-          <div style="font-size:11px;font-weight:800;white-space:nowrap;color:${dec === 'mismo' ? '#15803d' : dec === 'distinto' ? '#6b7280' : '#b45309'}">${dec === 'mismo' ? '✔ mismo' : dec === 'distinto' ? '✖ distintos' : 'por revisar'}</div>
+          <div style="font-size:11px;font-weight:800;white-space:nowrap;color:${dec === 'mismo' ? '#15803d' : dec === 'otro' ? '#1d4ed8' : dec === 'distinto' ? '#6b7280' : '#b45309'}">${dec === 'mismo' ? '✔ duplicado' : dec === 'otro' ? '🔀 otro servicio' : dec === 'distinto' ? '✖ distintos' : 'por revisar'}</div>
         </div>`; }).join('') || '<div style="font-size:12px;color:#9ca3af">Nada que revisar con estos filtros.</div>'}
       ${lista.length > 300 ? `<div style="font-size:11px;color:#9ca3af;margin-top:6px">Se muestran 300 de ${lista.length}; usa el buscador para acotar.</div>` : ''}
       </div>`;
@@ -488,9 +492,9 @@
   function vistaParDup(ix) {
     const p = DUPS.pares[ix]; const byId = new Map(DATA.map(r => [r.id, r]));
     const a = byId.get(p.a), b = byId.get(p.b); if (!a || !b) return;
-    const dec = DUP_DEC[dupClave(p)];
+    const dec = dupDecision(p);
     const f = (r, k, fmt) => { const v = r[k]; return (v == null || v === '' || v === 0) ? '<span style="color:#d1d5db">—</span>' : (fmt ? fmt(v) : v); };
-    const campos = [['Origen', r => r.origen.toUpperCase() + ' · ' + r.id], ['Empresa', r => f(r, 'empresa')], ['Proyecto', r => f(r, 'proyecto')],
+    const campos = [['Origen', r => r.origen.toUpperCase() + ' · ' + r.id], ['Tipo de proyecto', r => (r.tipo || []).length ? r.tipo.join(' + ') : '<span style="color:#d1d5db">—</span>'], ['Empresa', r => f(r, 'empresa')], ['Proyecto', r => f(r, 'proyecto')],
       ['Contacto', r => f(r, 'contacto')], ['Teléfono', r => f(r, 'tel')], ['Correo', r => f(r, 'email')],
       ['kWp', r => f(r, 'kwp', x => (+x).toLocaleString('es-MX'))], ['Precio USD', r => f(r, 'precioUSD', x => '$' + Math.round(x).toLocaleString('es-MX'))],
       ['% energía', r => f(r, 'energia', x => x + '%')], ['Vendedor', r => f(r, 'dueno')], ['Estado', r => f(r, 'estado')], ['Etapa', r => f(r, 'etapa')],
@@ -508,10 +512,12 @@
       </table></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
         <button onclick="dupDecidir(${ix},'mismo')" style="flex:1;background:${dec === 'mismo' ? '#15803d' : '#fff'};color:${dec === 'mismo' ? '#fff' : '#15803d'};border:2px solid #15803d;border-radius:10px;padding:11px;font-size:13px;font-weight:900;cursor:pointer">✔ Es el mismo cliente</button>
+        <button onclick="dupDecidir(${ix},'otro')" style="flex:1;background:${dec === 'otro' ? '#1d4ed8' : '#fff'};color:${dec === 'otro' ? '#fff' : '#1d4ed8'};border:2px solid #1d4ed8;border-radius:10px;padding:11px;font-size:13px;font-weight:900;cursor:pointer">🔀 Mismo cliente, otro servicio</button>
         <button onclick="dupDecidir(${ix},'distinto')" style="flex:1;background:${dec === 'distinto' ? '#374151' : '#fff'};color:${dec === 'distinto' ? '#fff' : '#374151'};border:2px solid #9ca3af;border-radius:10px;padding:11px;font-size:13px;font-weight:900;cursor:pointer">✖ Son distintos</button>
         ${dec ? `<button onclick="dupDecidir(${ix},null)" style="background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:10px;padding:11px 14px;font-size:12px;font-weight:700;cursor:pointer">Deshacer</button>` : ''}
       </div>
-      <div style="font-size:11px;color:#9ca3af;margin-top:8px">Si confirmas que es el mismo, se oculta ${(a.origen === 'bitrix') !== (b.origen === 'bitrix') ? 'el que no es de Bitrix' : 'el que tiene menos datos'} para que el cliente cuente una sola vez. Puedes deshacerlo cuando quieras.</div>`;
+      ${p.nivel === 'otro servicio' ? '<div style="font-size:11.5px;color:#1d4ed8;font-weight:700;margin-top:8px">🔀 Clasificado solo: mismo cliente con servicios distintos (' + p.tipos[0].join('+') + ' vs ' + p.tipos[1].join('+') + '). Los dos siguen contando.</div>' : ''}
+      <div style="font-size:11px;color:#9ca3af;margin-top:8px">Si confirmas que es duplicado, se oculta ${(a.origen === 'bitrix') !== (b.origen === 'bitrix') ? 'el que no es de Bitrix' : 'el que tiene menos datos'} para que el cliente cuente una sola vez. Puedes deshacerlo cuando quieras.</div>`;
     document.getElementById('ov-det').style.display = 'flex';
   }
   window.dupDecidir = (ix, dec) => {
@@ -519,7 +525,7 @@
     if (dec) DUP_DEC[dupClave(p)] = dec; else delete DUP_DEC[dupClave(p)];
     try { localStorage.setItem('dup_decisiones', JSON.stringify(DUP_DEC)); } catch {}
     dupRecalcularOcultos(); pinta(1);
-    const pend = DUPS.pares.filter(q => !DUP_DEC[dupClave(q)]).length;
+    const pend = DUPS.pares.filter(q => !dupDecision(q)).length;
     document.getElementById('btn-dup').textContent = `🔍 Posibles duplicados · ${pend.toLocaleString()}`;
     vistaDuplicados();
   };
@@ -548,6 +554,9 @@
       </details>
       <details open><summary>Estado</summary>
         ${cb('estado','abierto','🟢 Abiertos')}${cb('estado','ganado','🏆 Ganados')}${cb('estado','perdido','❌ Perdidos')}
+      </details>
+      <details open><summary>Tipo de proyecto</summary>
+        ${[['FV','☀️ FV · fotovoltaico'],['SC','🔌 SC · suministro calificado'],['BESS','🔋 BESS · baterías'],['MANT','🛠️ Mantenimiento'],['Sin tipo','Sin tipo capturado']].map(([v, t]) => cb('tipo', v, t)).join('')}
       </details>
       <details open><summary>Especiales</summary>
         ${cb('esp', 'prio', ESPECIALES.find(([x]) => x === 'prio')[1])}
@@ -618,6 +627,7 @@
       const n = g === 'origen' ? arr.filter(r => r.origen === v).length
         : g === 'estado' ? arr.filter(r => r.estado === v).length
         : g === 'esp' ? arr.filter(r => cumpleEsp(r, v)).length
+        : g === 'tipo' ? arr.filter(r => v === 'Sin tipo' ? !(r.tipo || []).length : (r.tipo || []).includes(v)).length
         : g === 'pipeline' ? arr.filter(r => (r.pipeline || 'Sin embudo').replace(/'/g, '') === v).length
         : g === 'etapa' ? arr.filter(r => (r.etapa || 'Sin etapa').replace(/'/g, '') === v).length
         : arr.filter(r => (r.dueno || 'Sin vendedor').replace(/'/g, '') === v).length;
@@ -688,7 +698,7 @@
       const nProp = r.od ? (r.od.nPropuestas || 0) : 0;
       const cc = r.completitud >= 7 ? 'c-alta' : r.completitud >= 4 ? 'c-media' : 'c-baja';
       return `<tr onclick="detalle('${r.id}')">
-        <td>${tag}${sospechoso(r) ? ' <span class="tag" style="background:#fee2e2;color:#991b1b">⚠️ DATO DUDOSO</span>' : ''}${({ conprecio: ' <span class="tag" style="background:#dcfce7;color:#15803d" title="Prioridad con precio y contacto: lista para trabajarse">🎯 PRIORIDAD · CON PRECIO</span>', sinprecio: ' <span class="tag" style="background:#fef3c7;color:#92400e" title="Prioridad por tamaño, pero falta cotizar">🎯 PRIORIDAD · SIN PRECIO</span>', sinenergia: ' <span class="tag" style="background:#e0e7ff;color:#3730a3" title="Entra por tamaño, pero no sabemos qué % de su energía cubrimos">🎯 PRIORIDAD · SIN % DE ENERGÍA</span>', sincontacto: ' <span class="tag" style="background:#fee2e2;color:#991b1b" title="Prioridad por tamaño, pero no hay teléfono ni correo">🎯 PRIORIDAD · SIN CONTACTO</span>' })[clasePrio(r)] || ''}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${nProp ? ` <span class="tag t-od" title="propuestas en OneDrive">📁 ${nProp}</span>` : ''}${r.od && r.od.pendienteDescarga ? ' <span class="tag" style="background:#fef9c3;color:#854d0e" title="la carpeta está en la nube pero los archivos no se han descargado">⏳ sin descargar</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
+        <td>${tag}${(r.tipo || []).map(t => ` <span class="tag" style="background:#e0f2fe;color:#075985" title="tipo de proyecto">${t}</span>`).join('')}${sospechoso(r) ? ' <span class="tag" style="background:#fee2e2;color:#991b1b">⚠️ DATO DUDOSO</span>' : ''}${({ conprecio: ' <span class="tag" style="background:#dcfce7;color:#15803d" title="Prioridad con precio y contacto: lista para trabajarse">🎯 PRIORIDAD · CON PRECIO</span>', sinprecio: ' <span class="tag" style="background:#fef3c7;color:#92400e" title="Prioridad por tamaño, pero falta cotizar">🎯 PRIORIDAD · SIN PRECIO</span>', sinenergia: ' <span class="tag" style="background:#e0e7ff;color:#3730a3" title="Entra por tamaño, pero no sabemos qué % de su energía cubrimos">🎯 PRIORIDAD · SIN % DE ENERGÍA</span>', sincontacto: ' <span class="tag" style="background:#fee2e2;color:#991b1b" title="Prioridad por tamaño, pero no hay teléfono ni correo">🎯 PRIORIDAD · SIN CONTACTO</span>' })[clasePrio(r)] || ''}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${nProp ? ` <span class="tag t-od" title="propuestas en OneDrive">📁 ${nProp}</span>` : ''}${r.od && r.od.pendienteDescarga ? ' <span class="tag" style="background:#fef9c3;color:#854d0e" title="la carpeta está en la nube pero los archivos no se han descargado">⏳ sin descargar</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
         <td style="font-weight:700;max-width:200px">${r.empresa || '—'}</td>
         <td style="max-width:180px">${r.proyecto || '—'}</td>
         <td>${r.contacto || '—'}</td>
@@ -719,7 +729,7 @@
       </div>`;
     window.toggleDudosos = () => { window._soloDudosos = !window._soloDudosos; pinta(1); };
     const hayFiltro = !!(document.getElementById('buscar').value || Object.values(colF).some(x => x) ||
-      F.origen.size || F.estado.size || F.esp.size || F.dueno.size || F.pipeline.size || F.etapa.size ||
+      F.origen.size || F.estado.size || F.esp.size || F.dueno.size || F.pipeline.size || F.etapa.size || F.tipo.size ||
       [F.usdMin, F.usdMax, F.kwMin, F.kwMax, F.enMin, F.compMin].some(x => x !== ''));
     document.getElementById('totales').innerHTML =
       cajita('📁', arr.length.toLocaleString(), hayFiltro ? 'proyectos (con tus filtros)' : 'proyectos en total', '#111827') +
@@ -798,6 +808,7 @@
       ${fila('Retorno', r.retorno ? r.retorno + ' años' : null)}
       ${fila('% Energía cubierta', r.energia ? r.energia + '%' : null)}
       ${fila('Último contacto', r.ultContacto)}
+      ${fila('Tipo de proyecto', (r.tipo || []).length ? r.tipo.join(' + ') : null)}
       ${fila('Estado', r.estado)}
       ${bloqueOneDrive(r)}
       ${r.od && r.origen !== 'onedrive' && odTieneDatos(r) ? `
