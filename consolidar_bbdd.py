@@ -45,7 +45,7 @@ def norm(s):
 # ── BITRIX ──
 users = {u['ID']: (u.get('NAME','') + ' ' + (u.get('LAST_NAME') or '')).strip()
          for u in bx('user.get', {'ADMIN_MODE': 'True'}).get('result', [])}
-sel = ['ID','TITLE','CATEGORY_ID','STAGE_ID','ASSIGNED_BY_ID','CREATED_BY_ID','OPPORTUNITY','CURRENCY_ID','CONTACT_ID',
+sel = ['ID','TITLE','CATEGORY_ID','STAGE_ID','ASSIGNED_BY_ID','CREATED_BY_ID','OPPORTUNITY','CURRENCY_ID','CONTACT_ID','COMPANY_ID',
        'DATE_CREATE','DATE_MODIFY','LAST_ACTIVITY_TIME','COMPANY_TITLE',
        'UF_CRM_1741392978542','UF_CRM_1741208352117','UF_CRM_1753209254287','UF_CRM_1758676152864','UF_CRM_1743795019024']
 bit = []
@@ -111,6 +111,8 @@ def empresa_bitrix(title, company_id=None):
     partes = [p.strip() for p in str(title or '').split('_') if p.strip()]
     partes = [p for p in partes if not _RX_TIPO.match(p) and not _RX_KWP.match(p) and norm(p) not in _NOMBRES_USUARIOS]
     razon = next((p for p in partes if re.search(r'\b(SA|S\.A\.|CV|SAPI|S DE RL|F\.?B\.?M|S\.C\.)\b', p, re.I)), None)
+    # Una pieza que es solo número (ej. "100") no es una empresa
+    partes = [p for p in partes if not re.fullmatch(r'[\d.,\s]+', p)]
     return razon or (partes[1] if len(partes) > 1 else (partes[0] if partes else ''))
 
 # Contactos de Bitrix (teléfono/email) en lotes
