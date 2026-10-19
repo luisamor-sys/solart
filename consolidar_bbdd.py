@@ -92,9 +92,25 @@ def duenos_anteriores(d, actual):
         prev.append(creador)
     return [p for p in prev if p and p != actual]
 
-def empresa_bitrix(title):
+# Nombres de las compañías ligadas a los deals (el listado de deals no trae COMPANY_TITLE)
+_cids = sorted({str(d.get('COMPANY_ID')) for d in bit if d.get('COMPANY_ID') and str(d.get('COMPANY_ID')) != '0'})
+COMPANIAS = {}
+for i in range(0, len(_cids), 50):
+    for c in bx_all('crm.company.list', {'filter': {'ID': _cids[i:i+50]}, 'select': ['ID', 'TITLE']}):
+        COMPANIAS[str(c['ID'])] = (c.get('TITLE') or '').strip()
+print('compañías ligadas:', len(COMPANIAS))
+
+_RX_TIPO = re.compile(r'^(FOTOVOLTAICO|BESS|SUMINISTRO( CALIFICADO)?|MANTENIMIENTO|SC|FV)(\s*,\s*(FOTOVOLTAICO|BESS|SUMINISTRO( CALIFICADO)?|MANTENIMIENTO|SC|FV))*$', re.I)
+_RX_KWP = re.compile(r'^\d+([.,]\d+)?\s*kwp?$', re.I)
+_NOMBRES_USUARIOS = {norm(n) for n in users.values() if n}
+def empresa_bitrix(title, company_id=None):
+    """Empresa del deal: la compañía ligada en Bitrix; si no hay, la nomenclatura del título
+    (TIPO_Contacto_Empresa_Vendedor_kWp_Proyecto) descartando tipo, vendedor y kWp."""
+    comp = COMPANIAS.get(str(company_id or ''))
+    if comp: return comp
     partes = [p.strip() for p in str(title or '').split('_') if p.strip()]
-    razon = next((p for p in partes if re.search(r'\b(SA|S\.A\.|CV|SAPI|S DE RL)\b', p, re.I)), None)
+    partes = [p for p in partes if not _RX_TIPO.match(p) and not _RX_KWP.match(p) and norm(p) not in _NOMBRES_USUARIOS]
+    razon = next((p for p in partes if re.search(r'\b(SA|S\.A\.|CV|SAPI|S DE RL|F\.?B\.?M|S\.C\.)\b', p, re.I)), None)
     return razon or (partes[1] if len(partes) > 1 else (partes[0] if partes else ''))
 
 # Contactos de Bitrix (teléfono/email) en lotes
@@ -113,7 +129,7 @@ print('contactos Bitrix resueltos:', len(contactos), 'de', len(contact_ids))
 
 registros, emp_bitrix = [], set()
 for d in bit:
-    emp = d.get('COMPANY_TITLE') or empresa_bitrix(d.get('TITLE'))
+    emp = d.get('COMPANY_TITLE') or empresa_bitrix(d.get('TITLE'), d.get('COMPANY_ID'))
     partes = [p.strip() for p in str(d.get('TITLE') or '').split('_') if p.strip()]
     contacto = contactos.get(str(d.get('CONTACT_ID')), {}).get('nombre') or (partes[0] if partes else '')
     monto = float(d.get('OPPORTUNITY') or 0)
