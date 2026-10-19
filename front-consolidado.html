@@ -88,6 +88,7 @@
     <input id="buscar" placeholder="Buscar empresa, proyecto o contacto…" oninput="pinta(1)">
     <select id="f-orden" onchange="pinta(1)">
       <option value="prioridad">Orden: prioridad</option>
+      <option value="seleccion">⭐ Orden: selección de leads</option>
       <option value="completitud">Más completos</option>
       <option value="usd">Mayor valor USD</option>
       <option value="reciente">Contacto más reciente</option>
@@ -266,7 +267,7 @@
     pinta(1);
   });
 
-  window.togF = (grupo, val, on) => { on ? F[grupo].add(val) : F[grupo].delete(val); pinta(1); };
+  window.togF = (grupo, val, on) => { on ? F[grupo].add(val) : F[grupo].delete(val); if (grupo === 'esp' && val === 'sel' && on) document.getElementById('f-orden').value = 'seleccion'; pinta(1); };
   window.filtrarVend = txt => {
     const q = String(txt || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
     let visibles = 0;
@@ -290,13 +291,13 @@
     if (bv) { bv.value = ''; filtrarVend(''); }
     pinta(1);
   };
-  const ESPECIALES = [ ['prio','🎯 Prioridad (150+ kWp y 50%+)'], ['prio_cp','🟢 Completas (con precio)'], ['prio_sp','🟡 Falta precio'], ['prio_se','🔵 Falta % de energía'], ['prio_sc','🔴 Falta contacto'], ['prio_od','📁 Con datos en OneDrive'], ['dudoso','⚠️ Dato dudoso'],
+  const ESPECIALES = [ ['sel','⭐ Selección de leads (híbrido)'], ['prio','🎯 Prioridad (150+ kWp y 50%+)'], ['prio_cp','🟢 Completas (con precio)'], ['prio_sp','🟡 Falta precio'], ['prio_se','🔵 Falta % de energía'], ['prio_sc','🔴 Falta contacto'], ['prio_od','📁 Con datos en OneDrive'], ['dudoso','⚠️ Dato dudoso'],
     ['conprop','📁 Con propuesta descargada'], ['sincrm','🆕 Propuesta sin registro en CRM'], ['pendiente','⏳ Carpeta sin descargar'],
     ['conmdy','🟣 Tiene ficha en Monday'], ['nocuadra','⚖️ No cuadra con Monday'], ['nocuadraod','⚖️ No cuadra con OneDrive'], ['enbx','🔁 Repetidos con Bitrix'] ];
   // "Con propuesta" = hay material ya descargado (PDF de propuesta u hoja de cálculo).
   // Una carpeta que solo existe en la nube va aparte, en "Carpeta sin descargar".
   const tieneProp = r => !!(r.od && (r.od.nPropuestas > 0 || r.od.excel));
-  const cumpleEsp = (r, e) => e === 'prio' ? esPrio(r)
+  const cumpleEsp = (r, e) => e === 'sel' ? esSeleccion(r) : e === 'prio' ? esPrio(r)
     : e === 'prio_cp' ? clasePrio(r) === 'conprecio' : e === 'prio_sp' ? clasePrio(r) === 'sinprecio' : e === 'prio_se' ? clasePrio(r) === 'sinenergia' : e === 'prio_sc' ? clasePrio(r) === 'sincontacto' : e === 'prio_od' ? esPrio(r) && odTieneDatos(r)
     : e === 'dudoso' ? sospechoso(r)
     : e === 'conprop' ? tieneProp(r) : e === 'sincrm' ? r.origen === 'onedrive'
@@ -414,6 +415,30 @@
            cel(d.pctEnergia, r.energia, x => Math.round(x) + '%') +
            cel(d.precioUSD, r.precioUSD, x => '$' + Math.round(x).toLocaleString('es-MX'));
   }
+
+  // ── ⭐ Selección de leads (filtro híbrido): primero filtros eliminatorios, luego puntaje ponderado ──
+  const SEL_ETAPA = { '11_Firma de Contrato':1, '10_Generación y obtención de documentos para contrato':.95, 'Espera anticipo':.95, '9_SI VERBAL (Cierre)':.9,
+    'Revision financiera ERICK_V2':.85, '7_Propuesta Final (SI VERBAL)':.75, 'Propuesta financiera':.65, '6_Evaluación Interna':.6, '5_Propuesta Formal':.5,
+    '4_Visita Técnica':.4, '3_Se agendo/presento propuesta inicial':.3, '2_Propuesta Preliminar':.15, '1_Generación de propuesta':.08, '04_Contacto comercial inicial':.1,
+    'CONTRATO POR LLEGAR (CPLL)/CONTRATO FIRMADO':.85, 'PRESENTACIÓN DE PROPUESTA':.35, 'CONSTRUCCIÓN DE PROPUESTA':.2, 'SEGUIMIENTO':.15, 'CON DATOS':.1 };
+  const SEL_PESO = { etapa:.35, recencia:.20, valor:.15, retorno:.15, cobertura:.10, propuesta:.05 };
+  const diasSinContacto = r => { const t = Date.parse(String(r.ultContacto || '').slice(0, 10)); return isNaN(t) ? 9999 : Math.round((Date.now() - t) / 86400000); };
+  // Devuelve null si no pasa los filtros eliminatorios; si pasa, { score, partes, motivo }
+  function seleccionDe(r) {
+    if (r.estado !== 'abierto' || esDuplicado(r) || sospechoso(r)) return null;
+    const kw = parseFloat(r.kwp) || 0, en = parseFloat(r.energia) || 0, usd = parseFloat(r.precioUSD) || 0, ret = parseFloat(r.retorno) || 0;
+    const d = diasSinContacto(r), nP = (r.od && r.od.nPropuestas) || 0;
+    if (!tieneContacto(r)) return { fuera: 'sin teléfono ni correo' };
+    if (d > 180) return { fuera: 'más de 180 días sin contacto' };
+    if (kw < 150) return { fuera: 'menos de 150 kWp' };
+    if (usd < 1000 && !nP) return { fuera: 'sin precio ni propuesta' };
+    const partes = { etapa: SEL_ETAPA[r.etapa] || 0, recencia: d <= 30 ? 1 : d <= 90 ? .7 : .4, valor: Math.min(usd, 600000) / 600000,
+      retorno: ret <= 0 ? .5 : Math.max(0, Math.min(1, (7 - ret) / 4)), cobertura: en ? Math.min(en, 100) / 100 : .5, propuesta: Math.min(nP, 3) / 3 };
+    const score = Object.keys(SEL_PESO).reduce((t, k) => t + partes[k] * SEL_PESO[k], 0);
+    return { score, partes, dias: d, nP };
+  }
+  const esSeleccion = r => { const s = seleccionDe(r); return !!(s && s.score != null); };
+  const scoreSel = r => { const s = seleccionDe(r); return s && s.score != null ? s.score : -1; };
 
   // Un proyecto de Pipedrive cuya empresa ya existe en Bitrix es el MISMO cliente: no se cuenta dos veces
   const esDuplicado = r => (r.origen !== 'bitrix' && !!r.enBitrix) || DUP_OCULTOS.has(r.id);
@@ -559,6 +584,8 @@
         ${[['FV','☀️ FV · fotovoltaico'],['SC','🔌 SC · suministro calificado'],['BESS','🔋 BESS · baterías'],['MANT','🛠️ Mantenimiento'],['Sin tipo','Sin tipo capturado']].map(([v, t]) => cb('tipo', v, t)).join('')}
       </details>
       <details open><summary>Especiales</summary>
+        ${cb('esp', 'sel', ESPECIALES.find(([x]) => x === 'sel')[1])}
+        <div style="font-size:10px;color:#9ca3af;margin:-2px 0 8px 24px;line-height:1.4">Entran solo abiertos con contacto, ≤180 días sin hablar, ≥150 kWp y precio o propuesta. Puntaje: etapa 35 % · recencia 20 % · valor 15 % · retorno 15 % · cobertura 10 % · propuesta 5 %.</div>
         ${cb('esp', 'prio', ESPECIALES.find(([x]) => x === 'prio')[1])}
         <div class="sub-prio">
           <div class="sub-tit">De esas prioridades:</div>
@@ -680,7 +707,8 @@
         : String(a[ordCol] || '').localeCompare(String(b[ordCol] || '')) * ordDir);
     } else {
       const ord = document.getElementById('f-orden').value;
-      if (ord === 'usd') arr.sort((a,b) => (b.precioUSD||0) - (a.precioUSD||0));
+      if (ord === 'seleccion') arr.sort((a,b) => scoreSel(b) - scoreSel(a) || ((parseFloat(b.precioUSD)||0) - (parseFloat(a.precioUSD)||0)));
+      else if (ord === 'usd') arr.sort((a,b) => (b.precioUSD||0) - (a.precioUSD||0));
       else if (ord === 'reciente') arr.sort((a,b) => String(b.ultContacto||'').localeCompare(String(a.ultContacto||'')));
       else if (ord === 'completitud') arr.sort((a,b) => b.completitud - a.completitud || (b.precioUSD||0) - (a.precioUSD||0));
       else arr.sort((a,b) => (sospechoso(a) - sospechoso(b)) || (ORDEN_PRIO[clasePrio(b)] - ORDEN_PRIO[clasePrio(a)]) || ((parseFloat(b.kwp)||0) - (parseFloat(a.kwp)||0)) || ((parseFloat(b.energia)||0) - (parseFloat(a.energia)||0)));
@@ -698,7 +726,7 @@
       const nProp = r.od ? (r.od.nPropuestas || 0) : 0;
       const cc = r.completitud >= 7 ? 'c-alta' : r.completitud >= 4 ? 'c-media' : 'c-baja';
       return `<tr onclick="detalle('${r.id}')">
-        <td>${tag}${(r.tipo || []).map(t => ` <span class="tag" style="background:#e0f2fe;color:#075985" title="tipo de proyecto">${t}</span>`).join('')}${sospechoso(r) ? ' <span class="tag" style="background:#fee2e2;color:#991b1b">⚠️ DATO DUDOSO</span>' : ''}${({ conprecio: ' <span class="tag" style="background:#dcfce7;color:#15803d" title="Prioridad con precio y contacto: lista para trabajarse">🎯 PRIORIDAD · CON PRECIO</span>', sinprecio: ' <span class="tag" style="background:#fef3c7;color:#92400e" title="Prioridad por tamaño, pero falta cotizar">🎯 PRIORIDAD · SIN PRECIO</span>', sinenergia: ' <span class="tag" style="background:#e0e7ff;color:#3730a3" title="Entra por tamaño, pero no sabemos qué % de su energía cubrimos">🎯 PRIORIDAD · SIN % DE ENERGÍA</span>', sincontacto: ' <span class="tag" style="background:#fee2e2;color:#991b1b" title="Prioridad por tamaño, pero no hay teléfono ni correo">🎯 PRIORIDAD · SIN CONTACTO</span>' })[clasePrio(r)] || ''}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${nProp ? ` <span class="tag t-od" title="propuestas en OneDrive">📁 ${nProp}</span>` : ''}${r.od && r.od.pendienteDescarga ? ' <span class="tag" style="background:#fef9c3;color:#854d0e" title="la carpeta está en la nube pero los archivos no se han descargado">⏳ sin descargar</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
+        <td>${tag}${(() => { const sl = seleccionDe(r); return sl && sl.score != null ? ` <span class="tag" style="background:#fef9c3;color:#854d0e" title="selección de leads: ${Object.entries(sl.partes).map(([k, v]) => k + ' ' + v.toFixed(2)).join(' · ')}">⭐ ${sl.score.toFixed(2)}</span>` : ''; })()}${(r.tipo || []).map(t => ` <span class="tag" style="background:#e0f2fe;color:#075985" title="tipo de proyecto">${t}</span>`).join('')}${sospechoso(r) ? ' <span class="tag" style="background:#fee2e2;color:#991b1b">⚠️ DATO DUDOSO</span>' : ''}${({ conprecio: ' <span class="tag" style="background:#dcfce7;color:#15803d" title="Prioridad con precio y contacto: lista para trabajarse">🎯 PRIORIDAD · CON PRECIO</span>', sinprecio: ' <span class="tag" style="background:#fef3c7;color:#92400e" title="Prioridad por tamaño, pero falta cotizar">🎯 PRIORIDAD · SIN PRECIO</span>', sinenergia: ' <span class="tag" style="background:#e0e7ff;color:#3730a3" title="Entra por tamaño, pero no sabemos qué % de su energía cubrimos">🎯 PRIORIDAD · SIN % DE ENERGÍA</span>', sincontacto: ' <span class="tag" style="background:#fee2e2;color:#991b1b" title="Prioridad por tamaño, pero no hay teléfono ni correo">🎯 PRIORIDAD · SIN CONTACTO</span>' })[clasePrio(r)] || ''}${r.enBitrix ? ' <span class="tag t-bx">ya en BX</span>' : ''}${nProp ? ` <span class="tag t-od" title="propuestas en OneDrive">📁 ${nProp}</span>` : ''}${r.od && r.od.pendienteDescarga ? ' <span class="tag" style="background:#fef9c3;color:#854d0e" title="la carpeta está en la nube pero los archivos no se han descargado">⏳ sin descargar</span>' : ''}${asignados.has(r.id) ? ' <span class="tag" style="background:#dcfce7;color:#15803d">rifado</span>' : ''}</td>
         <td style="font-weight:700;max-width:200px">${r.empresa || '—'}</td>
         <td style="max-width:180px">${r.proyecto || '—'}</td>
         <td>${r.contacto || '—'}</td>
@@ -808,6 +836,9 @@
       ${fila('Retorno', r.retorno ? r.retorno + ' años' : null)}
       ${fila('% Energía cubierta', r.energia ? r.energia + '%' : null)}
       ${fila('Último contacto', r.ultContacto)}
+      ${(() => { const sl = seleccionDe(r); if (!sl) return ''; return sl.score != null
+          ? `<div class="m-fila"><b>⭐ Selección de leads</b><span><b>${sl.score.toFixed(2)}</b> · ${Object.entries(sl.partes).map(([k, v]) => k + ' ' + v.toFixed(2)).join(' · ')}</span></div>`
+          : `<div class="m-fila"><b>⭐ Selección de leads</b><span style="color:#9ca3af">no entra: ${sl.fuera}</span></div>`; })()}
       ${fila('Vendedores anteriores', (r.duenosAnteriores || []).length ? r.duenosAnteriores.join(', ') : null)}
       ${fila('Tipo de proyecto', (r.tipo || []).length ? r.tipo.join(' + ') : null)}
       ${fila('Estado', r.estado)}
