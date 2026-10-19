@@ -531,8 +531,10 @@
   const sospechoso = r => (parseFloat(r.kwp) || 0) > 20000 || (parseFloat(r.precio) || 0) > 100000000;
   // Prioridad (misma regla del tablero de vendedores): el proyecto debe ser grande —150+ kW—
   // Y cubrir al menos la mitad de la energía del cliente. Si no sabemos el %, el tamaño manda.
+  // Se marca por tamaño y % de energía sin importar el estado: los ganados y perdidos
+  // también cuentan (el filtro de Estado sirve para acotarlos).
   const esPrio = r => {
-    if (sospechoso(r) || r.estado !== 'abierto') return false;
+    if (sospechoso(r)) return false;
     const kw = parseFloat(r.kwp) || 0;
     if (kw < 150) return false;
     const en = parseFloat(r.energia) || 0;
