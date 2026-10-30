@@ -213,9 +213,13 @@ rellenan huecos desde OneDrive.
   >$100 M MXN) queda fuera de prioridades y de las sumas. Cuatro clases excluyentes por el primer dato faltante:
   contacto → % energía → precio (precio real = ≥1,000 USD; `$1 MXN` es relleno). Subfiltro "Con datos en OneDrive"
   acota; las cuatro clases se suman entre sí.
-- *⭐ Selección de leads (híbrido)*: eliminatorios (abierto, sin dato dudoso, con tel/correo, ≤180 días sin contacto,
-  ≥150 kWp, precio real o propuesta) y puntaje etapa 15 % · recencia 20 % · valor USD 20 % (tope 600k) · retorno 20 % ·
-  cobertura 15 % · propuestas OneDrive 10 % (la etapa pesa poco a propósito: la lista busca proyectos atractivos, no solo avanzados) (`seleccionDe()`). Al marcarlo ordena por score.
+- *⭐ Selección de leads* — **REGLA FIJA definida por Luis el 30-oct-2026; no cambiar sin que él lo pida**: negociaciones
+  abiertas sin dato dudoso, calificadas con **4 criterios de igual peso (25 % c/u)**, cada uno cumple o no:
+  (1) tamaño entre 150 y 1,000 kWp; (2) etapa del embudo con propuesta ya presentada al cliente (desde
+  `3_Se agendo/presento propuesta inicial` en Bitrix o `PRESENTACIÓN DE PROPUESTA` en Pipedrive); (3) retorno de inversión
+  menor a 3 años; (4) % de energía cubierta arriba del 60 %. Puntaje = criterios cumplidos (0–4). Desempate: etapa más
+  avanzada y contacto más reciente. Dato vacío = criterio no cumplido (retorno o % energía en blanco bajan la nota, no se
+  rellenan). Implementado en `seleccionDe()` (front) y `cmd_viables` (solart.py); al marcar ⭐ ordena por este puntaje.
 - *Posibles duplicados* (`duplicados.json`): señales con peso RPU 5, carpeta OneDrive 4, teléfono 4, correo 4, USD
   exacto 3, nombre normalizado 3, nombre contenido 2, kWp exacto + vendedor 2, contacto 2, "cascarón" 2, fechas
   cercanas 1; alta ≥4, media ≥2. Si los dos registros tienen tipos de proyecto distintos (FV vs SC vs BESS) no es

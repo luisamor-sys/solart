@@ -211,7 +211,11 @@ ETAPA_PESO = {'11_Firma de Contrato': 1, '10_Generación y obtención de documen
               'Propuesta financiera': .65, '6_Evaluación Interna': .6, '5_Propuesta Formal': .5, '4_Visita Técnica': .4,
               '3_Se agendo/presento propuesta inicial': .3, '2_Propuesta Preliminar': .15, '1_Generación de propuesta': .08,
               '04_Contacto comercial inicial': .1}
-PESO = {'etapa': .15, 'recencia': .20, 'valor': .20, 'retorno': .20, 'cobertura': .15, 'propuesta': .10}
+# Criterios definidos por Luis (30-oct-2026), los 4 con el MISMO peso (25 % c/u), cada uno cumple (1) o no (0):
+#   tamaño 150–1,000 kWp · etapa con propuesta ya presentada · retorno < 3 años · % de energía cubierta > 60 %.
+# Desempate entre iguales: etapa más avanzada y luego contacto más reciente.
+PESO = {'tamano': .25, 'etapa': .25, 'retorno': .25, 'cobertura': .25}
+ETAPA_MINIMA = .3  # desde '3_Se agendo/presento propuesta inicial' (Bitrix) / 'PRESENTACIÓN DE PROPUESTA' (Pipedrive)
 
 
 def cmd_viables(a):
@@ -254,31 +258,28 @@ def cmd_viables(a):
         except ValueError:
             dias = 9999
         np_ = nprop.get(str(d['ID']), 0)
-        motivo = None
-        if kw > 20000 or monto > 1e8: motivo = 'dato dudoso'
-        elif not contacto.get(str(d.get('CONTACT_ID')), False): motivo = 'sin teléfono ni correo'
-        elif dias > 180: motivo = 'más de 180 días sin contacto'
-        elif kw < 150: motivo = 'menos de 150 kWp'
-        elif usd < 1000 and not np_: motivo = 'sin precio ni propuesta'
-        if motivo:
-            fuera[motivo] = fuera.get(motivo, 0) + 1; continue
+        if kw > 20000 or monto > 1e8:
+            fuera['dato dudoso'] = fuera.get('dato dudoso', 0) + 1; continue
         etapa = mapa.get(d['STAGE_ID'], d['STAGE_ID'])
-        partes = {'etapa': ETAPA_PESO.get(etapa, 0), 'recencia': 1 if dias <= 30 else .7 if dias <= 90 else .4,
-                  'valor': min(usd, 600000) / 600000, 'retorno': .5 if ret <= 0 else max(0, min(1, (7 - ret) / 4)),
-                  'cobertura': min(en, 100) / 100 if en else .5, 'propuesta': min(np_, 3) / 3}
+        partes = {'tamano': 1 if 150 <= kw <= 1000 else 0,
+                  'etapa': 1 if ETAPA_PESO.get(etapa, 0) >= ETAPA_MINIMA else 0,
+                  'retorno': 1 if 0 < ret < 3 else 0,
+                  'cobertura': 1 if en > 60 else 0}
         score = sum(partes[k] * PESO[k] for k in PESO)
         filas.append((score, d, etapa, kw, en, ret, usd, dias, np_, partes))
-    filas.sort(key=lambda t: -t[0])
+    filas.sort(key=lambda t: (-t[0], -ETAPA_PESO.get(t[2], 0), t[7]))
     print(f"LEADS MÁS VIABLES (datos vivos de Bitrix, {date.today():%d/%m/%Y})")
     print(f"Pasan los filtros: {len(filas)} · fuera: " + ', '.join(f'{v} {k}' for k, v in sorted(fuera.items(), key=lambda x: -x[1])) + '\n')
-    print(f"{'#':>2} {'score':>5}  {'negociación':34s} {'vendedor':18s} {'kWp':>6} {'%en':>4} {'ROI':>4} {'USD':>9} {'días':>4}  etapa")
+    print(f"{'#':>2} {'cumple':>6}  {'negociación':34s} {'vendedor':18s} {'kWp':>6} {'%en':>4} {'ROI':>4} {'USD':>9} {'días':>4}  etapa")
     for i, (s, d, etapa, kw, en, ret, usd, dias, np_, partes) in enumerate(filas[:a.top], 1):
         v = usuarios.get(int(d.get('ASSIGNED_BY_ID') or 0), str(d.get('ASSIGNED_BY_ID')))
-        print(f"{i:2d} {s:5.2f}  {titulo_deal(d)[:34]:34s} {v[:18]:18s} {kw:6.0f} {en:4.0f} {ret:4.1f} {usd:9,.0f} {dias:4d}  {etapa}")
+        marcas = ''.join('✓' if partes[k] else '·' for k in ('tamano', 'etapa', 'retorno', 'cobertura'))
+        print(f"{i:2d} {s*4:2.0f}/4 {marcas} {titulo_deal(d)[:34]:34s} {v[:18]:18s} {kw:6.0f} {en:4.0f} {ret:4.1f} {usd:9,.0f} {dias:4d}  {etapa}")
         if a.detalle:
-            print('        ' + ' · '.join(f'{k} {x:.2f}' for k, x in partes.items()) + (f' · {np_} propuestas' if np_ else ''))
-    print("\nCómo se calcula: pasan solo negociaciones abiertas con contacto, ≤180 días sin hablar, ≥150 kWp y precio o propuesta. "
-          "Puntaje: etapa 15 % · recencia 20 % · valor 20 % · retorno 20 % · cobertura 15 % · propuestas 10 %.")
+            print('        ' + ' · '.join(f'{k} {"sí" if x else "no"}' for k, x in partes.items()) + (f' · {np_} propuestas' if np_ else ''))
+    print("\nCómo se calcula: negociaciones abiertas sin datos dudosos. Cuatro criterios con el mismo peso (25 % cada uno), en el orden "
+          "de las marcas ✓: tamaño 150–1,000 kWp · etapa con propuesta ya presentada · retorno < 3 años · % de energía cubierta > 60 %. "
+          "Desempate: etapa más avanzada y contacto más reciente.")
 
 
 # ─────────────────────────────── negociacion ───────────────────────────────
