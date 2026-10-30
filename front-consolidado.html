@@ -421,7 +421,7 @@
     'Revision financiera ERICK_V2':.85, '7_Propuesta Final (SI VERBAL)':.75, 'Propuesta financiera':.65, '6_Evaluación Interna':.6, '5_Propuesta Formal':.5,
     '4_Visita Técnica':.4, '3_Se agendo/presento propuesta inicial':.3, '2_Propuesta Preliminar':.15, '1_Generación de propuesta':.08, '04_Contacto comercial inicial':.1,
     'CONTRATO POR LLEGAR (CPLL)/CONTRATO FIRMADO':.85, 'PRESENTACIÓN DE PROPUESTA':.35, 'CONSTRUCCIÓN DE PROPUESTA':.2, 'SEGUIMIENTO':.15, 'CON DATOS':.1 };
-  const SEL_PESO = { etapa:.35, recencia:.20, valor:.15, retorno:.15, cobertura:.10, propuesta:.05 };
+  const SEL_PESO = { etapa:.15, recencia:.20, valor:.20, retorno:.20, cobertura:.15, propuesta:.10 };
   const diasSinContacto = r => { const t = Date.parse(String(r.ultContacto || '').slice(0, 10)); return isNaN(t) ? 9999 : Math.round((Date.now() - t) / 86400000); };
   // Devuelve null si no pasa los filtros eliminatorios; si pasa, { score, partes, motivo }
   function seleccionDe(r) {
@@ -585,7 +585,7 @@
       </details>
       <details open><summary>Especiales</summary>
         ${cb('esp', 'sel', ESPECIALES.find(([x]) => x === 'sel')[1])}
-        <div style="font-size:10px;color:#9ca3af;margin:-2px 0 8px 24px;line-height:1.4">Entran solo abiertos con contacto, ≤180 días sin hablar, ≥150 kWp y precio o propuesta. Puntaje: etapa 35 % · recencia 20 % · valor 15 % · retorno 15 % · cobertura 10 % · propuesta 5 %.</div>
+        <div style="font-size:10px;color:#9ca3af;margin:-2px 0 8px 24px;line-height:1.4">Entran solo abiertos con contacto, ≤180 días sin hablar, ≥150 kWp y precio o propuesta. Puntaje: etapa 15 % · recencia 20 % · valor 20 % · retorno 20 % · cobertura 15 % · propuesta 10 %.</div>
         ${cb('esp', 'prio', ESPECIALES.find(([x]) => x === 'prio')[1])}
         <div class="sub-prio">
           <div class="sub-tit">De esas prioridades:</div>

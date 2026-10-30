@@ -214,8 +214,8 @@ rellenan huecos desde OneDrive.
   contacto → % energía → precio (precio real = ≥1,000 USD; `$1 MXN` es relleno). Subfiltro "Con datos en OneDrive"
   acota; las cuatro clases se suman entre sí.
 - *⭐ Selección de leads (híbrido)*: eliminatorios (abierto, sin dato dudoso, con tel/correo, ≤180 días sin contacto,
-  ≥150 kWp, precio real o propuesta) y puntaje etapa 35 % · recencia 20 % · valor USD 15 % (tope 600k) · retorno 15 % ·
-  cobertura 10 % · propuestas OneDrive 5 % (`seleccionDe()`). Al marcarlo ordena por score.
+  ≥150 kWp, precio real o propuesta) y puntaje etapa 15 % · recencia 20 % · valor USD 20 % (tope 600k) · retorno 20 % ·
+  cobertura 15 % · propuestas OneDrive 10 % (la etapa pesa poco a propósito: la lista busca proyectos atractivos, no solo avanzados) (`seleccionDe()`). Al marcarlo ordena por score.
 - *Posibles duplicados* (`duplicados.json`): señales con peso RPU 5, carpeta OneDrive 4, teléfono 4, correo 4, USD
   exacto 3, nombre normalizado 3, nombre contenido 2, kWp exacto + vendedor 2, contacto 2, "cascarón" 2, fechas
   cercanas 1; alta ≥4, media ≥2. Si los dos registros tienen tipos de proyecto distintos (FV vs SC vs BESS) no es

@@ -211,7 +211,7 @@ ETAPA_PESO = {'11_Firma de Contrato': 1, '10_Generación y obtención de documen
               'Propuesta financiera': .65, '6_Evaluación Interna': .6, '5_Propuesta Formal': .5, '4_Visita Técnica': .4,
               '3_Se agendo/presento propuesta inicial': .3, '2_Propuesta Preliminar': .15, '1_Generación de propuesta': .08,
               '04_Contacto comercial inicial': .1}
-PESO = {'etapa': .35, 'recencia': .20, 'valor': .15, 'retorno': .15, 'cobertura': .10, 'propuesta': .05}
+PESO = {'etapa': .15, 'recencia': .20, 'valor': .20, 'retorno': .20, 'cobertura': .15, 'propuesta': .10}
 
 
 def cmd_viables(a):
@@ -278,7 +278,7 @@ def cmd_viables(a):
         if a.detalle:
             print('        ' + ' · '.join(f'{k} {x:.2f}' for k, x in partes.items()) + (f' · {np_} propuestas' if np_ else ''))
     print("\nCómo se calcula: pasan solo negociaciones abiertas con contacto, ≤180 días sin hablar, ≥150 kWp y precio o propuesta. "
-          "Puntaje: etapa 35 % · recencia 20 % · valor 15 % · retorno 15 % · cobertura 10 % · propuestas 5 %.")
+          "Puntaje: etapa 15 % · recencia 20 % · valor 20 % · retorno 20 % · cobertura 15 % · propuestas 10 %.")
 
 
 # ─────────────────────────────── negociacion ───────────────────────────────
