@@ -212,7 +212,7 @@ ETAPA_PESO = {'11_Firma de Contrato': 1, '10_Generación y obtención de documen
               '3_Se agendo/presento propuesta inicial': .3, '2_Propuesta Preliminar': .15, '1_Generación de propuesta': .08,
               '04_Contacto comercial inicial': .1}
 # Criterios definidos por Luis (30-oct-2026), los 4 con el MISMO peso (25 % c/u), cada uno cumple (1) o no (0):
-#   tamaño 150–1,000 kWp · etapa con propuesta ya presentada · retorno < 3 años · % de energía cubierta > 60 %.
+#   tamaño 150–1,000 kWp · etapa con propuesta ya presentada · retorno < 3 años · % de energía cubierta > 50 %.
 # Desempate entre iguales: etapa más avanzada y luego contacto más reciente.
 PESO = {'tamano': .25, 'etapa': .25, 'retorno': .25, 'cobertura': .25}
 ETAPA_MINIMA = .3  # desde '3_Se agendo/presento propuesta inicial' (Bitrix) / 'PRESENTACIÓN DE PROPUESTA' (Pipedrive)
@@ -264,7 +264,7 @@ def cmd_viables(a):
         partes = {'tamano': 1 if 150 <= kw <= 1000 else 0,
                   'etapa': 1 if ETAPA_PESO.get(etapa, 0) >= ETAPA_MINIMA else 0,
                   'retorno': 1 if 0 < ret < 3 else 0,
-                  'cobertura': 1 if en > 60 else 0}
+                  'cobertura': 1 if en > 50 else 0}
         score = sum(partes[k] * PESO[k] for k in PESO)
         filas.append((score, d, etapa, kw, en, ret, usd, dias, np_, partes))
     filas.sort(key=lambda t: (-t[0], -ETAPA_PESO.get(t[2], 0), t[7]))
@@ -278,7 +278,7 @@ def cmd_viables(a):
         if a.detalle:
             print('        ' + ' · '.join(f'{k} {"sí" if x else "no"}' for k, x in partes.items()) + (f' · {np_} propuestas' if np_ else ''))
     print("\nCómo se calcula: negociaciones abiertas sin datos dudosos. Cuatro criterios con el mismo peso (25 % cada uno), en el orden "
-          "de las marcas ✓: tamaño 150–1,000 kWp · etapa con propuesta ya presentada · retorno < 3 años · % de energía cubierta > 60 %. "
+          "de las marcas ✓: tamaño 150–1,000 kWp · etapa con propuesta ya presentada · retorno < 3 años · % de energía cubierta > 50 %. "
           "Desempate: etapa más avanzada y contacto más reciente.")
 
 
