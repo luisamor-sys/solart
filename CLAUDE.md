@@ -215,8 +215,9 @@ rellenan huecos desde OneDrive.
   acota; las cuatro clases se suman entre sí.
 - *⭐ Selección de leads* — **REGLA FIJA definida por Luis el 30-oct-2026; no cambiar sin que él lo pida**: negociaciones
   abiertas sin dato dudoso, calificadas con **4 criterios de igual peso (25 % c/u)**, cada uno cumple o no:
-  (1) tamaño entre 150 y 1,000 kWp; (2) etapa del embudo con propuesta ya presentada al cliente (desde
-  `3_Se agendo/presento propuesta inicial` en Bitrix o `PRESENTACIÓN DE PROPUESTA` en Pipedrive); (3) retorno de inversión
+  (1) tamaño entre 150 y 1,000 kWp; (2) etapa del embudo con propuesta ya presentada al cliente: en Bitrix cualquier etapa EXCEPTO
+  `04_Contacto comercial inicial`; en Pipedrive `SEGUIMIENTO`, `CONSTRUCCIÓN DE PROPUESTA`, `PRESENTACIÓN DE PROPUESTA` o
+  `CONTRATO POR LLEGAR`; en Monday estatus Negocio/Listo/Venta o con propuesta en OneDrive; (3) retorno de inversión
   menor a 3 años; (4) % de energía cubierta arriba del 50 %. Puntaje = criterios cumplidos (0–4). Desempate: etapa más
   avanzada y contacto más reciente. Dato vacío = criterio no cumplido (retorno o % energía en blanco bajan la nota, no se
   rellenan). Implementado en `seleccionDe()` (front) y `cmd_viables` (solart.py); al marcar ⭐ ordena por este puntaje.

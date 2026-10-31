@@ -215,7 +215,7 @@ ETAPA_PESO = {'11_Firma de Contrato': 1, '10_Generación y obtención de documen
 #   tamaño 150–1,000 kWp · etapa con propuesta ya presentada · retorno < 3 años · % de energía cubierta > 50 %.
 # Desempate entre iguales: etapa más avanzada y luego contacto más reciente.
 PESO = {'tamano': .25, 'etapa': .25, 'retorno': .25, 'cobertura': .25}
-ETAPA_MINIMA = .3  # desde '3_Se agendo/presento propuesta inicial' (Bitrix) / 'PRESENTACIÓN DE PROPUESTA' (Pipedrive)
+ETAPA_SIN_PROPUESTA = {'04_Contacto comercial inicial'}  # en Bitrix cuenta toda etapa menos esta (regla de Luis 30-oct-2026)
 
 
 def cmd_viables(a):
@@ -262,7 +262,7 @@ def cmd_viables(a):
             fuera['dato dudoso'] = fuera.get('dato dudoso', 0) + 1; continue
         etapa = mapa.get(d['STAGE_ID'], d['STAGE_ID'])
         partes = {'tamano': 1 if 150 <= kw <= 1000 else 0,
-                  'etapa': 1 if ETAPA_PESO.get(etapa, 0) >= ETAPA_MINIMA else 0,
+                  'etapa': 1 if etapa and etapa not in ETAPA_SIN_PROPUESTA else 0,
                   'retorno': 1 if 0 < ret < 3 else 0,
                   'cobertura': 1 if en > 50 else 0}
         score = sum(partes[k] * PESO[k] for k in PESO)
