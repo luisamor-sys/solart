@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Consolida la BBDD comercial: Bitrix (API) + respaldo Pipedrive → consolidado.json
 Uso: python3 consolidar_bbdd.py  (correr desde la carpeta del repo; luego git push)"""
-import json, re, urllib.request, unicodedata
+import json, os, re, sys, urllib.request, unicodedata
 import openpyxl
 from collections import defaultdict
 
 WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/'
-PIPE = "/Users/luisamor/Downloads/OneDrive_1_24-8-2026/Pipedrive/Respaldo 19-03-25/"
+# Carpeta del respaldo de Pipedrive: se pasa como argumento o con la variable SOLART_PIPEDRIVE (en otra compu cambia la ruta)
+PIPE = (sys.argv[1] if len(sys.argv) > 1 else os.environ.get("SOLART_PIPEDRIVE") or "/Users/luisamor/Downloads/OneDrive_1_24-8-2026/Pipedrive/Respaldo 19-03-25/").rstrip("/\\") + "/"
 TC = 17.22  # para convertir MXN→USD cuando Bitrix no trae USD
 
 def bx(method, params):

@@ -300,3 +300,6 @@ Reglas:
 - Los webhooks son públicos en el HTML: al crecer el equipo, moverlos detrás de un proxy.
 - Rodamex ↔ Tanques Menher: la carpeta "Rodamex - Tanques Menher" quedó enganchada a Tanques Menher; confirmar si son el
   mismo cliente.
+
+## Para integrar a otra persona del equipo
+Lee `GUIA-DANI.md`: instalación, clonado fuera de OneDrive, flujo de publicación y uso de `solart.py`.

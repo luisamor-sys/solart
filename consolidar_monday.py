@@ -10,7 +10,7 @@ Uso:  python3 consolidar_monday.py [ruta_del_respaldo]
 import json, os, re, sys, unicodedata
 from datetime import datetime
 
-RESPALDO = sys.argv[1] if len(sys.argv) > 1 else \
+RESPALDO = sys.argv[1] if len(sys.argv) > 1 else os.environ.get('SOLART_MONDAY') or \
     '/Users/luisamor/Documents/Respaldo MONDAY/backups/monday-backup-20260602-044158'
 BOARDS = os.path.join(RESPALDO, 'boards')
 CONSOLIDADO = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'consolidado.json')
