@@ -165,9 +165,9 @@
       CUENTAS = datos.cuentas.map(c => ({ ...c }));
 
       // Usuarios y etapas
-      const [us, cats] = await Promise.all([bx('user.get', { FILTER:{ ACTIVE:true } }), bx('crm.dealcategory.list', {})]);
+      const [us, cats] = await Promise.all([bx('user.get', { ADMIN_MODE:'Y' }), bx('crm.dealcategory.list', {})]);
       USERS = {};
-      (us.result || []).forEach(u => { if (String(u.ID) !== '1') USERS[String(u.ID)] = { nombre:`${u.NAME || ''} ${u.LAST_NAME || ''}`.trim(), deps:(u.UF_DEPARTMENT || []).map(String) }; });
+      (us.result || []).forEach(u => { if (String(u.ID) !== '1') USERS[String(u.ID)] = { nombre:`${u.NAME || ''} ${u.LAST_NAME || ''}`.trim(), deps:(u.UF_DEPARTMENT || []).map(String), activo:u.ACTIVE === true || u.ACTIVE === 'Y' }; });
       const catIds = [0, ...((cats.result || []).map(c => c.ID))];
       const st = await batch(Object.fromEntries(catIds.map(id => ['c' + id, ['crm.dealcategory.stage.list', { id }]])));
       ETAPAS = {};
@@ -243,9 +243,9 @@
     });
     if (!CUENTAS.length) { document.getElementById('cuerpo').innerHTML = '<div class="aviso">No tienes cuentas prioritarias asignadas todavía.</div>'; return; }
 
-    const opciones = sel => '<option value="">— Sin asignar —</option>' + Object.entries(USERS)
+    const opciones = sel => '<option value="">— Sin asignar —</option>' + Object.entries(USERS).filter(([id, u]) => u.activo || id === sel)
       .sort((a, b) => (b[1].deps.includes('3') - a[1].deps.includes('3')) || a[1].nombre.localeCompare(b[1].nombre))
-      .map(([id, u]) => `<option value="${id}" ${id === sel ? 'selected' : ''}>${esc(u.nombre)}</option>`).join('');
+      .map(([id, u]) => `<option value="${id}" ${id === sel ? 'selected' : ''}>${esc(u.nombre)}${u.activo ? '' : ' (inactivo)'}</option>`).join('');
 
     const filas = lista.map(c => {
       const s = semaforo(c), cam = cambios[c.id];
