@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuentas prioritarias — SOLART</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+  body { background:#f1f5f9; color:#111827; padding:18px 14px 60px; }
+  .wrap { max-width:1200px; margin:0 auto; }
+  .top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  h1 { font-size:20px; font-weight:900; }
+  .sub { font-size:12px; color:#6b7280; margin-top:3px; max-width:720px; line-height:1.45; }
+  .volver { background:#f3f4f6; border:1px solid #e5e7eb; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700; color:#374151; text-decoration:none; white-space:nowrap; }
+  .tarjetas { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:12px; }
+  .tj { background:#fff; border-radius:14px; padding:12px 14px; box-shadow:0 1px 3px rgba(0,0,0,.06); cursor:pointer; border:2px solid transparent; }
+  .tj.on { border-color:#006099; }
+  .tj .v { font-size:24px; font-weight:900; }
+  .tj .l { font-size:11px; color:#6b7280; font-weight:700; margin-top:2px; }
+  .controles { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+  .controles input, .controles select { border:1.5px solid #e5e7eb; border-radius:10px; padding:9px 12px; font-size:13px; background:#fff; }
+  .controles input { flex:1; min-width:200px; }
+  .btn { border:none; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:800; cursor:pointer; }
+  .btn-prim { background:#006099; color:#fff; } .btn-prim:disabled { background:#9ca3af; cursor:default; }
+  .btn-sec { background:#fff; color:#374151; border:1.5px solid #e5e7eb; }
+  .tabla-wrap { overflow-x:auto; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  table { width:100%; border-collapse:collapse; background:#fff; }
+  th { background:#006099; color:#fff; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; padding:9px 8px; text-align:left; white-space:nowrap; }
+  td { font-size:12px; padding:9px 8px; border-bottom:1px solid #f3f4f6; vertical-align:top; }
+  tr.fila:hover td { background:#f8fafc; cursor:pointer; }
+  tr.cambio td { background:#fffbeb !important; }
+  .tag { font-size:9.5px; font-weight:800; border-radius:20px; padding:2px 8px; white-space:nowrap; display:inline-block; }
+  .t-bx { background:#eef6fb; color:#006099; } .t-pd { background:#fef3c7; color:#92400e; } .t-md { background:#f3e8ff; color:#7c3aed; }
+  .sem { font-size:11px; font-weight:800; border-radius:20px; padding:3px 9px; white-space:nowrap; display:inline-block; }
+  .s-verde { background:#dcfce7; color:#15803d; } .s-amarillo { background:#fef3c7; color:#92400e; }
+  .s-rojo { background:#fee2e2; color:#b91c1c; } .s-gris { background:#f3f4f6; color:#6b7280; }
+  .nom { font-weight:800; font-size:12.5px; }
+  .peq { font-size:11px; color:#6b7280; margin-top:2px; }
+  .resp select { border:1.5px solid #e5e7eb; border-radius:8px; padding:5px 6px; font-size:12px; max-width:170px; background:#fff; }
+  .det td { background:#f8fafc; padding:12px 14px; }
+  .det-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+  .det h4 { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#6b7280; margin-bottom:6px; }
+  .act { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:7px 9px; margin-bottom:6px; font-size:12px; }
+  .act .f { font-size:10.5px; color:#9ca3af; }
+  .kv { font-size:12px; padding:3px 0; } .kv b { color:#6b7280; font-weight:700; display:inline-block; min-width:120px; }
+  .aviso { background:#fff; border-radius:14px; padding:30px; text-align:center; color:#6b7280; font-size:14px; }
+  .barra-guardar { position:sticky; bottom:12px; margin-top:12px; background:#0f172a; color:#fff; border-radius:14px; padding:12px 16px; display:none; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; box-shadow:0 8px 24px rgba(0,0,0,.2); }
+  .barra-guardar.on { display:flex; }
+  .ov { display:none; position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:100; align-items:flex-start; justify-content:center; padding:24px 12px; overflow-y:auto; }
+  .ov.on { display:flex; }
+  .modal { background:#fff; border-radius:16px; max-width:620px; width:100%; padding:18px 20px; }
+  .modal h3 { font-size:16px; font-weight:900; margin-bottom:8px; }
+  .modal li { font-size:12.5px; margin:0 0 6px 18px; line-height:1.45; }
+  .glosario { background:#fff; border-radius:12px; padding:10px 14px; font-size:11.5px; color:#4b5563; line-height:1.55; margin-bottom:12px; }
+  .glosario summary { font-weight:800; cursor:pointer; color:#111827; }
+  @media (max-width:640px) { th.opt, td.opt { display:none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>⭐ 30 cuentas prioritarias</h1>
+      <div class="sub" id="sub">Las 30 cuentas del corte de selección de leads y su seguimiento en Bitrix.</div>
+    </div>
+    <a class="volver" target="_top" href="https://app.solart.mx/front-home.html">🏠 Inicio</a>
+  </div>
+
+  <details class="glosario">
+    <summary>ℹ️ Cómo se lee esta vista</summary>
+    <div style="margin-top:6px">
+      <b>Corte:</b> top 30 con los 4 criterios de igual peso: tamaño 150–1,000 kWp, propuesta ya presentada, retorno menor a 3 años y energía cubierta mayor a 50 %.<br>
+      <b>Responsable:</b> el vendedor que tiene la negociación en Bitrix. Las cuentas que venían de Pipedrive se dan de alta en Bitrix al asignarlas, en la etapa "3_Se agendó/presentó propuesta inicial".<br>
+      <b>Seguimiento:</b> 🟢 actividad, tarea o comentario en los últimos 7 días · 🟡 entre 8 y 21 días · 🔴 más de 21 días o nada registrado · ⚪ todavía sin responsable en Bitrix.<br>
+      <b>Pendiente:</b> la siguiente actividad o tarea abierta de la negociación; en rojo si ya venció.
+    </div>
+  </details>
+
+  <div class="tarjetas" id="tarjetas"></div>
+
+  <div class="controles">
+    <input id="q" placeholder="Buscar cliente, contacto o vendedor…" oninput="pintar()">
+    <select id="fResp" onchange="pintar()"><option value="">Todos los responsables</option></select>
+    <button class="btn btn-sec" onclick="cargar()">↻ Actualizar</button>
+  </div>
+
+  <div id="cuerpo"><div class="aviso">Cargando cuentas y seguimiento desde Bitrix…</div></div>
+
+  <div class="barra-guardar" id="barra">
+    <span id="barra-txt"></span>
+    <span style="display:flex;gap:8px">
+      <button class="btn btn-sec" onclick="descartar()">Descartar</button>
+      <button class="btn btn-prim" id="btn-guardar" onclick="revisarCambios()">Guardar asignaciones</button>
+    </span>
+  </div>
+</div>
+
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+
+<script>
+  const WEBHOOK = 'https://crm-solart.bitrix24.mx/rest/12/128t1gaxhgz3aoue/';
+  const BX_URL = 'https://crm-solart.bitrix24.mx/crm/deal/details/';
+  const ADMINS = ['8', '158', '12'];           // Daniel, Victor y Luis: ven las 30 y asignan
+  const MARCA = 'Cuentas prioritarias';        // va en "Fuente de información" de los deals creados desde aquí
+  const UF = { proyecto:'UF_CRM_1741392978542', kwp:'UF_CRM_1741208352117', energia:'UF_CRM_1753209254287',
+               retorno:'UF_CRM_1758676152864', tipo:'UF_CRM_1743795019024' };
+  const TIPO_ID = { FV:312, BESS:310, SC:336, MANT:526 };
+  const ETAPA_ALTA = 'PREPAYMENT_INVOICE';     // 3_Se agendo/presento propuesta inicial
+
+  let USUARIO = null, CUENTAS = [], USERS = {}, ETAPAS = {}, cambios = {}, abierta = null, filtroSem = '';
+  try { USUARIO = JSON.parse(localStorage.getItem('solart_user') || 'null'); } catch (e) {}
+  const esAdmin = () => USUARIO && ADMINS.includes(String(USUARIO.id));
+
+  // ── Bitrix ──────────────────────────────────────────────────────────
+  async function bx(method, body) {
+    const res = await fetch(WEBHOOK + method, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body || {}) });
+    const j = await res.json();
+    if (j.error) throw new Error(j.error_description || j.error);
+    return j;
+  }
+  function qs(obj, pre) {
+    return Object.entries(obj).map(([k, v]) => {
+      const key = pre ? `${pre}[${k}]` : k;
+      return v !== null && typeof v === 'object' ? qs(v, key) : `${encodeURIComponent(key)}=${encodeURIComponent(v)}`;
+    }).join('&');
+  }
+  async function batch(cmds) {   // cmds: {clave: [metodo, params]} · Bitrix acepta 50 por llamada
+    const claves = Object.keys(cmds), out = {};
+    for (let i = 0; i < claves.length; i += 50) {
+      const cmd = {};
+      claves.slice(i, i + 50).forEach(k => cmd[k] = cmds[k][0] + '?' + qs(cmds[k][1]));
+      const j = await bx('batch', { halt:0, cmd });
+      Object.assign(out, (j.result && j.result.result) || {});
+    }
+    return out;
+  }
+
+  // ── Utilidades ──────────────────────────────────────────────────────
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+  const dias = f => { const t = Date.parse(f || ''); return isNaN(t) ? null : Math.floor((Date.now() - t) / 86400000); };
+  const fecha = f => { const t = Date.parse(f || ''); return isNaN(t) ? '—' : new Date(t).toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'2-digit' }); };
+  const usd = n => n ? '$' + Math.round(n).toLocaleString('es-MX') : '—';
+  const nombreU = id => (USERS[String(id)] || {}).nombre || (id ? 'Usuario ' + id : '—');
+  const limpio = t => String(t || '').replace(/<[^>]+>/g, ' ').replace(/\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+
+  function semaforo(c) {
+    if (!c.deal) return { cls:'s-gris', txt:'⚪ Sin responsable', k:'sin' };
+    const d = c.ultimoMov == null ? null : dias(c.ultimoMov);
+    if (d === null) return { cls:'s-rojo', txt:'🔴 Sin registro', k:'rojo' };
+    if (d <= 7)  return { cls:'s-verde', txt:`🟢 hace ${d} d`, k:'verde' };
+    if (d <= 21) return { cls:'s-amarillo', txt:`🟡 hace ${d} d`, k:'amarillo' };
+    return { cls:'s-rojo', txt:`🔴 hace ${d} d`, k:'rojo' };
+  }
+
+  // ── Carga ───────────────────────────────────────────────────────────
+  async function cargar() {
+    if (!USUARIO) {
+      document.getElementById('cuerpo').innerHTML = '<div class="aviso">Entra primero a la app con tu nombre y PIN.<br><br><a class="volver" target="_top" href="https://app.solart.mx/front-home.html">Ir al inicio</a></div>';
+      return;
+    }
+    document.getElementById('cuerpo').innerHTML = '<div class="aviso">Cargando cuentas y seguimiento desde Bitrix…</div>';
+    try {
+      const datos = await (await fetch('cuentas-prioritarias.json?v=' + Date.now())).json();
+      document.getElementById('sub').textContent = datos.corte + '. Seguimiento en vivo desde Bitrix.';
+      CUENTAS = datos.cuentas.map(c => ({ ...c }));
+
+      // Usuarios y etapas
+      const [us, cats] = await Promise.all([bx('user.get', { FILTER:{ ACTIVE:true } }), bx('crm.dealcategory.list', {})]);
+      USERS = {};
+      (us.result || []).forEach(u => { if (String(u.ID) !== '1') USERS[String(u.ID)] = { nombre:`${u.NAME || ''} ${u.LAST_NAME || ''}`.trim(), deps:(u.UF_DEPARTMENT || []).map(String) }; });
+      const catIds = [0, ...((cats.result || []).map(c => c.ID))];
+      const st = await batch(Object.fromEntries(catIds.map(id => ['c' + id, ['crm.dealcategory.stage.list', { id }]])));
+      ETAPAS = {};
+      Object.values(st).forEach(lst => (lst || []).forEach(s => ETAPAS[s.STATUS_ID] = s.NAME));
+
+      // Deals ya creados desde esta vista para cuentas de Pipedrive/Monday
+      const creados = await bx('crm.deal.list', { filter:{ '%SOURCE_DESCRIPTION': MARCA }, select:['ID', 'SOURCE_DESCRIPTION'] });
+      const porOrigen = {};
+      (creados.result || []).forEach(d => { const m = String(d.SOURCE_DESCRIPTION || '').match(/(PD|MDY|BX)-\d+/); if (m) porOrigen[m[0]] = String(d.ID); });
+      CUENTAS.forEach(c => c.dealId = c.bitrixId ? String(c.bitrixId) : (porOrigen[c.id] || null));
+
+      // Datos vivos de los deals
+      const ids = CUENTAS.map(c => c.dealId).filter(Boolean);
+      const deals = {};
+      if (ids.length) {
+        const r = await bx('crm.deal.list', { filter:{ ID:ids }, select:['ID', 'TITLE', 'STAGE_ID', 'CATEGORY_ID', 'ASSIGNED_BY_ID', 'LAST_ACTIVITY_TIME', 'DATE_MODIFY', 'CLOSED', 'OPPORTUNITY', 'CURRENCY_ID'] });
+        (r.result || []).forEach(d => deals[String(d.ID)] = d);
+      }
+
+      // Actividades/tareas y comentarios de cada deal
+      const cmds = {};
+      ids.forEach(id => {
+        cmds['a' + id] = ['crm.activity.list', { filter:{ OWNER_TYPE_ID:2, OWNER_ID:id }, order:{ ID:'DESC' }, select:['ID', 'SUBJECT', 'COMPLETED', 'DEADLINE', 'CREATED', 'LAST_UPDATED', 'RESPONSIBLE_ID', 'PROVIDER_ID'] }];
+        cmds['k' + id] = ['crm.timeline.comment.list', { filter:{ ENTITY_ID:id, ENTITY_TYPE:'deal' }, order:{ ID:'DESC' }, select:['ID', 'CREATED', 'AUTHOR_ID', 'COMMENT'] }];
+      });
+      const res = ids.length ? await batch(cmds) : {};
+
+      CUENTAS.forEach(c => {
+        c.deal = c.dealId ? deals[c.dealId] || null : null;
+        c.acts = c.dealId ? (res['a' + c.dealId] || []) : [];
+        c.coms = c.dealId ? (res['k' + c.dealId] || []) : [];
+        const hechos = c.acts.filter(a => a.COMPLETED === 'Y').map(a => a.LAST_UPDATED || a.CREATED);
+        const movs = [...hechos, ...c.acts.map(a => a.CREATED), ...c.coms.map(k => k.CREATED)].filter(Boolean).sort();
+        c.ultimoMov = movs.length ? movs[movs.length - 1] : null;
+        c.pendiente = c.acts.filter(a => a.COMPLETED !== 'Y').sort((a, b) => String(a.DEADLINE || '9').localeCompare(String(b.DEADLINE || '9')))[0] || null;
+        c.resp = c.deal ? String(c.deal.ASSIGNED_BY_ID) : '';
+      });
+
+      // Vendedor: solo ve las suyas
+      if (!esAdmin()) CUENTAS = CUENTAS.filter(c => c.resp === String(USUARIO.id));
+      cambios = {};
+      llenarFiltroResp();
+      pintar();
+    } catch (e) {
+      document.getElementById('cuerpo').innerHTML = `<div class="aviso">No se pudo cargar: ${esc(e.message)}</div>`;
+    }
+  }
+
+  function llenarFiltroResp() {
+    const sel = document.getElementById('fResp'), cnt = {};
+    CUENTAS.forEach(c => { const k = c.resp || 'sin'; cnt[k] = (cnt[k] || 0) + 1; });
+    sel.innerHTML = '<option value="">Todos los responsables</option>' +
+      Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<option value="${k}">${k === 'sin' ? 'Sin responsable' : esc(nombreU(k))} (${n})</option>`).join('');
+    sel.style.display = esAdmin() ? '' : 'none';
+  }
+
+  // ── Pintar ──────────────────────────────────────────────────────────
+  function pintar() {
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    const fr = document.getElementById('fResp').value;
+    const conteo = { total:CUENTAS.length, bitrix:0, verde:0, amarillo:0, rojo:0, sin:0 };
+    CUENTAS.forEach(c => { const s = semaforo(c); conteo[s.k]++; if (c.deal) conteo.bitrix++; });
+    const T = [['', conteo.total, 'Cuentas'], ['verde', conteo.verde, '🟢 Seguimiento esta semana'], ['amarillo', conteo.amarillo, '🟡 8 a 21 días'],
+               ['rojo', conteo.rojo, '🔴 Más de 21 días'], ['sin', conteo.sin, '⚪ Sin responsable']];
+    document.getElementById('tarjetas').innerHTML = T.map(([k, v, l]) =>
+      `<div class="tj ${filtroSem === k ? 'on' : ''}" onclick="filtroSem='${k}';pintar()"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+
+    const lista = CUENTAS.filter(c => {
+      if (filtroSem && semaforo(c).k !== filtroSem) return false;
+      if (fr && (c.resp || 'sin') !== fr) return false;
+      if (q && !`${c.empresa} ${c.contacto} ${nombreU(c.resp)} ${c.vendedorOriginal}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    if (!CUENTAS.length) { document.getElementById('cuerpo').innerHTML = '<div class="aviso">No tienes cuentas prioritarias asignadas todavía.</div>'; return; }
+
+    const opciones = sel => '<option value="">— Sin asignar —</option>' + Object.entries(USERS)
+      .sort((a, b) => (b[1].deps.includes('3') - a[1].deps.includes('3')) || a[1].nombre.localeCompare(b[1].nombre))
+      .map(([id, u]) => `<option value="${id}" ${id === sel ? 'selected' : ''}>${esc(u.nombre)}</option>`).join('');
+
+    const filas = lista.map(c => {
+      const s = semaforo(c), cam = cambios[c.id];
+      const respSel = cam != null ? cam : c.resp;
+      const etapa = c.deal ? (ETAPAS[c.deal.STAGE_ID] || c.deal.STAGE_ID) : `<span class="peq">Pipedrive: ${esc(c.etapaOrigen)}</span>`;
+      const pend = c.pendiente ? (() => { const d = dias(c.pendiente.DEADLINE); const venc = d != null && d > 0;
+        return `<div style="color:${venc ? '#b91c1c' : '#374151'}">${esc(limpio(c.pendiente.SUBJECT).slice(0, 60))}</div><div class="peq">${venc ? 'Venció ' : 'Vence '}${fecha(c.pendiente.DEADLINE)}</div>`; })()
+        : (c.deal ? '<span class="peq">Sin pendientes</span>' : '');
+      const resp = esAdmin()
+        ? `<select onclick="event.stopPropagation()" onchange="cambiar('${c.id}', this.value)">${opciones(respSel)}</select>`
+        : esc(nombreU(c.resp));
+      return `<tr class="fila ${cam != null ? 'cambio' : ''}" onclick="abrir('${c.id}')">
+        <td style="color:#9ca3af;font-weight:800">${c.n}</td>
+        <td><div class="nom">${esc(c.empresa)}</div><div class="peq">${esc(c.contacto || 'sin contacto')}</div>
+            <span class="tag ${c.origen === 'bitrix' ? 't-bx' : c.origen === 'pipedrive' ? 't-pd' : 't-md'}">${c.origen === 'bitrix' ? 'Bitrix' : c.origen === 'pipedrive' ? 'Pipedrive' : 'Monday'}</span>
+            ${c.deal && c.origen !== 'bitrix' ? ' <span class="tag t-bx">ya en Bitrix</span>' : ''}</td>
+        <td class="resp">${resp}<div class="peq">antes: ${esc(c.vendedorOriginal || '—')}</div></td>
+        <td>${etapa}</td>
+        <td><span class="sem ${s.cls}">${s.txt}</span><div class="peq">${c.acts.length} act. · ${c.coms.length} coment.</div></td>
+        <td class="opt">${pend}</td>
+        <td class="opt" style="white-space:nowrap">${c.kwp} kWp · ${c.energia} %<div class="peq">ROI ${c.retorno} a · ${usd(c.precioUSD)}</div></td>
+      </tr>` + (abierta === c.id ? detalle(c) : '');
+    }).join('');
+
+    document.getElementById('cuerpo').innerHTML = `<div class="tabla-wrap"><table>
+      <thead><tr><th>#</th><th>Cuenta</th><th>Responsable</th><th>Etapa</th><th>Seguimiento</th><th class="opt">Pendiente</th><th class="opt">Proyecto</th></tr></thead>
+      <tbody>${filas || '<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:20px">Nada con estos filtros</td></tr>'}</tbody></table></div>`;
+    barra();
+  }
+
+  function detalle(c) {
+    const acts = c.acts.slice(0, 6).map(a => `<div class="act"><div>${a.COMPLETED === 'Y' ? '✅' : '⏳'} ${esc(limpio(a.SUBJECT))}</div>
+      <div class="f">${esc(nombreU(a.RESPONSIBLE_ID))} · creada ${fecha(a.CREATED)}${a.DEADLINE ? ' · vence ' + fecha(a.DEADLINE) : ''}</div></div>`).join('') || '<div class="peq">Sin actividades ni tareas.</div>';
+    const coms = c.coms.slice(0, 4).map(k => `<div class="act"><div>${esc(limpio(k.COMMENT).slice(0, 220))}</div><div class="f">${esc(nombreU(k.AUTHOR_ID))} · ${fecha(k.CREATED)}</div></div>`).join('') || '<div class="peq">Sin comentarios.</div>';
+    const crit = ['150–1,000 kWp', 'Propuesta presentada', 'ROI < 3 años', 'Energía > 50 %'].map((t, i) => (c.criterios[i] ? '✓ ' : '✗ ') + t).join(' · ');
+    return `<tr class="det"><td colspan="7"><div class="det-grid">
+      <div><h4>Datos de la cuenta</h4>
+        <div class="kv"><b>Contacto</b>${esc(c.contacto || '—')}</div>
+        <div class="kv"><b>Teléfono</b>${c.tel ? `<a href="tel:${esc(c.tel)}">${esc(c.tel)}</a>` : '—'}</div>
+        <div class="kv"><b>Correo</b>${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : '—'}</div>
+        <div class="kv"><b>Origen</b>${esc(c.id)} · ${esc(c.pipeline || '')}</div>
+        <div class="kv"><b>Último contacto origen</b>${fecha(c.ultContactoOrigen)}</div>
+        <div class="kv"><b>Propuestas OneDrive</b>${c.nPropuestasOneDrive || 0}</div>
+        <div class="kv"><b>Criterios</b>${crit}</div>
+        ${c.deal ? `<div style="margin-top:8px"><a class="volver" target="_blank" href="${BX_URL}${c.dealId}/">Abrir en Bitrix ↗</a></div>` : ''}
+      </div>
+      <div><h4>Actividades y tareas</h4>${acts}</div>
+      <div><h4>Comentarios</h4>${coms}</div>
+    </div></td></tr>`;
+  }
+
+  function abrir(id) { abierta = abierta === id ? null : id; pintar(); }
+
+  // ── Asignación ──────────────────────────────────────────────────────
+  function cambiar(id, uid) {
+    const c = CUENTAS.find(x => x.id === id);
+    if (uid === (c.resp || '')) delete cambios[id]; else cambios[id] = uid;
+    pintar();
+  }
+  function descartar() { cambios = {}; pintar(); }
+  function barra() {
+    const n = Object.keys(cambios).length;
+    document.getElementById('barra').classList.toggle('on', n > 0);
+    document.getElementById('barra-txt').textContent = `${n} cambio${n === 1 ? '' : 's'} de responsable sin guardar`;
+  }
+
+  function revisarCambios() {
+    const items = Object.entries(cambios).map(([id, uid]) => {
+      const c = CUENTAS.find(x => x.id === id);
+      if (!uid) return `<li><b>${esc(c.empresa)}</b>: no se puede dejar sin responsable una cuenta que ya está en Bitrix. Se ignora.</li>`;
+      return c.deal
+        ? `<li><b>${esc(c.empresa)}</b>: pasa de ${esc(nombreU(c.resp))} a <b>${esc(nombreU(uid))}</b> en Bitrix.</li>`
+        : `<li><b>${esc(c.empresa)}</b>: se da de alta en Bitrix (empresa, contacto y negociación en "3_Se agendó/presentó propuesta inicial") a nombre de <b>${esc(nombreU(uid))}</b>.</li>`;
+    }).join('');
+    document.getElementById('modal').innerHTML = `<h3>Confirmar asignaciones</h3><ul>${items}</ul>
+      <div class="peq" style="margin:8px 0 14px">Cada negociación queda con un comentario de quién la asignó. El vendedor la verá en su "Mi día".</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-sec" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-prim" id="btn-conf" onclick="guardar()">Sí, guardar</button></div>`;
+    document.getElementById('ov').classList.add('on');
+  }
+  function cerrarModal() { document.getElementById('ov').classList.remove('on'); }
+
+  async function asegurarResponsable(id, uid) {   // los robots de Bitrix a veces reasignan lo nuevo
+    for (let i = 0; i < 3; i++) {
+      const d = (await bx('crm.deal.get', { id })).result;
+      if (String(d.ASSIGNED_BY_ID) === String(uid)) return true;
+      await bx('crm.deal.update', { id, fields:{ ASSIGNED_BY_ID:uid } });
+      await new Promise(r => setTimeout(r, 1200));
+    }
+    return false;
+  }
+
+  async function guardar() {
+    const btn = document.getElementById('btn-conf'); btn.disabled = true; btn.textContent = 'Guardando…';
+    const quien = USUARIO.nombre, log = [];
+    for (const [id, uid] of Object.entries(cambios)) {
+      const c = CUENTAS.find(x => x.id === id);
+      if (!uid) continue;
+      const vend = nombreU(uid);
+      try {
+        let dealId = c.dealId;
+        if (c.deal) {
+          await bx('crm.deal.update', { id:dealId, fields:{ ASSIGNED_BY_ID:uid } });
+        } else {
+          const comp = (await bx('crm.company.add', { fields:{ TITLE:c.empresa, ASSIGNED_BY_ID:uid } })).result;
+          let cont = null;
+          if (c.contacto || c.tel || c.email) {
+            const p = String(c.contacto || c.empresa).trim().split(' ');
+            const f = { NAME:p[0], LAST_NAME:p.slice(1).join(' '), COMPANY_ID:comp, ASSIGNED_BY_ID:uid };
+            if (c.tel) f.PHONE = [{ VALUE:c.tel, VALUE_TYPE:'WORK' }];
+            if (c.email) f.EMAIL = [{ VALUE:c.email, VALUE_TYPE:'WORK' }];
+            cont = (await bx('crm.contact.add', { fields:f })).result;
+          }
+          const tipos = (c.tipo || []).filter(t => TIPO_ID[t]); if (!tipos.length) tipos.push('FV');
+          const contacto1 = String(c.contacto || '').trim().split(' ')[0] || 'SinContacto';
+          const fields = {
+            TITLE:`${tipos.join(',')}_${contacto1}_${c.empresa}_${vend.split(' ')[0]}_${Math.round(c.kwp)}kWp_${c.empresa}`,
+            CATEGORY_ID:0, STAGE_ID:ETAPA_ALTA, ASSIGNED_BY_ID:uid, COMPANY_ID:comp, OPPORTUNITY:c.precioUSD || 0, CURRENCY_ID:'USD',
+            SOURCE_DESCRIPTION:`${MARCA} · ${c.id} · vendedor original ${c.vendedorOriginal || '—'} · etapa ${c.etapaOrigen || '—'}`,
+            [UF.proyecto]:c.empresa, [UF.kwp]:c.kwp, [UF.energia]:c.energia, [UF.retorno]:c.retorno, [UF.tipo]:tipos.map(t => TIPO_ID[t]),
+            COMMENTS:`Cuenta recuperada de ${c.origen === 'pipedrive' ? 'Pipedrive' : 'Monday'} (${c.id}). Último contacto registrado allá: ${c.ultContactoOrigen || '—'}. Propuestas en OneDrive: ${c.nPropuestasOneDrive || 0}.`,
+          };
+          if (cont) fields.CONTACT_ID = cont;
+          dealId = String((await bx('crm.deal.add', { fields })).result);
+        }
+        await bx('crm.timeline.comment.add', { fields:{ ENTITY_ID:dealId, ENTITY_TYPE:'deal', COMMENT:`⭐ Cuenta prioritaria asignada a ${vend} por ${quien} desde app.solart.mx.` } });
+        const ok = await asegurarResponsable(dealId, uid);
+        log.push(`${ok ? '✅' : '⚠️'} ${c.empresa} → ${vend}${ok ? '' : ' (Bitrix la reasignó; revisa sus robots)'}`);
+      } catch (e) { log.push(`❌ ${c.empresa}: ${e.message}`); }
+    }
+    document.getElementById('modal').innerHTML = `<h3>Resultado</h3><ul>${log.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
+      <div style="text-align:right;margin-top:12px"><button class="btn btn-prim" onclick="cerrarModal();cargar()">Listo</button></div>`;
+  }
+
+  cargar();
+</script>
+</body>
+</html>

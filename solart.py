@@ -26,11 +26,12 @@ PERSONAS = {
     'javier': (36, 'Javier Olmos'), 'gerardo': (86, 'Gerardo Vite'), 'arturo chavez': (34, 'Arturo Chávez'),
     'carlos': (40, 'Carlos Mariscal'), 'samantha': (390, 'Samantha Miranda'), 'victor': (158, 'Victor Linaldi'),
     'arturo lopez': (188, 'Arturo López Gallo'), 'arturo': (188, 'Arturo López Gallo'),
-    'christian': (44, 'Christian González'), 'samuel': (48, 'Samuel Capuano'), 'alberto': (296, 'Alberto Atilano'),
+    'christian': (436, 'Christian Chávez'), 'christian chavez': (436, 'Christian Chávez'), 'christian gonzalez': (44, 'Christian González'), 'samuel': (48, 'Samuel Capuano'), 'alberto': (296, 'Alberto Atilano'),
     'moises': (356, 'Moises Jimenez'), 'rafael': (46, 'Rafael De la cuadra'), 'lilia': (126, 'Lilia Ventura'),
     'erick': (344, 'Erick Hernandez'), 'ulises': (282, 'Ulises Navarro'),
+    'alejandro': (434, 'Alejandro García'), 'alejandro garcia': (434, 'Alejandro García'),
 }
-VENDEDORES = {44, 48, 296, 356, 188, 126, 282}
+VENDEDORES = {44, 48, 296, 356, 188, 126, 282, 344, 434, 436}
 TIPO_ID = {'FV': 312, 'FOTOVOLTAICO': 312, 'BESS': 310, 'SC': 336, 'SUMINISTRO': 336, 'MANT': 526, 'MANTENIMIENTO': 526}
 TIPO_NOMBRE = {312: 'FOTOVOLTAICO', 310: 'BESS', 336: 'SUMINISTRO CALIFICADO', 526: 'MANTENIMIENTO'}
 UF = {'proyecto': 'UF_CRM_1741392978542', 'kwp': 'UF_CRM_1741208352117', 'energia': 'UF_CRM_1753209254287',

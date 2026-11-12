@@ -303,3 +303,16 @@ Reglas:
 
 ## Para integrar a otra persona del equipo
 Lee `GUIA-DANI.md`: instalación, clonado fuera de OneDrive, flujo de publicación y uso de `solart.py`.
+
+## Cuentas prioritarias (12-nov-2026)
+- Las 30 cuentas del corte de selección (4 criterios, ver arriba) quedaron congeladas en `cuentas-prioritarias.json`
+  (10 de Bitrix, 20 de Pipedrive). Vista: `front-cuentas.html` (tarjeta ⭐ en el Home). Daniel (8), Victor (158) y Luis (12)
+  ven las 30 y asignan responsable; cualquier otro usuario solo ve las que tiene asignadas.
+- Asignar una cuenta de Bitrix = cambiar `ASSIGNED_BY_ID`. Asignar una de Pipedrive = crear empresa + contacto + deal en
+  categoría 0, etapa `PREPAYMENT_INVOICE` (3_Se agendó/presentó propuesta inicial), con `SOURCE_DESCRIPTION`
+  "Cuentas prioritarias · PD-xxxx · …"; así la vista los vuelve a encontrar. Siempre deja comentario en el timeline y
+  verifica 3 veces que el responsable no lo haya cambiado un robot.
+- Seguimiento = actividades/tareas y comentarios del deal: 🟢 ≤7 días, 🟡 8–21, 🔴 >21 o nada, ⚪ sin responsable.
+- Vendedores nuevos (12-nov-2026): Alejandro García (id 434, alejandro.garcia@solart.mx) y Christian Chávez (id 436,
+  christian.chavez@solart.mx), departamento comercial (3), PIN 1234 en la app. Ojo: "christian" en `solart.py` ahora es
+  Christian Chávez; Christian González (44) está inactivo.
