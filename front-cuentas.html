@@ -63,7 +63,10 @@
       <h1>⭐ 30 cuentas prioritarias</h1>
       <div class="sub" id="sub">Las 30 cuentas del corte de selección de leads y su seguimiento en Bitrix.</div>
     </div>
-    <a class="volver" target="_top" href="https://app.solart.mx/front-home.html">🏠 Inicio</a>
+    <span style="display:flex;gap:6px">
+      <a class="volver" id="a-tablero" target="_top" href="https://app.solart.mx/front-ingenieria.html" style="display:none">📊 Mi tablero</a>
+      <a class="volver" target="_top" href="https://app.solart.mx/front-home.html">🏠 Inicio</a>
+    </span>
   </div>
 
   <details class="glosario">
@@ -110,6 +113,7 @@
   let USUARIO = null, CUENTAS = [], USERS = {}, ETAPAS = {}, cambios = {}, abierta = null, filtroSem = '';
   try { USUARIO = JSON.parse(localStorage.getItem('solart_user') || 'null'); } catch (e) {}
   const esAdmin = () => USUARIO && ADMINS.includes(String(USUARIO.id));
+  if (USUARIO && ['8', '158', '188'].includes(String(USUARIO.id))) document.getElementById('a-tablero').style.display = '';
 
   // ── Bitrix ──────────────────────────────────────────────────────────
   async function bx(method, body) {

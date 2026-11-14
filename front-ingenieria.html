@@ -184,6 +184,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <a class="sidebar-link" id="sb-visitas" href="#" onclick="switchVista('visitas')" style="display:none"><span class="sb-icon">🧭</span> Visitas Técnicas</a>
     <a class="sidebar-link" id="sb-consolidado" target="_top" href="https://app.solart.mx/front-consolidado.html" style="display:none"><span class="sb-icon">🗃️</span> BBDD comercial</a>
     <a class="sidebar-link" id="sb-panorama" target="_top" href="https://app.solart.mx/front-panorama.html" style="display:none"><span class="sb-icon">🥧</span> Panorama de propuestas</a>
+    <a class="sidebar-link" id="sb-cuentas" target="_top" href="https://app.solart.mx/front-cuentas.html" style="display:none"><span class="sb-icon">⭐</span> 30 cuentas prioritarias</a>
     <a class="sidebar-link" id="sb-director" href="#" onclick="switchVista('director')" style="display:none"><span class="sb-icon">📊</span> Tablero Ingeniería</a>
     <a class="sidebar-link" id="sb-propuestas-ent" href="#" onclick="switchVista('entregadas')"><span class="sb-icon">📦</span> Propuestas Entregadas</a>
   </nav>
@@ -255,6 +256,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <button id="mnav-vis" onclick="switchVista('visitas')" style="display:none">🧭 Visitas</button>
     <button id="mnav-dir" onclick="switchVista('director')" style="display:none">📊 Tablero</button>
     <button id="mnav-ent" onclick="switchVista('entregadas')">📦 Entregadas</button>
+    <button id="mnav-cuentas" onclick="window.top.location.href='https://app.solart.mx/front-cuentas.html'" style="display:none">⭐ Cuentas</button>
   </div>
   <div class="app-body" id="app-body">
     <div class="cargando"><div class="spinner"></div></div>
@@ -533,6 +535,8 @@ async function abrirApp() {
     if (mnIng) mnIng.textContent = '📊 Comercial';
   }
   cargarBacklogPersonal();
+  // 30 cuentas prioritarias: Dani, Victor y Luis
+  if (['8','158','12'].includes(String(u.id))) ['sb-cuentas', 'mnav-cuentas'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
   if (['ceo','comercial'].includes(u.rol) || String(u.id) === '390') { ['sb-consolidado', 'sb-panorama'].forEach(id => { const sc = document.getElementById(id); if (sc) sc.style.display = ''; }); }
   if (u.rol === 'supervisor') renderSupervisor();
   else if (u.rol === 'ejecutor') renderEjecutor();
